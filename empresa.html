@@ -82,6 +82,7 @@ button.loading::after{
  to{ transform:translateY(-50%) rotate(360deg); }
 }
 
+/* TABLA DESKTOP */
 table{
  width:100%;
  border-collapse:collapse;
@@ -108,6 +109,45 @@ th{ background:#f8fafc; }
 
 .activa{ background:#dcfce7; color:#166534; }
 .inactiva{ background:#fee2e2; color:#991b1b; }
+
+/* ================================
+   TABLA → TARJETAS (MÓVIL)
+================================ */
+@media (max-width:768px){
+
+ table, thead, tbody, th, tr{
+  display:block;
+ }
+
+ thead{ display:none; }
+
+ tbody tr{
+  background:#fff;
+  margin-bottom:14px;
+  border-radius:16px;
+  box-shadow:0 6px 16px rgba(0,0,0,.08);
+  padding:14px;
+ }
+
+ tbody td{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 0;
+  border:none;
+ }
+
+ tbody td::before{
+  content:attr(data-label);
+  font-weight:600;
+  color:var(--muted);
+ }
+
+ tbody td:last-child{
+  justify-content:flex-end;
+  gap:8px;
+ }
+}
 
 /* MODAL */
 .modal{
@@ -152,154 +192,152 @@ th{ background:#f8fafc; }
 
 <div class="container">
 
+ <div class="flex">
+  <h2>Empresas Registradas</h2>
   <div class="flex">
-    <h2>Empresas Registradas</h2>
-    <div class="flex">
-      <button id="btnCargar" class="secondary" onclick="cargarEmpresas()">⟳ Recargar</button>
-      <button onclick="abrirModal()">＋ Nueva Empresa</button>
-    </div>
+   <button id="btnCargar" class="secondary" onclick="cargarEmpresas()">⟳ Recargar</button>
+   <button onclick="abrirModal()">＋ Nueva Empresa</button>
   </div>
+ </div>
 
-  <div class="mt">
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Empresa</th>
-          <th>RUT</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tablaEmpresas"></tbody>
-    </table>
-  </div>
+ <div class="mt">
+  <table>
+   <thead>
+    <tr>
+     <th>ID</th>
+     <th>Empresa</th>
+     <th>RUT</th>
+     <th>Estado</th>
+     <th>Acciones</th>
+    </tr>
+   </thead>
+   <tbody id="tablaEmpresas"></tbody>
+  </table>
+ </div>
 
 </div>
 
 <!-- MODAL -->
 <div id="modalEmpresa" class="modal">
-  <div class="modal-content">
-    <h3 id="modalTitulo">Nueva Empresa</h3>
+ <div class="modal-content">
+  <h3 id="modalTitulo">Nueva Empresa</h3>
 
-    <input type="hidden" id="empresaId">
+  <input type="hidden" id="empresaId">
 
-    <label>Nombre Empresa</label>
-    <input id="empresaNombre">
+  <label>Nombre Empresa</label>
+  <input id="empresaNombre">
 
-    <label>RUT</label>
-    <input id="empresaRut">
+  <label>RUT</label>
+  <input id="empresaRut">
 
-    <label>Estado</label>
-    <select id="empresaEstado">
-      <option value="ACTIVA">ACTIVA</option>
-      <option value="INACTIVA">INACTIVA</option>
-    </select>
+  <label>Estado</label>
+  <select id="empresaEstado">
+   <option value="ACTIVA">ACTIVA</option>
+   <option value="INACTIVA">INACTIVA</option>
+  </select>
 
-    <div class="flex mt">
-      <button id="btnGuardar" onclick="guardarEmpresa()">💾 Guardar</button>
-      <button class="danger" onclick="cerrarModal()">Cancelar</button>
-    </div>
+  <div class="flex mt">
+   <button id="btnGuardar" onclick="guardarEmpresa()">💾 Guardar</button>
+   <button class="danger" onclick="cerrarModal()">Cancelar</button>
   </div>
+ </div>
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbyxZ90bDIdYBJjpDIA_g5ha3_MwXPbgV7x0xRx01ypisR0jzJzsPssgX8Bfp1VJoB9v/exec";
+const API="https://script.google.com/macros/s/AKfycbyxZ90bDIdYBJjpDIA_g5ha3_MwXPbgV7x0xRx01ypisR0jzJzsPssgX8Bfp1VJoB9v/exec";
 
 /* MODAL */
 function abrirModal(e=null){
-  modalEmpresa.style.display="flex";
-  if(e){
-    modalTitulo.textContent="Editar Empresa";
-    empresaId.value=e.id;
-    empresaNombre.value=e.nombre;
-    empresaRut.value=e.rut;
-    empresaEstado.value=e.estado;
-  }else{
-    modalTitulo.textContent="Nueva Empresa";
-    empresaId.value="";
-    empresaNombre.value="";
-    empresaRut.value="";
-    empresaEstado.value="ACTIVA";
-  }
+ modalEmpresa.style.display="flex";
+ if(e){
+  modalTitulo.textContent="Editar Empresa";
+  empresaId.value=e.id;
+  empresaNombre.value=e.nombre;
+  empresaRut.value=e.rut;
+  empresaEstado.value=e.estado;
+ }else{
+  modalTitulo.textContent="Nueva Empresa";
+  empresaId.value="";
+  empresaNombre.value="";
+  empresaRut.value="";
+  empresaEstado.value="ACTIVA";
+ }
 }
 
 function cerrarModal(){
-  modalEmpresa.style.display="none";
+ modalEmpresa.style.display="none";
 }
 
 /* CRUD */
 async function cargarEmpresas(){
-  btnCargar.classList.add("loading");
+ btnCargar.classList.add("loading");
 
-  const r = await fetch(API+"?action=listarEmpresas");
-  const d = await r.json();
+ const r=await fetch(API+"?action=listarEmpresas");
+ const d=await r.json();
 
-  tablaEmpresas.innerHTML="";
-  if(d.data){
-    d.data.forEach(e=>{
-      const cls = e.estado === "ACTIVA" ? "activa" : "inactiva";
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${e.id}</td>
-        <td>${e.nombre}</td>
-        <td>${e.rut}</td>
-        <td><span class="badge ${cls}">${e.estado}</span></td>
-        <td>
-          <button class="secondary" onclick='abrirModal(${JSON.stringify(e)})'>✏️</button>
-          <button class="danger" onclick='eliminarEmpresa(${e.id})'>🗑</button>
-        </td>`;
-      tablaEmpresas.appendChild(tr);
-    });
-  }
+ tablaEmpresas.innerHTML="";
+ if(d.data){
+  d.data.forEach(e=>{
+   const cls=e.estado==="ACTIVA"?"activa":"inactiva";
+   const tr=document.createElement("tr");
+   tr.innerHTML=`
+    <td data-label="ID">${e.id}</td>
+    <td data-label="Empresa">${e.nombre}</td>
+    <td data-label="RUT">${e.rut}</td>
+    <td data-label="Estado">
+     <span class="badge ${cls}">${e.estado}</span>
+    </td>
+    <td data-label="Acciones">
+     <button class="secondary" onclick='abrirModal(${JSON.stringify(e)})'>✏️</button>
+     <button class="danger" onclick='eliminarEmpresa(${e.id})'>🗑</button>
+    </td>
+   `;
+   tablaEmpresas.appendChild(tr);
+  });
+ }
 
-  btnCargar.classList.remove("loading");
+ btnCargar.classList.remove("loading");
 }
 
 async function guardarEmpresa(){
-  btnGuardar.classList.add("loading");
+ btnGuardar.classList.add("loading");
 
-  const payload={
-    action: empresaId.value ? "editarEmpresa" : "crearEmpresa",
-    id: empresaId.value,
-    nombre: empresaNombre.value,
-    rut: empresaRut.value,
-    estado: empresaEstado.value
-  };
+ const payload={
+  action:empresaId.value?"editarEmpresa":"crearEmpresa",
+  id:empresaId.value,
+  nombre:empresaNombre.value,
+  rut:empresaRut.value,
+  estado:empresaEstado.value
+ };
 
-  const r = await fetch(API,{
-    method:"POST",
-    body:JSON.stringify(payload)
-  });
+ const r=await fetch(API,{method:"POST",body:JSON.stringify(payload)});
+ const d=await r.json();
 
-  const d = await r.json();
-  if(!d.ok) alert(d.msg || "Error");
+ if(!d.ok) alert(d.msg||"Error");
 
-  btnGuardar.classList.remove("loading");
-  cerrarModal();
-  cargarEmpresas();
+ btnGuardar.classList.remove("loading");
+ cerrarModal();
+ cargarEmpresas();
 }
 
 async function eliminarEmpresa(id){
-  if(!confirm("¿Marcar como INACTIVA?")) return;
+ if(!confirm("¿Marcar como INACTIVA?")) return;
 
-  const r = await fetch(API,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"eliminarEmpresa",
-      id
-    })
-  });
+ const r=await fetch(API,{
+  method:"POST",
+  body:JSON.stringify({action:"eliminarEmpresa",id})
+ });
 
-  const d = await r.json();
-  if(!d.ok) alert(d.msg || "Error");
+ const d=await r.json();
+ if(!d.ok) alert(d.msg||"Error");
 
-  cargarEmpresas();
+ cargarEmpresas();
 }
 
 /* INIT */
 cargarEmpresas();
 </script>
+
 <script src="auth.js"></script>
 <script src="segurity.js"></script>
 </body>
