@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gestión de Empresas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+ --bg:#f1f5f9;
+ --card:#ffffff;
+ --text:#0f172a;
+ --muted:#64748b;
+ --accent:#14b8a6;
+ --border:#e2e8f0;
+ --danger:#ef4444;
+}
+
+*{ box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+
+body{ margin:0; background:var(--bg); color:var(--text); }
+
+header{
+ padding:16px 20px;
+ background:#fff;
+ border-bottom:1px solid var(--border);
+ font-weight:700;
+ box-shadow:0 4px 12px rgba(0,0,0,.05);
+}
+
+.container{
+ max-width:1200px;
+ margin:auto;
+ padding:24px;
+}
+
+.flex{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ gap:10px;
+ flex-wrap:wrap;
+}
+
+.mt{ margin-top:16px; }
+
+/* BOTONES + LOADER */
+button{
+ background:var(--accent);
+ color:#fff;
+ border:none;
+ padding:10px 14px;
+ border-radius:8px;
+ cursor:pointer;
+ font-weight:600;
+ position:relative;
+}
+
+button.secondary{ background:#3b82f6; }
+button.danger{ background:var(--danger); }
+
+button.loading{
+ pointer-events:none;
+ opacity:.7;
+}
+
+button.loading::after{
+ content:"";
+ width:16px;
+ height:16px;
+ border:2px solid #fff;
+ border-top-color:transparent;
+ border-radius:50%;
+ position:absolute;
+ right:10px;
+ top:50%;
+ transform:translateY(-50%);
+ animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+ to{ transform:translateY(-50%) rotate(360deg); }
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ background:#fff;
+ border-radius:14px;
+ overflow:hidden;
+ box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
+
+th,td{
+ padding:12px;
+ border-bottom:1px solid var(--border);
+ font-size:14px;
+}
+
+th{ background:#f8fafc; }
+
+.badge{
+ padding:4px 10px;
+ border-radius:20px;
+ font-size:12px;
+ font-weight:600;
+}
+
+.activa{ background:#dcfce7; color:#166534; }
+.inactiva{ background:#fee2e2; color:#991b1b; }
+
+/* MODAL */
+.modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.45);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:999;
+}
+
+.modal-content{
+ background:#fff;
+ padding:22px;
+ border-radius:16px;
+ width:100%;
+ max-width:420px;
+}
+
+.modal label{
+ display:block;
+ font-size:13px;
+ margin-top:12px;
+ color:var(--muted);
+}
+
+.modal input,
+.modal select{
+ width:100%;
+ padding:10px;
+ margin-top:4px;
+ border-radius:8px;
+ border:1px solid var(--border);
+}
+</style>
+</head>
+
+<body>
+
+<header>🏢 Gestión de Empresas</header>
+
+<div class="container">
+
+  <div class="flex">
+    <h2>Empresas Registradas</h2>
+    <div class="flex">
+      <button id="btnCargar" class="secondary" onclick="cargarEmpresas()">⟳ Recargar</button>
+      <button onclick="abrirModal()">＋ Nueva Empresa</button>
+    </div>
+  </div>
+
+  <div class="mt">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Empresa</th>
+          <th>RUT</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaEmpresas"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modalEmpresa" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitulo">Nueva Empresa</h3>
+
+    <input type="hidden" id="empresaId">
+
+    <label>Nombre Empresa</label>
+    <input id="empresaNombre">
+
+    <label>RUT</label>
+    <input id="empresaRut">
+
+    <label>Estado</label>
+    <select id="empresaEstado">
+      <option value="ACTIVA">ACTIVA</option>
+      <option value="INACTIVA">INACTIVA</option>
+    </select>
+
+    <div class="flex mt">
+      <button id="btnGuardar" onclick="guardarEmpresa()">💾 Guardar</button>
+      <button class="danger" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbyxZ90bDIdYBJjpDIA_g5ha3_MwXPbgV7x0xRx01ypisR0jzJzsPssgX8Bfp1VJoB9v/exec";
+
+/* MODAL */
+function abrirModal(e=null){
+  modalEmpresa.style.display="flex";
+  if(e){
+    modalTitulo.textContent="Editar Empresa";
+    empresaId.value=e.id;
+    empresaNombre.value=e.nombre;
+    empresaRut.value=e.rut;
+    empresaEstado.value=e.estado;
+  }else{
+    modalTitulo.textContent="Nueva Empresa";
+    empresaId.value="";
+    empresaNombre.value="";
+    empresaRut.value="";
+    empresaEstado.value="ACTIVA";
+  }
+}
+
+function cerrarModal(){
+  modalEmpresa.style.display="none";
+}
+
+/* CRUD */
+async function cargarEmpresas(){
+  btnCargar.classList.add("loading");
+
+  const r = await fetch(API+"?action=listarEmpresas");
+  const d = await r.json();
+
+  tablaEmpresas.innerHTML="";
+  if(d.data){
+    d.data.forEach(e=>{
+      const cls = e.estado === "ACTIVA" ? "activa" : "inactiva";
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${e.id}</td>
+        <td>${e.nombre}</td>
+        <td>${e.rut}</td>
+        <td><span class="badge ${cls}">${e.estado}</span></td>
+        <td>
+          <button class="secondary" onclick='abrirModal(${JSON.stringify(e)})'>✏️</button>
+          <button class="danger" onclick='eliminarEmpresa(${e.id})'>🗑</button>
+        </td>`;
+      tablaEmpresas.appendChild(tr);
+    });
+  }
+
+  btnCargar.classList.remove("loading");
+}
+
+async function guardarEmpresa(){
+  btnGuardar.classList.add("loading");
+
+  const payload={
+    action: empresaId.value ? "editarEmpresa" : "crearEmpresa",
+    id: empresaId.value,
+    nombre: empresaNombre.value,
+    rut: empresaRut.value,
+    estado: empresaEstado.value
+  };
+
+  const r = await fetch(API,{
+    method:"POST",
+    body:JSON.stringify(payload)
+  });
+
+  const d = await r.json();
+  if(!d.ok) alert(d.msg || "Error");
+
+  btnGuardar.classList.remove("loading");
+  cerrarModal();
+  cargarEmpresas();
+}
+
+async function eliminarEmpresa(id){
+  if(!confirm("¿Marcar como INACTIVA?")) return;
+
+  const r = await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"eliminarEmpresa",
+      id
+    })
+  });
+
+  const d = await r.json();
+  if(!d.ok) alert(d.msg || "Error");
+
+  cargarEmpresas();
+}
+
+/* INIT */
+cargarEmpresas();
+</script>
+<script src="auth.js"></script>
+<script src="segurity.js"></script>
+</body>
+</html>

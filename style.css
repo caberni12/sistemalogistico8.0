@@ -1,0 +1,391 @@
+/* =====================================================
+   RESET / BASE
+===================================================== */
+*{
+  box-sizing:border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+}
+
+html, body{
+  margin:0;
+  background:#eef2f7;
+  color:#0f172a;
+}
+
+/* =====================================================
+   CONTENEDOR
+===================================================== */
+.wrap{
+  width:100%;
+  padding:10px;
+}
+
+.card{
+  background:#ffffff;
+  border-radius:20px;
+  padding:18px;
+  box-shadow:0 10px 26px rgba(0,0,0,.08);
+  display:flex;
+  flex-direction:column;
+  height:100%;
+}
+
+/* =====================================================
+   TITULOS
+===================================================== */
+h2{
+  text-align:center;
+  margin:12px 0 20px;
+  font-size:17px;
+}
+
+/* =====================================================
+   INPUTS / BOTONES
+===================================================== */
+input, button{
+  width:100%;
+  padding:14px;
+  margin-top:14px;
+  border-radius:16px;
+  border:1px solid #e2e8f0;
+  font-size:14px;
+}
+
+input:focus{
+  outline:none;
+  border-color:#0ea5e9;
+  box-shadow:0 0 0 3px rgba(14,165,233,.15);
+}
+
+button{
+  border:none;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* =====================================================
+   COLORES
+===================================================== */
+.primary{background:#0ea5e9;color:#fff}
+.secondary{background:#64748b;color:#fff}
+.success{background:#22c55e;color:#fff}
+.warn{background:#f59e0b;color:#fff}
+.danger{background:#ef4444;color:#fff}
+
+/* =====================================================
+   TABBAR
+===================================================== */
+.tabbar{
+  display:flex;
+  gap:8px;
+  margin-bottom:14px;
+}
+
+.tabbar button{
+  flex:1;
+  padding:12px 8px;
+  font-size:13px;
+  border-radius:14px;
+}
+
+/* =====================================================
+   INPUT CON ICONO
+===================================================== */
+.input-scan{
+  position:relative;
+  margin-top:14px;
+}
+
+.input-scan input{
+  padding-right:52px;
+}
+
+.input-scan .icon{
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:18px;
+  opacity:.5;
+}
+
+/* =====================================================
+   NOTAS / TOTAL
+===================================================== */
+.note{
+  font-size:11px;
+  color:#64748b;
+  margin-top:6px;
+}
+
+.total{
+  margin:16px 0;
+  padding:12px;
+  border-radius:16px;
+  background:#0f172a;
+  color:#fff;
+  text-align:center;
+  font-size:14px;
+  font-weight:700;
+}
+
+/* =====================================================
+   PREVIEW (COMPACTO Y SEGURO)
+===================================================== */
+.preview{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.preview .row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:center;
+}
+
+.preview .row b{
+  grid-column:1 / -1;
+  font-size:16px;
+}
+
+.preview .small{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  font-size:12px;
+  color:#475569;
+}
+
+/* =====================================================
+   LISTADO CAPTURA
+===================================================== */
+.list-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#f8fafc;
+  padding:14px;
+  border-radius:18px;
+  margin-top:10px;
+}
+
+.list-row > div{
+  flex:1;
+  min-width:0;
+}
+
+.list-row.editing{
+  background:#e0f2fe;
+  border:2px solid #0ea5e9;
+}
+
+.small{
+  font-size:11px;
+  color:#475569;
+  line-height:1.4;
+}
+
+.delbtn{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#ef4444;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  font-weight:bold;
+}
+
+/* =====================================================
+   TABS
+===================================================== */
+.tab{
+  display:none;
+}
+
+.tab.active{
+  display:block;
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+}
+
+/* =====================================================
+   SCANNER
+===================================================== */
+.scanner-slot{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  margin-bottom:10px;
+}
+
+#scannerBox{
+  position:relative;
+  width:100%;
+  max-width:420px;
+  height:50dvh;
+  max-height:380px;
+  background:#000;
+  border-radius:22px;
+  overflow:hidden;
+}
+
+.scanner-overlay{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  z-index:10;
+  display:flex;
+  justify-content:space-between;
+  padding:12px;
+}
+
+.scanner-btn{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  border:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  color:#fff;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.5);
+}
+
+.scanner-btn.close{background:#ef4444}
+.scanner-btn.torch{background:#0ea5e9}
+.scanner-btn.torch.on{
+  background:#22c55e;
+  box-shadow:0 0 14px rgba(34,197,94,.9);
+}
+
+.scan-frame{
+  position:absolute;
+  inset:22%;
+  border-radius:20px;
+  border:2px solid rgba(255,255,255,.9);
+}
+
+.scan-line{
+  position:absolute;
+  left:18%;
+  right:18%;
+  height:2px;
+  background:#ff3b3b;
+  animation:scan 3.8s ease-in-out infinite;
+}
+
+@keyframes scan{
+  0%{top:0}
+  50%{top:95%}
+  100%{top:0}
+}
+
+/* =====================================================
+   MODAL CONSULTA
+===================================================== */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.6);
+  backdrop-filter:blur(6px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.modal.show{display:flex}
+
+.modal-card{
+  background:#fff;
+  width:96%;
+  max-height:90vh;
+  border-radius:18px;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+}
+
+.table-scroll{
+  flex:1;
+  margin-top:10px;
+  overflow-y:auto;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+}
+
+#tablaConsulta{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+
+#tablaConsulta th,
+#tablaConsulta td{
+  padding:10px;
+  font-size:12px;
+  text-align:left;
+  border-bottom:1px solid #e5e7eb;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+#tablaConsulta thead th{
+  position:sticky;
+  top:0;
+  background:#f1f5f9;
+  border-bottom:2px solid #e2e8f0;
+}
+
+/* =====================================================
+   ESCRITORIO
+===================================================== */
+@media (min-width:768px){
+  body{background:#f1f5f9}
+
+  .wrap{
+    max-width:1200px;
+    margin:auto;
+    padding:16px;
+  }
+
+  .card{
+    padding:28px;
+    border-radius:24px;
+  }
+
+  .scanner-slot,
+  #scannerBox{
+    display:none!important;
+  }
+}
+
+/* =====================================================
+   MÓVIL (ESTRUCTURA CORRECTA)
+===================================================== */
+@media (max-width:767px){
+  html, body{
+    height:100%;
+    overflow:hidden;
+  }
+
+  .wrap{
+    height:100%;
+    padding:0;
+  }
+
+  .card{
+    height:100%;
+    padding:12px;
+  }
+}

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Capturador de Datos</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body>
+
+<audio id="beep">
+  <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg">
+</audio>
+
+<audio id="beepQR" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+<audio id="beepEAN" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+
+<div class="wrap">
+<div class="card">
+
+  <!-- ================= TABBAR ================= -->
+  <div class="tabbar">
+    <button class="primary" onclick="openTab('captura')">📋 Capturador</button>
+    <button class="primary" onclick="openTab('importar')">📥 Importar Maestra</button>
+    <button type="button" class="primary" onclick="abrirModalConsulta()">🔍 Consultar</button>
+  </div>
+
+  <!-- ================= CAPTURADOR ================= -->
+  <div id="captura" class="tab active">
+
+    <h2>📋 Capturador PRO</h2>
+
+    <div class="total" id="totalizador">Total unidades: 0</div>
+
+    <input id="operador"
+           placeholder="Nombre del operador"
+           oninput="previewIngreso()">
+
+    <!-- ===== UBICACIÓN ===== -->
+    <div class="input-scan">
+      <input id="ubicacion"
+             placeholder="Ubicación (opcional)"
+             onfocus="activarScan('ubicacion')"
+             oninput="previewIngreso()">
+      <span class="icon">📍</span>
+    </div>
+
+    <div class="note">ℹ️ La ubicación es opcional</div>
+
+    <!-- SLOT SCANNER UBICACIÓN (VACÍO) -->
+    <div id="scanner-ubicacion" class="scanner-slot"></div>
+
+    <!-- ===== CÓDIGO ===== -->
+    <div class="input-scan">
+      <input id="codigo"
+             type="text"
+             placeholder="Código"
+             onfocus="activarScan('codigo')"
+             oninput="buscarDescripcion();previewIngreso()">
+      <span class="icon">📷</span>
+    </div>
+
+    <!-- SLOT SCANNER CÓDIGO (VACÍO) -->
+    <div id="scanner-codigo" class="scanner-slot"></div>
+
+    <input id="descripcion"
+           placeholder="Descripción"
+           oninput="previewIngreso()">
+
+    <input id="cantidad"
+           type="number"
+           value="1"
+           oninput="previewIngreso()">
+
+    <div id="preview"></div>
+
+    <button class="primary" onclick="ingresar()">💾 Guardar</button>
+    <button class="warn" onclick="cancelarEdicion()">↩️ Cancelar edición</button>
+
+    <div id="tabla"></div>
+
+    <button class="success" onclick="finalizar()">📊 Finalizar</button>
+    <button class="primary" onclick="exportarPDF()">📄 Descargar PDF</button>
+
+  </div>
+
+  <!-- ================= IMPORTADOR ================= -->
+  <div id="importar" class="tab">
+
+    <h2>📥 Importar Maestra de Códigos</h2>
+
+    <input type="file" id="fileExcel" accept=".xlsx">
+
+    <div class="progress">
+      <div id="barra"></div>
+    </div>
+
+    <button class="primary" onclick="importarMaestra()">⬆️ Importar a Google Sheets</button>
+
+    <div id="mensaje" class="msg"></div>
+
+  </div>
+
+</div>
+</div>
+
+<!-- ================= MODAL CONSULTA ================= -->
+<div id="modalConsulta" class="modal">
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <b>🔍 Consulta de productos</b>
+      <button onclick="cerrarModalConsulta()">✖</button>
+    </div>
+
+    <input id="buscarConsulta"
+           placeholder="Buscar por código o descripción…"
+           oninput="filtrarConsulta()">
+
+    <button class="primary" onclick="exportarMaestraProductos()">
+      📤 Exportar Maestra de Productos
+    </button>
+
+    <div class="table-scroll" id="scrollConsulta" style="display:none">
+      <table id="tablaConsulta">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+          </tr>
+        </thead>
+        <tbody id="resultadoConsulta"></tbody>
+      </table>
+    </div>
+
+    <div id="msgConsulta" class="msg">Escriba para consultar</div>
+
+  </div>
+</div>
+
+<script src="pro.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Logístico Integrado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+ --bg:#f1f5f9;
+ --card:#ffffff;
+ --hover:#f8fafc;
+ --text:#0f172a;
+ --muted:#64748b;
+ --accent:#14b8a6;
+ --border:#e2e8f0;
+ --danger:#ef4444;
+}
+
+*{ box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--text);
+ min-height:100vh;
+ display:flex;
+ flex-direction:column;
+}
+
+/* ================= HEADER ================= */
+header{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:14px 18px;
+ background:#ffffff;
+ border-bottom:1px solid var(--border);
+ box-shadow:0 4px 12px rgba(0,0,0,.04);
+ gap:12px;
+}
+
+.header-left{
+ display:flex;
+ align-items:center;
+ gap:10px;
+}
+
+/* BOTON HAMBURGUESA */
+#btnMenu{
+ background:var(--accent);
+ border:none;
+ color:#fff;
+ font-size:20px;
+ padding:8px 14px;
+ border-radius:10px;
+ cursor:pointer;
+ width:auto;
+}
+
+@media (max-width:768px){
+ #btnMenu{
+   font-size:18px;
+   padding:6px 10px;
+   border-radius:8px;
+ }
+}
+
+header h1{
+ margin:0;
+ font-size:18px;
+ font-weight:700;
+}
+
+header .right{
+ display:flex;
+ gap:14px;
+ align-items:center;
+ flex-wrap:wrap;
+}
+
+header .user{
+ font-size:13px;
+ color:var(--muted);
+ line-height:1.4;
+}
+
+header button{
+ background:var(--danger);
+ color:#fff;
+ border:none;
+ padding:8px 14px;
+ border-radius:8px;
+ cursor:pointer;
+ font-weight:600;
+}
+
+/* ================= MENU LATERAL ================= */
+.menu-lateral{
+ position:fixed;
+ top:0;
+ left:-300px;
+ width:300px;
+ height:100vh;
+ background:#ffffff;
+ box-shadow:4px 0 24px rgba(0,0,0,.18);
+ transition:.35s ease;
+ z-index:9997;
+ display:flex;
+ flex-direction:column;
+}
+
+.menu-lateral.open{ left:0; }
+
+.menu-header{
+ padding:16px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ font-weight:700;
+}
+
+.menu-header button{
+ background:none;
+ border:none;
+ font-size:18px;
+ cursor:pointer;
+}
+
+.menu-items{
+ padding:14px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+ overflow-y:auto;
+ max-height:calc(100vh - 80px);
+}
+
+.menu-item{
+ padding:12px 14px;
+ border-radius:10px;
+ background:#f8fafc;
+ cursor:pointer;
+ font-weight:600;
+}
+
+.menu-item:hover{ background:#e2e8f0; }
+
+.menu-item.active{
+ background:var(--accent);
+ color:#fff;
+}
+
+/* ================= VIEWER ================= */
+.viewer{
+ display:none;
+ flex-direction:column;
+ height:100vh;
+ background:#ffffff;
+}
+
+.viewer-header{
+ border-bottom:1px solid var(--border);
+ padding:12px 16px;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+
+.viewer-header button{
+ background:var(--accent);
+ color:#fff;
+ border:none;
+ padding:8px 14px;
+ border-radius:8px;
+ cursor:pointer;
+}
+
+.viewer iframe{
+ flex:1;
+ border:none;
+ width:100%;
+}
+
+/* ================= LOADER ================= */
+#progressBar{
+ position:fixed;
+ top:0;
+ left:0;
+ height:3px;
+ width:0%;
+ background:linear-gradient(90deg,#3b82f6,#14b8a6);
+ z-index:9999;
+ display:none;
+}
+
+#loadingOverlay{
+ position:fixed;
+ inset:0;
+ background:rgba(241,245,249,.95);
+ backdrop-filter:blur(4px);
+ z-index:9998;
+ display:none;
+ align-items:center;
+ justify-content:center;
+ flex-direction:column;
+ gap:16px;
+}
+
+#loadingOverlay span{
+ font-size:14px;
+ font-weight:600;
+ color:#334155;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width:768px){
+ header{
+   flex-direction:column;
+   align-items:flex-start;
+ }
+ header .right{
+   width:100%;
+   flex-direction:column;
+ }
+ header button{
+   width:100%;
+ }
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOADER -->
+<div id="progressBar"></div>
+<div id="loadingOverlay">
+  <span id="loadingText">Iniciando sistema…</span>
+</div>
+
+<!-- MENU LATERAL -->
+<div id="menuLateral" class="menu-lateral">
+  <div class="menu-header">
+    <span>📦 Módulos</span>
+    <button onclick="toggleMenu()">✕</button>
+  </div>
+  <div id="menuModulos" class="menu-items"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <button id="btnMenu" onclick="toggleMenu()">☰</button>
+    <!-- 🔹 TÍTULO DINÁMICO -->
+    <h1 id="tituloSistema">Cargando sistema…</h1>
+  </div>
+
+  <div class="right">
+    <div id="usuario" class="user"></div>
+    <!-- 🔹 EMPRESA DINÁMICA -->
+    <div id="conexionInfo" class="user">Conectando…</div>
+
+    <button onclick="recargarPanel()" style="background:#3b82f6;">⟳ Recargar</button>
+    <button onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
+  </div>
+</header>
+
+<!-- PANEL -->
+<div id="panel"></div>
+
+<!-- VISOR -->
+<div id="viewer" class="viewer">
+  <div class="viewer-header">
+    <span id="viewerTitle"></span>
+    <button onclick="volver()">⬅ Volver</button>
+  </div>
+  <iframe id="frame"></iframe>
+</div>
+
+<!-- ================= JS ================= -->
+<!-- ORDEN IMPORTANTE -->
+<script src="empresa.js"></script>
+<script src="auth.js"></script>
+<script src="main.js"></script>
+<script src="segurity.js"></script>
+
+</body>
+</html>

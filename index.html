@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Acceso de Usuario</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+  margin:0;
+  font-family:'Segoe UI',Arial;
+  background:linear-gradient(135deg,#cdcdce,#33768a);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+.card{
+  background:#fff;
+  padding:45px 40px;
+  width:380px;
+  border-radius:20px;
+  box-shadow:0 30px 60px rgba(0,0,0,.25);
+  text-align:center;
+}
+h3{margin:0 0 30px;color:#1e293b;font-weight:600}
+.form-group{display:flex;justify-content:center}
+input{
+  width:100%;max-width:300px;padding:12px 14px;margin-bottom:18px;
+  border-radius:10px;border:1px solid #ddd;font-size:14px;text-align:center
+}
+input:focus{
+  outline:none;border-color:#3bdaf6;box-shadow:0 0 0 3px rgba(59,130,246,.15)
+}
+button{
+  width:100%;max-width:300px;padding:12px;border-radius:10px;border:none;
+  background:#3bdaf6;color:#fff;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto
+}
+button:disabled{background:#94a3b8}
+.loader{
+  width:16px;height:16px;border:3px solid #fff;border-top:3px solid transparent;
+  border-radius:50%;animation:spin .7s linear infinite;display:none
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg{margin-top:18px;font-size:13px;color:#ef4444;min-height:18px}
+</style>
+</head>
+
+<body>
+<div class="card">
+  <h3>Acceso de Usuario</h3>
+
+  <div class="form-group">
+    <input id="user" placeholder="Usuario">
+  </div>
+
+  <div class="form-group">
+    <input id="pass" type="password" placeholder="Contraseña">
+  </div>
+
+  <button id="btnLogin" onclick="login()">
+    <span id="btnText">Ingresar</span>
+    <div class="loader" id="loader"></div>
+  </button>
+
+  <div class="msg" id="mensaje"></div>
+</div>
+
+<script>
+const API_LOGIN =
+"https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
+
+function activarLoader(){
+  btnLogin.disabled = true;
+  loader.style.display = "block";
+  btnText.innerText = "Validando...";
+}
+function desactivarLoader(){
+  btnLogin.disabled = false;
+  loader.style.display = "none";
+  btnText.innerText = "Ingresar";
+}
+
+async function login(){
+  const username = user.value.trim();
+  const password = pass.value.trim();
+  mensaje.innerText = "";
+
+  if(!username || !password){
+    mensaje.innerText = "Debe ingresar usuario y contraseña";
+    return;
+  }
+
+  activarLoader();
+
+  try{
+    const r = await fetch(API_LOGIN,{
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=UTF-8" },
+      body: JSON.stringify({
+        action:"login",
+        username,
+        password
+      })
+    });
+
+    const res = await r.json();
+
+    if(!res.ok){
+      mensaje.innerText = res.msg || "Credenciales inválidas";
+      desactivarLoader();
+      return;
+    }
+
+    // 🔐 Guardar sesión
+    localStorage.setItem("token", res.token);
+    localStorage.setItem("usuario", res.data.user);
+    localStorage.setItem("nombre", res.data.nombre);
+    localStorage.setItem("rol", res.data.rol);
+    localStorage.setItem("permisos", JSON.stringify(res.data.permisos || []));
+
+    // 🛡️ Marca para evitar doble validación
+    localStorage.setItem("login_ok", "1");
+
+    window.location.href = "main.html";
+
+  }catch(e){
+    console.error(e);
+    mensaje.innerText = "Error de conexión con el servidor";
+    desactivarLoader();
+  }
+}
+
+document.addEventListener("keydown", e=>{
+  if(e.key === "Enter") login();
+});
+</script>
+
+<!-- segurity.js puede ir si NO toca auth -->
+<script src="segurity.js"></script>
+</body>
+</html>

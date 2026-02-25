@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema de Etiquetas PRO INTEGRAL (SCAN FEEDBACK)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+:root{
+ --w:80mm;
+ --h:50mm;
+ --paper-bg:#fff;
+}
+*{box-sizing:border-box;font-family:Arial}
+body{margin:0;background:#f8fafc;color:#0f172a}
+.wrap{display:grid;grid-template-columns:380px 1fr;gap:20px;padding:20px}
+.card{background:#fff;border-radius:14px;padding:20px;border:1px solid #e2e8f0}
+h3{margin-top:0}
+
+input,select,button{
+ width:100%;padding:10px;margin-top:8px;
+ border-radius:10px;border:1px solid #e2e8f0
+}
+button{background:#14b8a6;color:#fff;font-weight:700;border:none}
+.secondary{background:#64748b}
+
+/* VISUAL */
+.progress{height:8px;background:#e5e7eb;border-radius:6px;overflow:hidden;margin-top:8px}
+.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#14b8a6,#22d3ee)}
+.semaforo{display:flex;gap:8px;margin-top:10px}
+.luz{width:14px;height:14px;border-radius:50%;background:#cbd5e1}
+.luz.rojo.on{background:#ef4444}
+.luz.amarillo.on{background:#facc15}
+.luz.verde.on{background:#22c55e}
+
+/* BUSCADOR */
+.results{border:1px solid #e2e8f0;border-radius:10px;margin-top:6px}
+.result{padding:6px;cursor:pointer}
+.result:hover{background:#e5e7eb}
+
+/* SCANNER */
+#scanner{display:none;margin-top:10px;background:#000;border-radius:14px;overflow:hidden}
+
+/* LISTA */
+.lista{margin-top:10px}
+.item{display:flex;justify-content:space-between;align-items:center;
+ background:#f1f5f9;padding:6px 10px;border-radius:8px;margin-bottom:6px;font-size:13px}
+.item button{width:auto;padding:4px 8px;background:#ef4444}
+
+/* ETIQUETAS */
+.sheet{display:flex;flex-wrap:wrap;gap:4mm;padding:4mm;background:var(--paper-bg)}
+.label{
+ width:var(--w);
+ height:var(--h);
+ background:#fff;
+ color:#000;
+ padding:4mm;
+ page-break-inside:avoid;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+}
+.codigo{text-align:center;font-size:20px;font-weight:900}
+.descripcion{text-align:center;font-size:13px;font-weight:700}
+.unidades{text-align:center;font-size:14px;font-weight:900}
+.code{
+ width:100%;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ margin:2mm 0;
+}
+.code canvas,
+.code svg{
+ display:block;
+ margin:0 auto;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+ .wrap{grid-template-columns:1fr}
+ .label{width:100%!important;height:auto!important;border-radius:18px}
+}
+
+/* PRINT */
+@page{margin:0}
+@media print{
+ body *{display:none!important}
+ .sheet,.sheet *{display:block!important}
+ .sheet{position:absolute;inset:0}
+ .label{width:var(--w)!important;height:var(--h)!important}
+}
+</style>
+</head>
+
+<body>
+
+<audio id="beep">
+ <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" type="audio/ogg">
+</audio>
+
+<div class="wrap">
+
+<div class="card">
+<h3>📂 Importar / Consultar</h3>
+<input type="file" id="file" accept=".xlsx">
+<button onclick="importarXLSX()">Importar XLSX</button>
+
+<input id="search" placeholder="Buscar código o descripción" oninput="buscar()">
+<div id="results" class="results"></div>
+
+<button class="secondary" onclick="abrirScanner()">📷 Escanear</button>
+<div id="scanner"></div>
+<button onclick="preAgregar()">Agregar</button>
+<button class="secondary" onclick="imprimir()">Imprimir</button>
+<div class="progress"><span id="bar"></span></div>
+
+<div class="semaforo">
+ <div class="luz rojo" id="lr"></div>
+ <div class="luz amarillo" id="la"></div>
+ <div class="luz verde" id="lv"></div>
+</div>
+</div>
+
+<div class="card">
+<h3>⚙️ Configuración</h3>
+
+<select id="paper" onchange="setPaper(this.value)">
+ <option value="termico">Papel térmico</option>
+ <option value="normal">Papel normal</option>
+</select>
+
+<select onchange="setTemplate(this.value)">
+ <option value="">Tamaño personalizado</option>
+ <option value="50x30">50 x 30 mm</option>
+ <option value="80x50">80 x 50 mm</option>
+ <option value="100x70">100 x 70 mm</option>
+</select>
+
+<input id="w" type="number" value="80">
+<input id="h" type="number" value="50">
+
+<select id="tipo">
+ <option value="QR">QR</option>
+ <option value="CODE128">CODE128</option>
+ <option value="CODE39">CODE39</option>
+</select>
+
+<input id="codigo" placeholder="Código">
+<input id="descripcion" placeholder="Descripción">
+<input id="unidades" value="1">
+<input id="cant" value="1">
+
+<button onclick="preAgregar()">Agregar</button>
+
+<div class="lista" id="lista"></div>
+
+<button class="secondary" onclick="imprimir()">Imprimir</button>
+</div>
+
+</div>
+
+<div class="sheet" id="preview"></div>
+
+<script>
+const API="https://script.google.com/macros/s/AKfycbwOx6mRhIPWQLXXeH5s_Fsw3A6A_dZv-ATUxQpybSR5jsoaH34i8c62eIhipmNy--ug/exec";
+let productos=[],buffer=[],scanner=null;
+
+/* UTIL */
+function sem(c){
+ ["lr","la","lv"].forEach(i=>document.getElementById(i).classList.remove("on"));
+ if(c==="rojo") lr.classList.add("on");
+ if(c==="amarillo") la.classList.add("on");
+ if(c==="verde") lv.classList.add("on");
+}
+function setPaper(v){
+ document.documentElement.style.setProperty("--paper-bg",v==="normal"?"#f8fafc":"#fff");
+}
+function setTemplate(v){
+ if(!v) return;
+ const [a,b]=v.split("x");
+ w.value=a;h.value=b;
+}
+
+/* BD */
+fetch(API).then(r=>r.json()).then(d=>{
+ productos=d;
+ localStorage.setItem("productos",JSON.stringify(productos));
+}).catch(()=>{
+ const ls=localStorage.getItem("productos");
+ if(ls) productos=JSON.parse(ls);
+});
+
+function importarXLSX(){
+ const f=file.files[0];
+ if(!f) return;
+ sem("amarillo");
+ const reader=new FileReader();
+ reader.onload=e=>{
+  const wb=XLSX.read(e.target.result,{type:"binary"});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  productos=XLSX.utils.sheet_to_json(ws);
+  localStorage.setItem("productos",JSON.stringify(productos));
+  const fd=new FormData();
+  fd.append("action","import");
+  fd.append("productos",JSON.stringify(productos));
+  fetch(API,{method:"POST",body:fd});
+  sem("verde");
+ };
+ reader.readAsBinaryString(f);
+}
+
+/* BUSCAR */
+function buscar(){
+ const q=search.value.toLowerCase();
+ if(!q){results.innerHTML="";return;}
+ results.innerHTML=productos.filter(p=>
+  p.CODIGO?.toLowerCase().includes(q)||
+  p.DESCRIPCION?.toLowerCase().includes(q)
+ ).slice(0,6).map(p=>`
+  <div class="result" onclick="seleccionar('${p.CODIGO}','${p.DESCRIPCION}','${p.UNIDADES||1}')">
+   <b>${p.CODIGO}</b> – ${p.DESCRIPCION}
+  </div>`).join("");
+}
+function seleccionar(c,d,u){
+ codigo.value=c;
+ descripcion.value=d;
+ unidades.value=u;
+ results.innerHTML="";
+}
+
+/* SCANNER CON SONIDO + VIBRACIÓN */
+function abrirScanner(){
+ const box=document.getElementById("scanner");
+ box.style.display="block";
+ if(scanner) return;
+ scanner=new Html5Qrcode("scanner");
+ scanner.start({facingMode:"environment"},{fps:10,qrbox:250},txt=>{
+  document.getElementById("beep").play();
+  if(navigator.vibrate) navigator.vibrate(200);
+  search.value=txt;
+  buscar();
+ });
+}
+
+/* LISTA */
+function renderLista(){
+ lista.innerHTML="";
+ buffer.forEach((b,i)=>{
+  lista.innerHTML+=`
+   <div class="item">
+    <span>${b.codigo} (${b.cant})</span>
+    <button onclick="delItem(${i})">X</button>
+   </div>`;
+ });
+}
+function delItem(i){
+ buffer.splice(i,1);
+ renderLista();
+}
+
+/* AGREGAR */
+function preAgregar(){
+ sem("amarillo");
+ bar.style.width="40%";
+ buffer.push({
+  codigo:codigo.value,
+  descripcion:descripcion.value,
+  unidades:unidades.value,
+  cant:cant.value,
+  tipo:tipo.value,
+  w:w.value,
+  h:h.value
+ });
+ renderLista();
+ bar.style.width="100%";
+ sem("verde");
+ setTimeout(()=>bar.style.width="0%",500);
+}
+
+/* IMPRIMIR */
+function imprimir(){
+ sem("rojo");
+ preview.innerHTML="";
+ buffer.forEach(b=>{
+  document.documentElement.style.setProperty("--w",b.w+"mm");
+  document.documentElement.style.setProperty("--h",b.h+"mm");
+  for(let i=0;i<b.cant;i++){
+   const l=document.createElement("div");
+   l.className="label";
+   l.innerHTML=`
+    <div class="codigo">${b.codigo}</div>
+    <div class="code"></div>
+    <div class="descripcion">${b.descripcion}</div>
+    <div class="unidades">UND: ${b.unidades}</div>`;
+   preview.appendChild(l);
+   const c=l.querySelector(".code");
+   if(b.tipo==="QR"){
+    new QRCode(c,{text:b.codigo,width:80,height:80});
+   }else{
+    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("width","100%");
+    svg.setAttribute("height","40");
+    c.appendChild(svg);
+    JsBarcode(svg,b.codigo,{format:b.tipo,width:2,height:35,displayValue:false,margin:0});
+   }
+  }
+ });
+ window.print();
+ buffer=[];
+ renderLista();
+ sem("verde");
+}
+</script>
+<script src="segurity.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sistema Profesional de Etiquetas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+:root{
+ --w:100mm;
+ --h:150mm;
+ --gap:2mm;
+ --bg:#f8fafc;
+ --panel:#ffffff;
+ --text:#0f172a;
+ --border:#cbd5e1;
+ --btn:#06b6d4;
+ --btnHover:#0891b2;
+}
+
+/* BASE */
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+
+body{
+ margin:0;
+ display:flex;
+ min-height:100vh;
+ background:var(--bg);
+ color:var(--text);
+}
+
+aside{
+ width:360px;
+ padding:20px;
+ background:var(--panel);
+ border-right:1px solid var(--border);
+ overflow:auto;
+}
+
+main{
+ flex:1;
+ padding:20px;
+ background:#eef2f7;
+}
+
+/* FORM */
+label{font-size:13px;margin-top:8px;display:block}
+input,textarea,select{
+ width:100%;
+ padding:8px;
+ margin-top:2px;
+ border-radius:6px;
+ border:1px solid var(--border);
+}
+textarea{resize:vertical}
+
+button{
+ width:100%;
+ padding:12px;
+ margin-top:12px;
+ border:none;
+ border-radius:8px;
+ background:var(--btn);
+ color:#fff;
+ cursor:pointer;
+}
+button:hover{background:var(--btnHover)}
+.secondary{background:#64748b}
+
+/* PREVIEW */
+#preview{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+}
+
+/* ETIQUETA */
+.label{
+ width:var(--w);
+ height:var(--h);
+ background:#fff;
+ margin-bottom:var(--gap);
+ page-break-inside:avoid;
+ overflow:hidden;
+}
+
+.inner{
+ height:100%;
+ padding:8mm;
+ display:flex;
+ flex-direction:column;
+ gap:2mm;
+}
+
+/* TEXTOS */
+.center{text-align:center}
+.big{font-size:32px;font-weight:900}
+.bulto{font-size:28px;font-weight:900;text-align:center}
+
+/* EMPRESA */
+.empresa{
+ text-align:center;
+ font-size:26px;
+ font-weight:900;
+ margin-bottom:2mm;
+}
+
+/* QR */
+.qr{display:flex;justify-content:center}
+.qr canvas{width:110px;height:110px}
+
+/* SEMÁFORO */
+.semaforo{
+ display:flex;
+ justify-content:center;
+ gap:12px;
+ margin:3mm 0;
+}
+.luz{width:14px;height:14px;border-radius:50%;background:#cbd5e1}
+.luz.rojo{background:#dc2626}
+.luz.amarillo{background:#facc15}
+.luz.verde{background:#16a34a}
+
+/* PROGRESO */
+.progress{
+ width:100%;
+ height:9px;
+ background:#e5e7eb;
+ border-radius:6px;
+ overflow:hidden;
+}
+.progress span{
+ display:block;
+ height:100%;
+ background:#06b6d4;
+ width:0%;
+}
+
+/* CAMPOS PARALELOS */
+.field{
+ display:grid;
+ grid-template-columns:160px 1fr;
+ column-gap:12px;
+ align-items:start;
+ font-size:17px;
+ margin-bottom:2.5mm;
+ line-height:1.0;
+}
+
+.field .label-txt{
+ font-weight:900;
+ font-size:18px;
+ white-space:nowrap;
+}
+
+.field .value{
+ font-size:17px;
+ font-weight:600;
+ word-break:break-word;
+}
+
+/* OBSERVACIONES — AJUSTE CLAVE */
+.field.obs{
+ max-height:26mm;
+ overflow:hidden;
+}
+
+.field.obs .value{
+ padding-left:6px;      /* ← separación extra */
+}
+
+/* PAGINADO */
+.sheet .page,
+.sheet-2 .page{
+ width:210mm;
+ height:297mm;
+ display:flex;
+ flex-direction:column;
+ justify-content:space-between;
+ page-break-after:always;
+ position:relative;
+}
+
+/* LÍNEA DE CORTE */
+.sheet-2 .page::after{
+ content:"";
+ position:absolute;
+ top:50%;
+ left:10mm;
+ right:10mm;
+ border-top:2px dashed #9ca3af;
+}
+
+/* MEDIA HOJA */
+.sheet-2 .label{
+ width:210mm;
+ height:148.5mm;
+ margin:0;
+}
+
+.media-hoja{
+ height:100%;
+ padding:10mm;
+ display:flex;
+ flex-direction:column;
+}
+
+/* TOP */
+.media-hoja .top{
+ display:flex;
+ align-items:center;
+ gap:14mm;
+}
+
+.media-hoja .qr.grande canvas{
+ width:165px !important;
+ height:165px !important;
+}
+
+.pedido-box{
+ flex:1;
+ text-align:center;
+}
+
+.pedido-box .pedido{
+ font-size:36px;
+ font-weight:900;
+ margin-bottom:4mm;
+}
+
+.bulto-grande{
+ font-size:52px;
+ font-weight:900;
+}
+
+/* PRINT */
+@media print{
+ aside{display:none}
+ body{background:#fff}
+}
+
+/* ===========================
+   VERSION MOVIL TIPO TARJETA
+=========================== */
+
+@media (max-width: 768px){
+
+body{
+ flex-direction:column;
+}
+
+aside{
+ width:100%;
+ border-right:none;
+ border-bottom:1px solid var(--border);
+}
+
+main{
+ padding:12px;
+}
+
+#preview{
+ width:100%;
+}
+
+.page{
+ width:100%;
+ min-height:auto;
+}
+
+.label{
+ width:100% !important;
+ height:auto !important;
+ border-radius:18px;
+ box-shadow:0 10px 25px rgba(0,0,0,0.08);
+ padding:0;
+}
+
+.inner{
+ padding:18px;
+ gap:8px;
+}
+
+.empresa{
+ font-size:20px;
+}
+
+.pedido{
+ font-size:24px;
+}
+
+.bulto,
+.bulto-grande{
+ font-size:22px !important;
+}
+
+.qr canvas{
+ width:120px !important;
+ height:120px !important;
+}
+
+.field{
+ grid-template-columns:120px 1fr;
+ font-size:15px;
+ margin-bottom:6px;
+}
+
+.field .label-txt{
+ font-size:15px;
+}
+
+.field .value{
+ font-size:15px;
+}
+
+.semaforo{
+ margin:6px 0;
+}
+
+.progress{
+ height:6px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<aside>
+<h2>Etiquetas Logísticas</h2>
+
+<label>Empresa que envía</label>
+<input id="empresa">
+
+<label>Formato</label>
+<select id="mode">
+ <option value="thermal">Térmica</option>
+ <option value="sheet">A4 automático</option>
+ <option value="sheet-2">A4 media hoja (2)</option>
+</select>
+
+<label>Buscar pedido</label>
+<input id="buscarPedido">
+<button class="secondary" onclick="buscarPedidoFn()">Buscar</button>
+
+<hr>
+
+<label>Pedido</label><input id="pedido">
+<label>Cliente</label><input id="cliente">
+<label>Dirección</label><textarea id="direccion"></textarea>
+<label>Comuna</label><input id="comuna">
+<label>Transporte</label><input id="transporte">
+<label>Bultos</label><input id="bultos" type="number" value="1">
+<label>Observaciones</label><textarea id="obs"></textarea>
+
+<label>Ancho (mm)</label><input id="w" type="number" value="100">
+<label>Alto (mm)</label><input id="h" type="number" value="150">
+
+<button onclick="guardarOReimprimir()">Guardar / Imprimir</button>
+</aside>
+
+<main>
+ <div id="preview"></div>
+</main>
+
+<script>
+const API_URL="https://script.google.com/macros/s/AKfycbxZZ_E5MObjPJL-EhnLENeIYVeN0DGnCSvIyI5ylNfYBxSoswo2pOJ4mCT1hiGrBhzfJg/exec";
+const preview=document.getElementById("preview");
+let pedidoExiste=false;
+
+async function buscarPedidoFn(){
+ const p=buscarPedido.value.trim();
+ if(!p) return alert("Ingrese pedido");
+ const r=await fetch(API_URL);
+ const data=await r.json();
+ const f=data.find(x=>x.pedido==p);
+ if(!f){pedidoExiste=false;alert("Pedido no encontrado");return;}
+ pedidoExiste=true;
+ empresa.value=f.empresa||"";
+ pedido.value=f.pedido;
+ cliente.value=f.cliente;
+ direccion.value=f.direccion;
+ comuna.value=f.comuna;
+ transporte.value=f.transporte;
+ bultos.value=f.etiquetas;
+ obs.value=f.observaciones;
+ generar();
+}
+
+function generar(){
+ preview.innerHTML="";
+ preview.className=mode.value;
+
+ const esMediaHoja=mode.value==="sheet-2";
+ if(esMediaHoja){w.value=210;h.value=148.5}
+
+ document.documentElement.style.setProperty("--w",w.value+"mm");
+ document.documentElement.style.setProperty("--h",h.value+"mm");
+
+ const total=+bultos.value||1;
+ const porPagina=esMediaHoja?2:total;
+ let page;
+
+ for(let i=1;i<=total;i++){
+  if(i===1||(i-1)%porPagina===0){
+   page=document.createElement("div");
+   page.className="page";
+   preview.appendChild(page);
+  }
+
+  const l=document.createElement("div");
+  l.className="label";
+
+  l.innerHTML=`
+   <div class="inner ${esMediaHoja?'media-hoja':''}">
+    <div class="empresa">${empresa.value}</div>
+
+    <div class="top">
+     <div class="qr ${esMediaHoja?'grande':''}"></div>
+     <div class="pedido-box">
+      <div class="pedido">${pedido.value}</div>
+      <div class="${esMediaHoja?'bulto-grande':'bulto'}">BULTO ${i}/${total}</div>
+     </div>
+    </div>
+
+    <div class="semaforo">
+     <div class="luz"></div><div class="luz"></div><div class="luz"></div>
+    </div>
+
+    <div class="progress"><span></span></div>
+
+    <div class="field"><span class="label-txt">CLIENTE:</span><span class="value">${cliente.value}</span></div>
+    <div class="field"><span class="label-txt">DIRECCIÓN:</span><span class="value">${direccion.value}</span></div>
+    <div class="field"><span class="label-txt">COMUNA:</span><span class="value">${comuna.value}</span></div>
+    <div class="field"><span class="label-txt">TRANSPORTE:</span><span class="value">${transporte.value}</span></div>
+    <div class="field obs"><span class="label-txt">OBSERVACIONES:</span><span class="value">${obs.value}</span></div>
+   </div>`;
+
+  page.appendChild(l);
+
+  new QRCode(l.querySelector(".qr"),{
+   text:pedido.value,
+   width:esMediaHoja?165:110,
+   height:esMediaHoja?165:110
+  });
+
+  const luces=l.querySelectorAll(".luz");
+  const bar=l.querySelector(".progress span");
+  const pct=Math.round((i/total)*100);
+  bar.style.width=pct+"%";
+
+  if(pct<40) luces[0].classList.add("rojo");
+  else if(pct<90) luces[1].classList.add("amarillo");
+  else luces[2].classList.add("verde");
+ }
+}
+
+async function guardarOReimprimir(){
+ generar();
+ if(pedidoExiste){window.print();return;}
+
+ await fetch(API_URL,{method:"POST",body:JSON.stringify({
+  action:"add",
+  EMPRESA:empresa.value,
+  PEDIDO:pedido.value,
+  CLIENTE:cliente.value,
+  DIRECCION:direccion.value,
+  COMUNA:comuna.value,
+  TRANSPORTE:transporte.value,
+  ETIQUETAS:+bultos.value,
+  OBSERVACIONES:obs.value,
+  STATUS:"PENDIENTE"
+ })});
+
+ window.print();
+}
+
+["empresa","pedido","cliente","direccion","comuna","transporte","bultos","obs","mode"]
+.forEach(id=>document.getElementById(id).addEventListener("input",generar));
+
+generar();
+</script>
+<script src="segurity.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

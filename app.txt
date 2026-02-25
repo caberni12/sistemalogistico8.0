@@ -1,0 +1,375 @@
+/********************************************************
+ * CONFIGURACIÓN GENERAL
+ ********************************************************/
+const SPREADSHEET_ID = "1l1JgKTl2uqs6J4oNWzSMLe0SsVAO6zN0WSwCGGX1B7E";
+
+const SHEET_USERS   = "USUARIOS";
+const SHEET_MODULOS = "MODULOS";
+const SHEET_LOGS    = "LOGS";
+const SHEET_CONFIG  = "CONFIG";
+
+const SESSION_DURATION = 30 * 60 * 1000; // 30 minutos
+
+// 🔐 CLAVE SECRETA
+const SECRET_KEY =
+  "70266ce39505458b922d9c36f568c66deb60f49c0664423b99f0dde3ac7be4fe";
+
+/********************************************************
+ * NORMALIZADORES
+ ********************************************************/
+function asText(v){
+  return v === null || v === undefined ? "" : String(v).trim();
+}
+function asNumber(v){
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+function isYes(v){
+  return asText(v).toUpperCase() === "SI";
+}
+
+/********************************************************
+ * RESPUESTA JSON
+ ********************************************************/
+function json(data){
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/********************************************************
+ * TOKEN FIRMADO
+ ********************************************************/
+function signToken(payload){
+  const raw = JSON.stringify(payload);
+  const sig = Utilities.computeHmacSha256Signature(raw, SECRET_KEY);
+  return Utilities.base64Encode(raw) + "." + Utilities.base64Encode(sig);
+}
+
+function verifyToken(token){
+  try{
+    if(!token) return null;
+
+    const parts = token.split(".");
+    if(parts.length !== 2) return null;
+
+    const raw = Utilities.newBlob(
+      Utilities.base64Decode(parts[0])
+    ).getDataAsString();
+
+    const expected = Utilities.base64Encode(
+      Utilities.computeHmacSha256Signature(raw, SECRET_KEY)
+    );
+
+    if(expected !== parts[1]) return null;
+
+    const data = JSON.parse(raw);
+    if(Date.now() > data.exp) return null;
+
+    return data;
+  }catch(e){
+    return null;
+  }
+}
+
+/********************************************************
+ * HOJAS
+ ********************************************************/
+function getSheet(name, headers){
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sh = ss.getSheetByName(name);
+  if(!sh){
+    sh = ss.insertSheet(name);
+    sh.appendRow(headers);
+  }
+  return sh;
+}
+
+function getSheetUsers(){
+  const sh = getSheet(SHEET_USERS,[
+    "ID","USERNAME","PASSWORD","NOMBRE",
+    "ROL","ACTIVO","PERMISOS"
+  ]);
+
+  if(sh.getLastRow() === 1){
+    sh.appendRow([
+      1,"admin","1234","Administrador",
+      "ADMIN","SI",
+      "inventario,etiquetas,codigos,dashboard,usuarios"
+    ]);
+  }
+  return sh;
+}
+
+function getSheetModulos(){
+  const sh = getSheet(SHEET_MODULOS,[
+    "ID","NOMBRE","ARCHIVO","ICONO","PERMISO","ACTIVO"
+  ]);
+
+  // ❌ NO insertar datos
+  // ✅ Solo asegurar encabezados
+
+  return sh;
+}
+function logAccion(usuario, accion){
+  const sh = getSheet(SHEET_LOGS,["Fecha","Usuario","Acción"]);
+  sh.appendRow([new Date(), asText(usuario), asText(accion)]);
+}
+
+/********************************************************
+ * DO GET
+ ********************************************************/
+function doGet(e){
+  e = e || {};
+  e.parameter = e.parameter || {};
+
+  const action = asText(e.parameter.action);
+
+  if(action === "verify"){
+    const data = verifyToken(e.parameter.token);
+    if(!data) return json({ valid:false });
+
+    data.exp = Date.now() + SESSION_DURATION;
+    return json({
+      valid:true,
+      data:data,
+      token:signToken(data)
+    });
+  }
+
+  if(action === "listarModulos"){
+    return json({ ok:true, data:listarModulos() });
+  }
+
+  // ✅ NUEVO
+  if(action === "obtenerEmpresa"){
+    return json(obtenerEmpresa());
+  }
+
+  return json({
+    ok:true,
+    msg:"Web App activa",
+    actions:["verify","listarModulos","obtenerEmpresa"]
+  });
+}
+
+/********************************************************
+ * DO POST
+ ********************************************************/
+function doPost(e){
+  let req;
+  try{
+    req = JSON.parse(e.postData.contents);
+  }catch{
+    return json({ ok:false, msg:"JSON inválido" });
+  }
+
+  if(req.action === "login"){
+    return json(login(req));
+  }
+
+  const session = verifyToken(req.token);
+  if(!session){
+    return json({ ok:false, msg:"Sesión inválida" });
+  }
+
+  try{
+    switch(req.action){
+      case "listarUsuarios": requirePerm(session,"usuarios"); return json({ ok:true, data:listarUsuarios() });
+      case "crearUsuario":   requirePerm(session,"usuarios"); return json(crearUsuario(req));
+      case "editarUsuario":  requirePerm(session,"usuarios"); return json(editarUsuario(req));
+      case "eliminarUsuario":requirePerm(session,"usuarios"); return json(eliminarUsuario(req));
+      case "crearModulo":    requirePerm(session,"usuarios"); return json(crearModulo(req));
+      case "editarModulo":   requirePerm(session,"usuarios"); return json(editarModulo(req));
+      case "eliminarModulo": requirePerm(session,"usuarios"); return json(eliminarModulo(req));
+      default: return json({ ok:false, msg:"Acción no permitida" });
+    }
+  }catch(err){
+    return json({ ok:false, msg:err.message });
+  }
+}
+
+/********************************************************
+ * PERMISOS
+ ********************************************************/
+function requirePerm(session, perm){
+  if(session.rol === "ADMIN") return;
+  if(!session.permisos.includes(perm)){
+    throw new Error("Permiso denegado");
+  }
+}
+
+/********************************************************
+ * LOGIN
+ ********************************************************/
+function login(d){
+  const rows = getSheetUsers().getDataRange().getValues();
+
+  for(let i=1;i<rows.length;i++){
+    const r = rows[i];
+    if(asText(r[1]) === asText(d.username)){
+      if(!isYes(r[5])) return { ok:false, msg:"Usuario inactivo" };
+      if(asText(r[2]) !== asText(d.password)) return { ok:false, msg:"Clave incorrecta" };
+
+      const payload = {
+        user: r[1],
+        nombre: r[3],
+        rol: r[4],
+        permisos: asText(r[6]).split(","),
+        exp: Date.now() + SESSION_DURATION
+      };
+
+      logAccion(r[1], "LOGIN");
+      return { ok:true, token:signToken(payload), data:payload };
+    }
+  }
+  return { ok:false, msg:"Usuario no existe" };
+}
+
+/********************************************************
+ * CRUD USUARIOS
+ ********************************************************/
+function listarUsuarios(){
+  const r = getSheetUsers().getDataRange().getValues();
+  r.shift();
+  return r;
+}
+
+function crearUsuario(d){
+  const sh = getSheetUsers();
+  const r = sh.getDataRange().getValues();
+
+  if(r.some((x,i)=>i>0 && asText(x[1]) === asText(d.username))){
+    return { ok:false, msg:"Usuario ya existe" };
+  }
+
+  sh.appendRow([
+    r.length,
+    d.username,
+    d.password,
+    d.nombre,
+    d.rol,
+    d.activo || "SI",
+    d.permisos || ""
+  ]);
+  return { ok:true };
+}
+
+function editarUsuario(d){
+  const sh = getSheetUsers();
+  const r = sh.getDataRange().getValues();
+
+  for(let i=1;i<r.length;i++){
+    if(r[i][1] === d.username){
+      sh.getRange(i+1,3,1,5).setValues([[
+        d.password,
+        d.nombre,
+        d.rol,
+        d.activo,
+        d.permisos
+      ]]);
+      return { ok:true };
+    }
+  }
+  return { ok:false, msg:"Usuario no encontrado" };
+}
+
+function eliminarUsuario(d){
+  const sh = getSheetUsers();
+  const r = sh.getDataRange().getValues();
+
+  for(let i=1;i<r.length;i++){
+    if(r[i][1] === d.username){
+      sh.deleteRow(i+1);
+      return { ok:true };
+    }
+  }
+  return { ok:false, msg:"Usuario no encontrado" };
+}
+
+
+function listarModulos(){
+  const r = getSheetModulos().getDataRange().getValues();
+  r.shift();              // quitar encabezados
+  return r;               // ← DEVUELVE TODOS (SI y NO)
+}
+
+function crearModulo(d){
+  const sh = getSheetModulos();
+  const r  = sh.getDataRange().getValues();
+
+  // evitar ID duplicado
+  if(r.some((x,i)=> i>0 && asText(x[0]) === asText(d.id))){
+    return { ok:false, msg:"ID de módulo ya existe" };
+  }
+
+  sh.appendRow([
+    d.id,
+    d.nombre,
+    d.archivo,
+    d.icono,
+    d.permiso,
+    d.activo || "SI"
+  ]);
+
+  return { ok:true };
+}
+
+function editarModulo(d){
+  const sh = getSheetModulos();
+  const r = sh.getDataRange().getValues();
+
+  for(let i=1;i<r.length;i++){
+    if(asNumber(r[i][0]) === asNumber(d.id)){
+      sh.getRange(i+1,2,1,5).setValues([[
+        d.nombre,
+        d.archivo,
+        d.icono,
+        d.permiso,
+        d.activo
+      ]]);
+      return { ok:true };
+    }
+  }
+  return { ok:false, msg:"Módulo no encontrado" };
+}
+
+function eliminarModulo(d){
+  const sh = getSheetModulos();
+  const r = sh.getDataRange().getValues();
+
+  for(let i=1;i<r.length;i++){
+    if(asNumber(r[i][0]) === asNumber(d.id)){
+      sh.deleteRow(i+1);
+      return { ok:true };
+    }
+  }
+  return { ok:false, msg:"Módulo no encontrado" };
+}
+
+/********************************************************
+ * OBTENER EMPRESA
+ ********************************************************/
+function obtenerEmpresa(){
+  try{
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName(SHEET_CONFIG);
+    if(!sh) throw new Error("Hoja CONFIG no existe");
+
+    const data = sh.getRange(1,1,sh.getLastRow(),2).getValues();
+
+    for(let i=0;i<data.length;i++){
+      const clave = asText(data[i][0]).toUpperCase();
+      const valor = asText(data[i][1]);
+
+      if(clave === "EMPRESA" && valor){
+        return { ok:true, empresa:valor };
+      }
+    }
+
+    return { ok:false, msg:"Empresa no configurada" };
+
+  }catch(err){
+    return { ok:false, msg:err.message };
+  }
+}

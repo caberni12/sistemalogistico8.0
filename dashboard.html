@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Logístico</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ================== LIBRERÍAS ================== -->
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+/* ================== VARIABLES ================== */
+:root{
+ --bg:#f8fafc;
+ --card:#ffffff;
+ --txt:#0f172a;
+ --muted:#64748b;
+ --pri:#14b8a6;
+ --pri-dark:#0d9488;
+ --border:#cbd5e1;
+}
+
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ font-family:Inter,Arial;
+ background:var(--bg);
+ color:var(--txt);
+ padding:16px;
+}
+
+
+
+
+/* ================== HEADER ================== */
+.topbar{margin-bottom:12px}
+
+/* ================== KPIs ================== */
+.kpis{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,120px);
+ gap:12px;
+ margin-bottom:16px
+}
+.kpi{
+ background:var(--card);
+ border-radius:16px;
+ padding:10px;
+ text-align:center;
+ box-shadow:0 4px 12px #0001
+}
+.kpi canvas{
+ width:90px!important;
+ height:90px!important
+}
+
+/* ================== FILTROS ================== */
+.filters{
+ display:flex;
+ gap:8px;
+ flex-wrap:wrap;
+ margin-bottom:12px
+}
+input,select{
+ padding:10px 12px;
+ border-radius:12px;
+ border:1px solid var(--border);
+ font-size:14px;
+ min-width:140px;
+}
+
+/* ================== BOTONES ================== */
+button{
+ position:relative;
+ padding:10px 14px;
+ border-radius:12px;
+ border:0;
+ background:var(--pri);
+ color:#fff;
+ font-weight:600;
+ cursor:pointer;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+}
+button:disabled{
+ opacity:.7;
+ cursor:not-allowed
+}
+
+/* ===== LOADER REAL ===== */
+.btn-text{display:inline}
+.btn-loader{
+ display:none;
+ width:18px;
+ height:18px;
+ border:3px solid rgba(255,255,255,.4);
+ border-top:3px solid #fff;
+ border-radius:50%;
+ animation:spin .8s linear infinite;
+}
+button.loading .btn-text{display:none}
+button.loading .btn-loader{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ================== TABLA ================== */
+.table-scroll{
+ max-height:70vh;
+ overflow-y:auto;
+ border-radius:16px;
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ background:var(--card);
+ box-shadow:0 8px 24px #0001
+}
+th,td{
+ padding:10px;
+ border-bottom:1px solid var(--border);
+ vertical-align:top;
+}
+th{
+ color:var(--muted);
+ text-align:left;
+ position:sticky;
+ top:0;
+ background:var(--card);
+ z-index:2;
+}
+
+/* ===== FECHAS NO MONTADAS ===== */
+td.fecha{
+ white-space:nowrap;
+ font-size:13px;
+}
+
+/* ================== FOTOS ================== */
+.foto-thumb{
+ width:48px;
+ height:48px;
+ object-fit:cover;
+ border-radius:8px;
+ cursor:pointer;
+ border:1px solid var(--border);
+ transition:.2s;
+}
+.foto-thumb:hover{transform:scale(1.05)}
+
+/* ================== MODALES (BASE) ================== */
+.modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.65);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:9999;
+}
+.modal-content{
+ background:var(--card);
+ padding:20px;
+ border-radius:18px;
+ max-width:95%;
+ max-height:90vh;
+ overflow:auto;
+}
+
+/* ================== MODAL FOTO ================== */
+.foto-modal-grande{
+ width:90vw;
+ max-width:1000px;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+}
+.foto-grande{
+ width:100%;
+ max-height:75vh;
+ object-fit:contain;
+ border-radius:16px;
+ box-shadow:0 12px 30px rgba(0,0,0,.4);
+}
+
+/* ================== MODAL MAPA ================== */
+.map-frame{
+ width:90vw;
+ max-width:1000px;
+ height:70vh;
+ border:0;
+ border-radius:16px;
+}
+
+/* ================== MOBILE ================== */
+.mobile-list{display:none}
+
+.row-card{
+ background:var(--card);
+ border-radius:18px;
+ padding:14px;
+ box-shadow:0 6px 18px #0001;
+ margin-bottom:12px
+}
+
+
+
+/* ===== FIX DEFINITIVO ACCIONES ===== */
+td .actions{
+  display:flex !important;
+  flex-direction:row !important;
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+  white-space:nowrap;
+}
+
+td .actions button{
+  display:inline-flex !important;
+  width:38px;
+  height:38px;
+  padding:0;
+  border-radius:10px;
+}
+
+
+@media(max-width:768px){
+ .table-scroll{display:none}
+ .mobile-list{display:block}
+}
+
+/* ===== ACCIONES MOBILE (LINEALES) ===== */
+.row-actions{
+  display:flex;
+  flex-direction:row;          /* 👈 CLAVE */
+  gap:10px;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:10px;
+}
+
+.row-actions button{
+  flex:1;                      /* todos mismo ancho */
+  height:40px;
+  padding:0;
+  border-radius:10px;
+  font-size:16px;
+}
+
+/* ================= DASHBOARD / KPIs ================= */
+#kpis{
+  display:grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap:12px;
+  margin-bottom:16px;
+}
+
+/* Tarjeta KPI */
+.kpi{
+  background:#fff;
+  border-radius:12px;
+  padding:12px 8px;
+  text-align:center;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+
+/* Canvas centrado */
+.kpi canvas{
+  width:90px !important;
+  height:90px !important;
+  margin:auto;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width:768px){
+
+  /* 👉 2 columnas reales en móvil */
+  #kpis{
+    grid-template-columns: repeat(2, 1fr);
+    gap:14px;
+  }
+
+  /* KPI más ancho y cómodo */
+  .kpi{
+    padding:14px 10px;
+  }
+
+  .kpi b{
+    font-size:18px;
+    display:block;
+    margin-top:4px;
+  }
+
+  .kpi br{
+    display:none;
+  }
+}
+
+/* ================= KPI TOCABLE ================= */
+.kpi{
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s;
+  user-select:none;
+}
+
+.kpi:active{
+  transform:scale(0.97);
+}
+
+.kpi:hover{
+  box-shadow:0 6px 16px rgba(0,0,0,.15);
+}
+
+/* KPI activo (filtro aplicado) */
+.kpi.active{
+  outline:3px solid #2563eb;
+  background:#eff6ff;
+}
+
+/* Texto */
+.kpi b{
+  font-size:18px;
+  display:block;
+}
+
+
+ /* ================= TOGGLE DASHBOARD ================= */
+.btn-kpi-toggle{
+  background:#2563eb;
+  color:#fff;
+  border:none;
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:14px;
+  margin-bottom:12px;
+}
+
+.btn-kpi-toggle:active{
+  transform:scale(.96);
+}
+
+/* contenedor KPIs */
+#kpis{
+  transition: max-height .35s ease, opacity .25s ease, margin .25s;
+  overflow:hidden;
+}
+
+/* oculto */
+#kpis.hidden{
+  max-height:0;
+  opacity:0;
+  margin:0;
+  pointer-events:none;
+}
+
+/* visible */
+#kpis:not(.hidden){
+  max-height:600px; /* suficiente para KPIs */
+  opacity:1;
+}
+
+
+ /* ================= CURSOR TABLA ================= */
+tr.cursor-active{
+  background:#e0f2fe !important;
+}
+
+tr.cursor-active td{
+  border-top:1px solid #38bdf8;
+  border-bottom:1px solid #38bdf8;
+}
+
+/* hover normal sigue funcionando */
+tbody tr:hover{
+  background:#f1f5f9;
+}
+
+
+/* ================= MOBILE ================= */
+@media (max-width:768px){
+  .kpi{
+    padding:16px 12px;
+  }
+}
+
+.foto-wrap{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  min-height:50px;
+  align-items:center;
+}
+
+td{
+  overflow: visible !important;
+}
+
+table{
+  table-layout: fixed;
+}
+
+
+ 
+
+
+</style>
+</head>
+
+<body>
+<!-- ================== HEADER ================== -->
+<div class="topbar">
+  <h2>🚚 Tracking de Pedidos</h2>
+</div>
+
+<!-- ================== KPIs ================== -->
+<div class="kpis" id="kpis"></div>
+
+<!-- ================== FILTROS ================== -->
+<div class="filters">
+  <input id="search" placeholder="Buscar pedido o cliente">
+  <input type="date" id="fDesde">
+  <input type="date" id="fHasta">
+
+  <select id="fStatus">
+    <option value="">Todos</option>
+    <option>PENDIENTE</option>
+    <option>EN RUTA</option>
+    <option>ENTREGADO</option>
+    <option>RECIBIDO</option>
+    <option>CANCELADO</option>
+  </select>
+
+  <button id="btnNuevo">
+    <span class="btn-text">➕ Nuevo</span>
+    <span class="btn-loader"></span>
+  </button>
+
+  <button id="btnPDF">
+    <span class="btn-text">📄 PDF</span>
+    <span class="btn-loader"></span>
+  </button>
+
+  <button id="btnExcel">
+    <span class="btn-text">📊 Excel</span>
+    <span class="btn-loader"></span>
+  </button>
+
+<button id="btnToggleKPI" class="btn-text">
+  📊 Ocultar dashboard
+</button>
+
+<button id="btnReload" class="btn-text">
+  🔄 Recargar
+</button>
+
+ 
+ </div>
+ 
+ 
+
+<!-- ================== TABLA DESKTOP ================== -->
+<div class="table-scroll" tabindex="0">
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha Ingreso</th>
+        <th>Pedido</th>
+        <th>Cliente</th>
+        <th>Dirección</th>
+        <th>Comuna</th>
+        <th>Transporte</th>
+        <th>Cajas</th>
+        <th>Obs</th>
+        <th>Estado</th>
+        <th>Responsable</th>
+        <th>Hora Entrega</th>
+        <th>Foto</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <!-- filas dinámicas -->
+    </tbody>
+  </table>
+</div>
+
+<!-- ================== MOBILE ================== -->
+<div class="mobile-list" id="mobileList">
+  <!-- cards dinámicas -->
+</div>
+
+<!-- ================== MODAL FOTO ================== -->
+<div class="modal" id="fotoModal">
+  <div class="modal-content foto-modal-grande">
+    <img id="fotoGrande" class="foto-grande" alt="Foto pedido">
+    <br>
+    <div style="display:flex;gap:10px">
+      <button id="btnDescargarFoto">
+        <span class="btn-text">⬇ Descargar</span>
+        <span class="btn-loader"></span>
+      </button>
+      <button id="btnCerrarFoto">❌ Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================== MODAL MAPA ================== -->
+<div class="modal" id="mapModal">
+  <div class="modal-content">
+    <iframe id="mapFrame" class="map-frame"></iframe>
+    <br>
+    <button id="btnCerrarMapa">❌ Cerrar</button>
+  </div>
+</div>
+
+<!-- ================== MODAL FORMULARIO ================== -->
+<div class="modal" id="modalForm">
+  <div class="modal-content">
+
+    <h3 id="mtitle">Nuevo Pedido</h3>
+
+    <input id="mPedido" placeholder="Pedido">
+    <input id="mCliente" placeholder="Cliente">
+    <input id="mDireccion" placeholder="Dirección">
+    <input id="mComuna" placeholder="Comuna">
+    <input id="mTransporte" placeholder="Transporte">
+
+    <input id="mCajas" type="number" min="1" placeholder="Cajas">
+
+    <select id="mStatus">
+      <option>PENDIENTE</option>
+      <option>EN RUTA</option>
+      <option>ENTREGADO</option>
+      <option>RECIBIDO</option>
+      <option>CANCELADO</option>
+    </select>
+
+    <input id="mResponsable" placeholder="Responsable Entrega">
+    <input id="mHoraEntrega" type="datetime-local">
+
+    <input id="mObs" placeholder="Observaciones">
+
+    <!-- FOTOS -->
+    <input type="file" id="mFotos" accept="image/*" multiple capture="environment">
+
+    <br><br>
+
+    <div style="display:flex;gap:10px">
+      <button id="btnGuardar">
+        <span class="btn-text">💾 Guardar</span>
+        <span class="btn-loader"></span>
+      </button>
+      <button id="btnCancelar">❌ Cancelar</button>
+    </div>
+
+  </div>
+</div>
+<script>
+  /* ======================================================
+     CONFIGURACIÓN
+  ====================================================== */
+  const API = "https://script.google.com/macros/s/AKfycbxZZ_E5MObjPJL-EhnLENeIYVeN0DGnCSvIyI5ylNfYBxSoswo2pOJ4mCT1hiGrBhzfJg/exec";
+  
+  let RAW = [];
+  let FILT = [];
+  let EDIT = null;
+  let charts = {};
+  let currentFoto = "";
+  let cursorIndex = -1;
+
+  /* ======================================================
+     HELPERS
+  ====================================================== */
+  const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+  
+  function setLoading(btn, state){
+    if(!btn) return;
+    btn.disabled = state;
+    btn.classList.toggle("loading", state);
+  }
+  
+  /* ======================================================
+     FECHA (dd-MM-yyyy HH:mm)
+  ====================================================== */
+  function parseFechaCL(str){
+    if(!str) return null;
+    const [f,h] = str.split(" ");
+    const [d,m,y] = f.split("-").map(Number);
+    const [hh=0,mm=0] = (h||"0:0").split(":").map(Number);
+    return new Date(y, m-1, d, hh, mm);
+  }
+  
+  /* ======================================================
+     LOAD
+  ====================================================== */
+  async function load(){
+    const r = await fetch(API);
+    RAW = await r.json();
+    applyFilters();
+  }
+  
+  /* ======================================================
+     FILTROS
+  ====================================================== */
+  function applyFilters(){
+
+const q = search.value.toLowerCase().trim();
+const s = fStatus.value;
+
+const d1 = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
+const d2 = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
+
+FILT = RAW.filter(r => {
+
+  /* ========= NORMALIZAR CAMPOS ========= */
+  const pedido   = String(r.pedido ?? '').toLowerCase();
+  const cliente  = String(r.cliente ?? '').toLowerCase();
+  const obs      = String(r.observaciones ?? '').toLowerCase();
+  const status   = String(r.status ?? '');
+  const fechaStr = r.fechaIngreso ?? null;
+
+  /* ========= TEXTO ========= */
+  const textOK = !q || (
+    pedido.includes(q) ||
+    cliente.includes(q) ||
+    obs.includes(q)
+  );
+
+  /* ========= STATUS ========= */
+  const statusOK = !s || status === s;
+
+  /* ========= FECHA ========= */
+  let fechaOK = true;
+  if(d1 || d2){
+    const fr = parseFechaCL(fechaStr);
+    if(!fr) return false;
+    if(d1 && fr < d1) fechaOK = false;
+    if(d2 && fr > d2) fechaOK = false;
+  }
+
+  return textOK && statusOK && fechaOK;
+});
+
+cursorIndex = -1;   // reset cursor
+render();
+}
+  
+  /* ======================================================
+     RENDER
+  ====================================================== */
+  function render(){
+  cursorIndex = -1;
+  renderKPIs();
+
+  // limpiar contenedores
+  tbody.innerHTML = "";
+  mobileList.innerHTML = "";
+
+  /* ================= DESKTOP ================= */
+  if(!isMobile()){
+    FILT.forEach(r=>{
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr>
+          <td class="fecha">${r.fechaIngreso || ""}</td>
+          <td>${r.pedido || ""}</td>
+          <td>${r.cliente || ""}</td>
+          <td>${r.direccion || ""}</td>
+          <td>${r.comuna || ""}</td>
+          <td>${r.transporte || ""}</td>
+          <td>${r.etiquetas || 0}</td>
+          <td>${r.observaciones || ""}</td>
+          <td>${r.status || ""}</td>
+          <td>${r.responsable || ""}</td>
+          <td>${r.horaEntrega || ""}</td>
+          <td>${renderFotos(r.foto)}</td>
+          <td>
+            <div class="actions">
+              <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
+              <button onclick="openModal(RAW.find(x=>x._row==${r._row}))">✏️</button>
+              <button onclick="delRow(${r._row})">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `);
+    });
+  }
+
+  /* ================= MOBILE ================= */
+  else{
+    FILT.forEach(r=>{
+      mobileList.insertAdjacentHTML("beforeend", `
+        <div class="row-card">
+          <b>${r.pedido || ""}</b> · ${r.status || ""}<br>
+          ${r.cliente || ""}<br>
+          ${r.direccion || ""} (${r.comuna || ""})<br>
+          🚚 ${r.transporte || ""}<br>
+          📦 ${r.etiquetas || 0}<br>
+          👤 ${r.responsable || ""}<br>
+          ⏱ ${r.horaEntrega || ""}<br><br>
+
+          ${renderFotos(r.foto)}
+
+          <div class="row-actions">
+            <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
+            <button onclick="openModal(RAW.find(x=>x._row==${r._row}))">✏️</button>
+            <button onclick="delRow(${r._row})">🗑️</button>
+          </div>
+        </div>
+      `);
+    });
+  }
+}
+
+  
+ function moveCursor(dir){
+  const rows = [...tbody.querySelectorAll("tr")];
+  if(!rows.length) return;
+
+  // quitar activo
+  rows.forEach(r=>r.classList.remove("cursor-active"));
+
+  // calcular índice
+  cursorIndex += dir;
+  if(cursorIndex < 0) cursorIndex = 0;
+  if(cursorIndex >= rows.length) cursorIndex = rows.length - 1;
+
+  const row = rows[cursorIndex];
+  row.classList.add("cursor-active");
+
+  // scroll automático
+  row.scrollIntoView({
+    behavior:"smooth",
+    block:"nearest"
+  });
+}
+
+ 
+ document.addEventListener("keydown", e=>{
+  if(isMobile()) return;            // solo escritorio
+  if(modalForm.style.display==="flex") return; // no interferir modal
+
+  if(e.key === "ArrowDown"){
+    e.preventDefault();
+    moveCursor(1);
+  }
+
+  if(e.key === "ArrowUp"){
+    e.preventDefault();
+    moveCursor(-1);
+  }
+});
+
+ 
+ 
+ 
+ /* ======================================================
+     FOTOS
+  ====================================================== */
+function renderFotos(f){
+  if(!f) return "";
+
+  const fotos = String(f)
+    .split("|")
+    .map(u => u.trim())
+    .filter(u => u && u.startsWith("http"));
+
+  if(!fotos.length) return "";
+
+  return `
+    <div class="foto-wrap">
+      ${fotos.map(u => {
+        const thumb = u.replace(/=s\d+$/, '=s120');   // 👈 miniatura
+        return `
+          <img
+            src="${thumb}"
+            data-full="${u}"
+            class="foto-thumb"
+            loading="lazy"
+            decoding="async"
+            onclick="openFoto(this.dataset.full)"
+          >
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+
+
+
+  
+  function openFoto(url){
+  currentFoto = url;
+
+  // usar versión GRANDE solo en el modal
+  const full = url.replace(/=s\d+$/, '=s1600');
+
+  // limpiar antes de cargar (evita parpadeos)
+  fotoGrande.src = "";
+  fotoModal.style.display = "flex";
+
+  // cargar imagen grande
+  fotoGrande.src = full;
+}
+
+// cerrar modal
+btnCerrarFoto.onclick = ()=>{
+  fotoModal.style.display = "none";
+  fotoGrande.src = ""; // libera memoria
+};
+
+// descargar imagen original
+btnDescargarFoto.onclick = ()=>{
+  const a = document.createElement("a");
+  a.href = currentFoto.replace(/=s\d+$/, '=s2000');
+  a.download = "foto_pedido.jpg";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+  /* ======================================================
+     MAPA
+  ====================================================== */
+  function openMap(d,c){
+    mapFrame.src =
+      `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}&output=embed`;
+    mapModal.style.display="flex";
+  }
+  
+  btnCerrarMapa.onclick = ()=>{
+    mapModal.style.display="none";
+    mapFrame.src="";
+  };
+  
+  /* ======================================================
+     KPIS
+  ====================================================== */
+  function drawKPI(id,val,total,color){
+    if(charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id),{
+      type:"doughnut",
+      data:{datasets:[{data:[val,total-val],backgroundColor:[color,"#e5e7eb"]}]},
+      options:{cutout:"70%",plugins:{legend:{display:false}}}
+    });
+  }
+  
+function kpiFilter(status){
+  // marcar activo
+  document.querySelectorAll('.kpi').forEach(k=>k.classList.remove('active'));
+  const active = [...document.querySelectorAll('.kpi')]
+    .find(k=>k.dataset.status===status);
+  if(active) active.classList.add('active');
+
+  // aplicar filtro
+  fStatus.value = status;
+  applyFilters();
+}
+const btnToggleKPI = document.getElementById('btnToggleKPI');
+
+btnToggleKPI.onclick = ()=>{
+  kpis.classList.toggle('hidden');
+
+  const hidden = kpis.classList.contains('hidden');
+  btnToggleKPI.textContent = hidden
+    ? '📊 Mostrar dashboard'
+    : '📊 Ocultar dashboard';
+
+  // guardar estado
+  localStorage.setItem('kpiHidden', hidden ? '1' : '0');
+};
+
+// restaurar estado
+if(localStorage.getItem('kpiHidden') === '1'){
+  kpis.classList.add('hidden');
+  btnToggleKPI.textContent = '📊 Mostrar dashboard';
+}
+
+
+  function renderKPIs(){
+    const t = FILT.length || 1;
+    const c = s => FILT.filter(r=>r.status===s).length;
+  
+    kpis.innerHTML = `
+  <div class="kpi" onclick="kpiFilter('')" data-status="">
+    <canvas id="k1"></canvas><b>${t}</b>Total
+  </div>
+
+  <div class="kpi" onclick="kpiFilter('PENDIENTE')" data-status="PENDIENTE">
+    <canvas id="k2"></canvas><b>${c("PENDIENTE")}</b>Pendiente
+  </div>
+
+  <div class="kpi" onclick="kpiFilter('EN RUTA')" data-status="EN RUTA">
+    <canvas id="k3"></canvas><b>${c("EN RUTA")}</b>Ruta
+  </div>
+
+  <div class="kpi" onclick="kpiFilter('ENTREGADO')" data-status="ENTREGADO">
+    <canvas id="k4"></canvas><b>${c("ENTREGADO")}</b>Entregado
+  </div>
+
+  <div class="kpi" onclick="kpiFilter('RECIBIDO')" data-status="RECIBIDO">
+    <canvas id="k5"></canvas><b>${c("RECIBIDO")}</b>Recibido
+  </div>
+
+  <div class="kpi" onclick="kpiFilter('CANCELADO')" data-status="CANCELADO">
+    <canvas id="k6"></canvas><b>${c("CANCELADO")}</b>Cancelado
+  </div>
+`;
+
+    drawKPI("k1",t,t,"#14b8a6");
+    drawKPI("k2",c("PENDIENTE"),t,"#facc15");
+    drawKPI("k3",c("EN RUTA"),t,"#38bdf8");
+    drawKPI("k4",c("ENTREGADO"),t,"#4ade80");
+    drawKPI("k5",c("RECIBIDO"),t,"#a78bfa");
+    drawKPI("k6",c("CANCELADO"),t,"#ef4444");
+  }
+  
+  /* ======================================================
+     CRUD
+  ====================================================== */
+  btnNuevo.onclick = ()=> openModal();
+  btnCancelar.onclick = ()=> modalForm.style.display="none";
+  
+  function openModal(r=null){
+    modalForm.style.display="flex";
+    EDIT = r;
+  
+    if(r){
+      mtitle.textContent="Editar Pedido";
+      mPedido.value=r.pedido;
+      mCliente.value=r.cliente;
+      mDireccion.value=r.direccion;
+      mComuna.value=r.comuna;
+      mTransporte.value=r.transporte||"";
+      mCajas.value=r.etiquetas||1;
+      mObs.value=r.observaciones||"";
+      mStatus.value=r.status;
+      mResponsable.value=r.responsable||"";
+      mHoraEntrega.value=r.horaEntrega||"";
+    } else {
+      mtitle.textContent="Nuevo Pedido";
+      mPedido.value=mCliente.value=mDireccion.value=mComuna.value=mTransporte.value=mObs.value="";
+      mCajas.value=1;
+      mStatus.value="PENDIENTE";
+      mResponsable.value=mHoraEntrega.value="";
+    }
+  }
+  
+  /* ======================================================
+     GUARDAR
+  ====================================================== */
+  btnGuardar.onclick = async ()=>{
+  setLoading(btnGuardar, true);
+
+  // ===== convertir TODAS las fotos a base64 =====
+  let fotos64 = [];
+
+  if (mFotos.files.length > 0) {
+    for (const file of mFotos.files) {
+      fotos64.push(await toBase64(file));
+    }
+  }
+
+  // ===== payload correcto =====
+  const payload = {
+    action: EDIT ? "update" : "add",
+    row: EDIT ? EDIT._row : null,
+    "PEDIDO": mPedido.value,
+    "CLIENTE": mCliente.value,
+    "DIRECCION": mDireccion.value,
+    "COMUNA": mComuna.value,
+    "TRANSPORTE": mTransporte.value,
+    "ETIQUETAS": mCajas.value,
+    "OBSERVACIONES": mObs.value,
+    "STATUS": mStatus.value,
+    "RESPONSABLE ENTREGA": mResponsable.value,
+    "HORA ENTREGA": mHoraEntrega.value,
+    "FOTO": fotos64       // 👈 ahora es ARRAY
+  };
+
+  await fetch(API, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  setLoading(btnGuardar, false);
+  modalForm.style.display = "none";
+  load();
+};
+
+  
+ function toBase64(file){
+  return new Promise(r=>{
+    const fr = new FileReader();
+    fr.onload = ()=> r(fr.result);
+    fr.readAsDataURL(file);
+  });
+}
+
+  
+  /* ======================================================
+     ELIMINAR
+  ====================================================== */
+  async function delRow(row){
+    if(!confirm("¿Eliminar pedido?")) return;
+    await fetch(API,{method:"POST",body:JSON.stringify({action:"delete",row})});
+    load();
+  }
+  
+  /* ======================================================
+     EXPORTES
+  ====================================================== */
+   /* ================== EXPORT ================== */
+   btnPDF.onclick = ()=> exportPDF(btnPDF);
+  btnExcel.onclick = ()=> exportExcel(btnExcel);
+  /* ================== EXPORT PDF ================== */
+function exportPDF(btn){
+  setLoading(btn,true);
+
+  setTimeout(()=>{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'landscape' });
+
+    // ===== CALCULOS =====
+    const totalPedidos = FILT.length;
+    const totalBultos = FILT.reduce(
+      (sum,r)=> sum + Number(r.etiquetas || 0), 0
+    );
+
+    // ===== TABLA =====
+    doc.autoTable({
+      head:[[
+        'Fecha Ingreso',
+        'Pedido',
+        'Cliente',
+        'Dirección',
+        'Comuna',
+        'Transporte',
+        'Cajas',
+        'Responsable',
+        'Hora Entrega',
+        'Estado',
+        'Obs'
+      ]],
+      body: FILT.map(r=>[
+        r.fechaIngreso || '',
+        r.pedido || '',
+        r.cliente || '',
+        r.direccion || '',
+        r.comuna || '',
+        r.transporte || '',
+        r.etiquetas || 0,
+        r.responsable || '',
+        r.horaEntrega || '',
+        r.status || '',
+        r.observaciones || ''
+      ]),
+      foot:[[
+        '',
+        '',
+        '',
+        '',
+        '',
+        'TOTALES →',
+        `CAJAS: ${totalBultos}`,
+        '',
+        '',
+        `PEDIDOS: ${totalPedidos}`,
+        ''
+      ]],
+      styles:{
+        fontSize:9,
+        cellPadding:3
+      },
+      footStyles:{
+        fontStyle:'bold',
+        halign:'right'
+      },
+      margin:{ top:20 }
+    });
+
+    doc.save("Pedidos_Logisticos.pdf");
+    setLoading(btn,false);
+  },300);
+}
+
+  
+  /* ================== EXPORT EXCEL ================== */
+function exportExcel(btn){
+  setLoading(btn,true);
+
+  setTimeout(()=>{
+    // Normalizar datos (orden y nombres claros)
+    const data = FILT.map(r=>({
+      "Fecha Ingreso": r.fechaIngreso || '',
+      "Pedido": r.pedido || '',
+      "Cliente": r.cliente || '',
+      "Dirección": r.direccion || '',
+      "Comuna": r.comuna || '',
+      "Transporte": r.transporte || '',
+      "Cajas": r.etiquetas || 0,
+      "Responsable": r.responsable || '',
+      "Hora Entrega": r.horaEntrega || '',
+      "Estado": r.status || '',
+      "Observaciones": r.observaciones || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
+
+    XLSX.writeFile(wb, "Pedidos_Logisticos.xlsx");
+
+    setLoading(btn,false);
+  },300);
+}
+
+function setLoading(btn, state){
+  if(!btn) return;
+  btn.disabled = state;
+  btn.classList.toggle("loading", state);
+}
+
+/* ======================================================
+   RECARGAR TABLA – EFECTO VISIBLE
+====================================================== */
+btnReload.onclick = async ()=>{
+  setLoading(btnReload, true);
+
+  // efecto visual inmediato (tabla)
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="13" style="text-align:center;padding:20px;font-weight:600;">
+        🔄 Recargando tabla...
+      </td>
+    </tr>
+  `;
+
+  // efecto visual móvil
+  mobileList.innerHTML = `
+    <div style="padding:20px;text-align:center;font-weight:600;">
+      🔄 Recargando lista...
+    </div>
+  `;
+
+  // forzar repintado del navegador
+  await new Promise(r => setTimeout(r, 200));
+
+  // usar TU lógica existente
+  await load();
+
+  setLoading(btnReload, false);
+};
+
+  
+  /* ======================================================
+     INIT
+  ====================================================== */
+  search.oninput=applyFilters;
+  fStatus.onchange=applyFilters;
+  fDesde.onchange=applyFilters;
+  fHasta.onchange=applyFilters;
+  
+  load();
+  </script>
+  
+  <script src="segurity.js"></script>
+  <script src="auth.js"></script>
+ 
+  
+
+  </body>
+  </html>
