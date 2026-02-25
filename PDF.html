@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guía de Despacho Electrónica</title>
+
+<style>
+@page{
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  color:#000;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.border{
+  border:1px solid #000;
+}
+
+.center{ text-align:center; }
+.right{ text-align:right; }
+.bold{ font-weight:bold; }
+
+h1{
+  font-size:18px;
+  margin:0;
+}
+
+.small{ font-size:10px; }
+
+.header td{
+  vertical-align:top;
+}
+
+.box{
+  border:1px solid #000;
+  padding:5px;
+}
+
+.items th, .items td{
+  border:1px solid #000;
+  padding:4px;
+}
+
+.items th{
+  background:#f0f0f0;
+  font-size:10px;
+}
+
+.footer-box{
+  height:60px;
+  border:1px solid #000;
+}
+
+.timbre{
+  border:1px solid #000;
+  height:110px;
+  text-align:center;
+  font-size:9px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ENCABEZADO -->
+<table class="header">
+<tr>
+<td width="35%">
+  <div class="box">
+    <div class="bold">TEXORA S.A</div>
+    RUT: 76.345.987-6<br>
+    Giro: Comercial<br>
+    Dirección: Santiago<br>
+    Teléfono: 22 123 4567
+  </div>
+</td>
+
+<td width="30%" class="center">
+  <h1>GUÍA DE DESPACHO</h1>
+  <div class="bold">ELECTRÓNICA</div>
+</td>
+
+<td width="35%">
+  <div class="box center">
+    <div class="bold">RUT: 16.345.650-0</div>
+    <div class="bold">N° 528463</div>
+    <div>S.I.I. SANTIAGO NORTE</div>
+  </div>
+</td>
+</tr>
+</table>
+
+<br>
+
+<!-- DATOS DOCUMENTO -->
+<table>
+<tr>
+<td class="box">
+  Fecha Emisión: 19-02-2025<br>
+  Fecha Traslado: 19-02-2025<br>
+  Tipo Traslado: Venta
+</td>
+
+<td class="box">
+  Señor(es): WORLD TEXTIL SPA<br>
+  RUT: 77.123.456-7<br>
+  Dirección: Santiago
+</td>
+
+<td class="box">
+  Vendedor: Juan Pérez<br>
+  Condición de Pago: Contado
+</td>
+</tr>
+</table>
+
+<br>
+
+<!-- TABLA ITEMS -->
+<table class="items">
+<thead>
+<tr>
+<th width="8%">Código</th>
+<th width="32%">Descripción</th>
+<th width="6%">Talla</th>
+<th width="10%">Color</th>
+<th width="6%">U.M.</th>
+<th width="6%">Cant.</th>
+<th width="10%">Precio</th>
+<th width="12%">Sub-Total</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>10001</td>
+<td>Polera Algodón Unisex</td>
+<td>S</td>
+<td>Azulino</td>
+<td>Und</td>
+<td class="center">1</td>
+<td class="right">$14.765</td>
+<td class="right">$14.765</td>
+</tr>
+
+<tr>
+<td>10002</td>
+<td>Polera Algodón Unisex</td>
+<td>M</td>
+<td>Verde</td>
+<td>Und</td>
+<td class="center">1</td>
+<td class="right">$2.234</td>
+<td class="right">$2.234</td>
+</tr>
+
+<tr>
+<td>10003</td>
+<td>Polerón Canguro ML</td>
+<td>XL</td>
+<td>Azulino</td>
+<td>Und</td>
+<td class="center">12</td>
+<td class="right">$319</td>
+<td class="right">$3.828</td>
+</tr>
+</tbody>
+</table>
+
+<br>
+
+<!-- TOTALES -->
+<table>
+<tr>
+<td width="65%"></td>
+<td width="35%">
+  <table>
+    <tr>
+      <td class="bold">TOTAL</td>
+      <td class="right bold">$20.827</td>
+    </tr>
+  </table>
+</td>
+</tr>
+</table>
+
+<br>
+
+<!-- OBSERVACIONES / FIRMAS -->
+<table>
+<tr>
+<td width="60%" class="footer-box">
+  Observaciones:
+</td>
+
+<td width="40%" class="footer-box center">
+  Nombre y Firma Receptor
+</td>
+</tr>
+</table>
+
+<br>
+
+<!-- TIMBRE -->
+<table>
+<tr>
+<td width="60%"></td>
+<td width="40%" class="timbre">
+  TIMBRE ELECTRÓNICO SII<br><br>
+  <div style="height:60px; border:1px dashed #000;">
+    PDF417 / CÓDIGO
+  </div>
+  <br>
+  Res. SII
+</td>
+</tr>
+</table>
+
+</body>
+</html>
