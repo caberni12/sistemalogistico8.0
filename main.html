@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- VIEWPORT APP-LIKE -->
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1,
+               maximum-scale=1,
+               user-scalable=no">
 
 <!-- LEAFLET -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -23,53 +29,51 @@
  --radius:12px;
 }
 
-/* RESET */
-*{ box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+/* ================= RESET ================= */
+*{
+ box-sizing:border-box;
+ font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+ -webkit-tap-highlight-color:transparent;
+}
 
-html,body{
- margin:0;
- padding:0;
+html{
  height:100%;
+}
+
+body{
+ margin:0;
+ min-height:100%;
  background:var(--bg);
  color:var(--text);
- overflow:hidden;
+ overflow:hidden;            /* ❗ el scroll se mueve al contenedor */
+ overscroll-behavior:none;
 }
 
 /* Leaflet fix */
-.leaflet-div-icon{ background:none!important; border:none!important; }
-
-/* ================= BOTONES ================= */
-button{
- border:none;
- border-radius:var(--radius);
- padding:10px 16px;
- font-weight:600;
- cursor:pointer;
- display:inline-flex;
- align-items:center;
- justify-content:center;
- gap:8px;
- transition:.25s ease;
- box-shadow:0 6px 18px rgba(0,0,0,.12);
+.leaflet-div-icon{
+ background:none!important;
+ border:none!important;
 }
-button:active{ transform:scale(.97); }
 
-.btn-primary{ background:linear-gradient(135deg,#60a5fa,#2563eb); color:#fff; }
-.btn-danger{ background:linear-gradient(135deg,#f87171,#dc2626); color:#fff; }
-.btn-ghost{ background:#fff; border:1px solid var(--border); box-shadow:none; }
-
-/* ================= HEADER ================= */
-header{
- min-height:72px;
+/* ================= APP CONTAINER ================= */
+.app{
  display:flex;
- flex-wrap:wrap;
- align-items:center;
- justify-content:space-between;
- padding:12px 16px;
+ flex-direction:column;
+ height:100vh;
+}
+
+/* ================= HEADER (STICKY) ================= */
+header{
+ position:sticky;
+ top:0;
+ z-index:20;
  background:#fff;
  border-bottom:1px solid var(--border);
  box-shadow:0 4px 14px rgba(0,0,0,.06);
- z-index:20;
+ padding:12px 16px;
+ display:flex;
+ flex-wrap:wrap;
+ gap:8px;
 }
 
 .header-left{
@@ -85,7 +89,8 @@ header{
  font-size:20px;
  background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
- flex-shrink:0;
+ border:none;
+ border-radius:12px;
 }
 
 header h1{
@@ -99,12 +104,8 @@ header h1{
  display:flex;
  gap:12px;
  align-items:center;
-}
-
-header .user{
  font-size:12px;
  color:var(--muted);
- line-height:1.2;
 }
 
 header .right{
@@ -112,53 +113,49 @@ header .right{
  gap:12px;
 }
 
-/* ================= MENU ================= */
-.menu-lateral{
- position:fixed;
- top:0;
- left:-300px;
- width:300px;
- height:100vh;
- background:#fff;
- box-shadow:6px 0 28px rgba(0,0,0,.18);
- transition:.35s ease;
- z-index:9997;
- display:flex;
- flex-direction:column;
-}
-
-.menu-lateral.open{ left:0; }
-
-.menu-header{
- padding:16px;
- border-bottom:1px solid var(--border);
- display:flex;
- justify-content:space-between;
- align-items:center;
- font-weight:700;
-}
-
-.menu-items{
- padding:14px;
- display:flex;
- flex-direction:column;
- gap:10px;
- overflow-y:auto;
-}
-
-.menu-item{
- padding:14px;
+/* ================= BOTONES ================= */
+button{
+ border:none;
  border-radius:var(--radius);
- background:var(--hover);
+ padding:10px 16px;
  font-weight:600;
  cursor:pointer;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ box-shadow:0 6px 18px rgba(0,0,0,.12);
+}
+
+.btn-primary{
+ background:linear-gradient(135deg,#60a5fa,#2563eb);
+ color:#fff;
+}
+
+.btn-danger{
+ background:linear-gradient(135deg,#f87171,#dc2626);
+ color:#fff;
+}
+
+.btn-ghost{
+ background:#fff;
+ border:1px solid var(--border);
+ box-shadow:none;
+}
+
+/* ================= MAIN SCROLL AREA ================= */
+.main{
+ flex:1;
+ overflow-y:auto;                       /* ✅ SCROLL REAL */
+ -webkit-overflow-scrolling:touch;     /* iOS smooth */
 }
 
 /* ================= MAPA ================= */
 #mapaBox{
  position:relative;
  width:100%;
- height:calc(100vh - 72px);
+ height:100%;
+ min-height:400px;
 }
 
 #mapa{
@@ -180,12 +177,44 @@ header .right{
  z-index:500;
 }
 
+/* ================= MENU LATERAL ================= */
+.menu-lateral{
+ position:fixed;
+ top:0;
+ left:-300px;
+ width:300px;
+ height:100vh;
+ background:#fff;
+ box-shadow:6px 0 28px rgba(0,0,0,.18);
+ transition:.35s ease;
+ z-index:9997;
+ display:flex;
+ flex-direction:column;
+}
+
+.menu-lateral.open{ left:0; }
+
+.menu-header{
+ padding:16px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ justify-content:space-between;
+ font-weight:700;
+}
+
+.menu-items{
+ padding:14px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+ overflow-y:auto;
+}
+
 /* ================= VISOR ================= */
 .viewer{
  display:none;
  position:fixed;
  inset:0;
- height:100vh;
  background:#fff;
  z-index:9996;
  flex-direction:column;
@@ -203,7 +232,6 @@ header .right{
 .viewer iframe{
  flex:1;
  width:100%;
- height:calc(100vh - 52px);
  border:none;
 }
 
@@ -218,7 +246,6 @@ header .right{
  align-items:center;
  justify-content:center;
  font-weight:600;
- font-size:16px;
 }
 
 #progressBar{
@@ -238,17 +265,12 @@ header .right{
  header{
    flex-direction:column;
    align-items:flex-start;
-   gap:8px;
  }
 
  .header-left,
  .header-info,
  .right{
    width:100%;
- }
-
- .header-info{
-   justify-content:space-between;
  }
 
  .right{
@@ -264,15 +286,13 @@ header .right{
    height:36px;
    font-size:18px;
  }
-
- #mapaBox{
-   height:calc(100vh - 128px);
- }
 }
 </style>
 </head>
 
 <body>
+
+<div class="app">
 
 <!-- LOADER -->
 <div id="loadingOverlay">Iniciando sistema…</div>
@@ -295,8 +315,8 @@ header .right{
   </div>
 
   <div class="header-info">
-    <div id="usuario" class="user"></div>
-    <div id="conexionInfo" class="user"></div>
+    <div id="usuario"></div>
+    <div id="conexionInfo"></div>
   </div>
 
   <div class="right">
@@ -305,18 +325,22 @@ header .right{
   </div>
 </header>
 
-<!-- MAPA -->
-<div id="mapaBox">
-  <div id="mapa"></div>
+<!-- MAIN -->
+<div class="main">
 
-  <div id="dashboardMapa">
-    <strong>📍 Dirección</strong>
-    <span id="dirTexto">Detectando…</span><br><br>
-    <strong>🌐 Red</strong>
-    <span id="netTexto">Detectando…</span><br><br>
-    <strong>🚀 Velocidad</strong>
-    <span id="speedTexto">0 km/h</span>
+  <div id="mapaBox">
+    <div id="mapa"></div>
+
+    <div id="dashboardMapa">
+      <strong>📍 Dirección</strong><br>
+      <span id="dirTexto">Detectando…</span><br><br>
+      <strong>🌐 Red</strong><br>
+      <span id="netTexto">Detectando…</span><br><br>
+      <strong>🚀 Velocidad</strong><br>
+      <span id="speedTexto">0 km/h</span>
+    </div>
   </div>
+
 </div>
 
 <!-- VISOR -->
@@ -326,6 +350,8 @@ header .right{
     <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
   </div>
   <iframe id="frame"></iframe>
+</div>
+
 </div>
 
 <script src="empresa.js"></script>
