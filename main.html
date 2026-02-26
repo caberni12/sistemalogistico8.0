@@ -95,7 +95,6 @@ header{
  gap:10px;
 }
 
-/* Hamburguesa */
 #btnMenu{
  width:40px;
  height:40px;
@@ -221,7 +220,33 @@ header .user{
  border:none;
 }
 
-/* ================= MOBILE FIX ================= */
+/* ================= LOADER (🔥 CORREGIDO 🔥) ================= */
+#loadingOverlay{
+ position:fixed;
+ inset:0;
+ background:rgba(241,245,249,.92);
+ backdrop-filter:blur(4px);
+ z-index:9999;
+ display:none;
+ align-items:center;
+ justify-content:center;
+ text-align:center;
+ font-weight:600;
+ font-size:16px;
+}
+
+#progressBar{
+ position:fixed;
+ top:0;
+ left:0;
+ height:3px;
+ width:0%;
+ background:linear-gradient(90deg,#3b82f6,#14b8a6);
+ z-index:10000;
+ display:none;
+}
+
+/* ================= MOBILE ================= */
 @media (max-width:768px){
 
  header{
@@ -233,25 +258,20 @@ header .user{
 
  .header-left{
    width:100%;
-   justify-content:flex-start;
  }
 
  header h1{
    font-size:15px;
  }
 
- /* 🔥 INFO SUPERIOR EN UNA SOLA FILA */
  .header-info{
    width:100%;
    display:flex;
    justify-content:space-between;
-   align-items:center;
-   gap:8px;
  }
 
  header .right{
    width:100%;
-   display:flex;
    flex-direction:column;
    gap:8px;
  }
@@ -275,24 +295,26 @@ header .user{
 
 <body>
 
-<div id="progressBar"></div>
+<!-- LOADER -->
 <div id="loadingOverlay">Iniciando sistema…</div>
+<div id="progressBar"></div>
 
+<!-- MENU -->
 <div id="menuLateral" class="menu-lateral">
   <div class="menu-header">
-    <span>📦 Panel de Gestíon</span>
+    <span>📦 Panel de Gestión</span>
     <button class="btn-ghost" onclick="toggleMenu()">✕</button>
   </div>
   <div id="menuModulos" class="menu-items"></div>
 </div>
 
+<!-- HEADER -->
 <header>
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
     <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
-  <!-- INFO COMPACTA -->
   <div class="header-info">
     <div id="usuario" class="user"></div>
     <div id="conexionInfo" class="user"></div>
@@ -304,6 +326,7 @@ header .user{
   </div>
 </header>
 
+<!-- MAPA -->
 <div id="mapaBox">
   <div id="mapa"></div>
 
@@ -319,6 +342,7 @@ header .user{
   </div>
 </div>
 
+<!-- VISOR -->
 <div id="viewer" class="viewer">
   <div class="viewer-header">
     <span id="viewerTitle"></span>
