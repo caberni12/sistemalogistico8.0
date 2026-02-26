@@ -18,7 +18,7 @@
  --danger:#ef4444;
  --border:#e2e8f0;
  --radius:12px;
- --header-h:72px; /* ALTURA DINÁMICA */
+ --header-h:72px;
 }
 
 /* RESET */
@@ -49,33 +49,18 @@ button{
  box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
 
-.btn-primary{
- background:linear-gradient(135deg,#60a5fa,#2563eb);
- color:#fff;
-}
-
-.btn-danger{
- background:linear-gradient(135deg,#f87171,#dc2626);
- color:#fff;
-}
-
-.btn-ghost{
- background:#fff;
- border:1px solid var(--border);
- box-shadow:none;
-}
+.btn-primary{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;}
+.btn-danger{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff;}
+.btn-ghost{background:#fff;border:1px solid var(--border);box-shadow:none;}
 
 /* HEADER */
 header{
  position:fixed;
- top:0;
- left:0;
- right:0;
+ top:0; left:0; right:0;
  height:var(--header-h);
  background:#fff;
  display:flex;
  flex-direction:column;
- justify-content:center;
  padding:8px 16px;
  border-bottom:1px solid var(--border);
  box-shadow:0 4px 14px rgba(0,0,0,.06);
@@ -89,11 +74,10 @@ header.oculto{
  overflow:hidden;
 }
 
-/* CONTROLES HEADER */
 .header-top{
  display:flex;
- align-items:center;
  justify-content:space-between;
+ align-items:center;
  gap:10px;
 }
 
@@ -116,14 +100,13 @@ header.oculto{
 }
 
 header h1{
- font-size:16px;
  margin:0;
+ font-size:16px;
 }
 
 .header-right{
  display:flex;
  gap:10px;
- flex-wrap:wrap;
 }
 
 .user{
@@ -131,17 +114,72 @@ header h1{
  color:var(--muted);
 }
 
+/* BOTÓN OCULTAR HEADER */
+#toggleHeader{
+ position:fixed;
+ top:10px;
+ right:10px;
+ z-index:2000;
+ padding:8px 10px;
+ font-size:14px;
+}
+
+/* MENU */
+.menu-lateral{
+ position:fixed;
+ top:0;
+ left:-300px;
+ width:300px;
+ height:100vh;
+ background:#fff;
+ box-shadow:6px 0 28px rgba(0,0,0,.18);
+ transition:.35s ease;
+ z-index:1500;
+ display:flex;
+ flex-direction:column;
+}
+
+.menu-lateral.open{left:0;}
+
+.menu-header{
+ padding:16px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ font-weight:700;
+}
+
+.menu-items{
+ padding:14px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+ overflow-y:auto;
+}
+
+.menu-item{
+ padding:14px;
+ border-radius:var(--radius);
+ background:#f8fafc;
+ font-weight:600;
+ cursor:pointer;
+}
+
 /* MAPA */
 #mapaBox{
  margin-top:var(--header-h);
  height:calc(100vh - var(--header-h));
  transition:.3s ease;
+ position:relative;
 }
 
 header.oculto ~ #mapaBox{
  margin-top:0;
  height:100vh;
 }
+
+#mapa{width:100%;height:100%;}
 
 /* LEAFLET FIX */
 .leaflet-top{
@@ -161,40 +199,67 @@ header.oculto ~ #mapaBox{
  box-shadow:0 14px 30px rgba(0,0,0,.22);
 }
 
-/* BOTÓN MOSTRAR / OCULTAR */
-#toggleHeader{
- position:fixed;
- top:10px;
- right:10px;
- z-index:2000;
- padding:8px 10px;
- font-size:14px;
-}
-
 /* VISOR */
 .viewer{
  display:none;
  position:fixed;
  top:var(--header-h);
- left:0;
- right:0;
- bottom:0;
+ left:0; right:0; bottom:0;
  background:#fff;
- z-index:999;
+ z-index:1200;
 }
 
-.viewer iframe{
- width:100%;
- height:100%;
- border:none;
+.viewer iframe{width:100%;height:100%;border:none;}
+
+/* LOADER */
+#loadingOverlay{
+ position:fixed;
+ inset:0;
+ background:rgba(241,245,249,.92);
+ z-index:3000;
+ display:none;
+ align-items:center;
+ justify-content:center;
+ font-weight:600;
+}
+
+#progressBar{
+ position:fixed;
+ top:0; left:0;
+ height:3px;
+ width:0%;
+ background:linear-gradient(90deg,#3b82f6,#14b8a6);
+ z-index:3001;
+ display:none;
+}
+
+/* MOBILE */
+@media(max-width:768px){
+ header{gap:6px;}
+ .header-right{flex-direction:column;}
 }
 </style>
 </head>
 
 <body>
 
+<!-- BOTÓN OCULTAR HEADER -->
 <button id="toggleHeader" class="btn-ghost" onclick="toggleHeader()">👁</button>
 
+<!-- LOADER -->
+<div id="loadingOverlay">Iniciando sistema…</div>
+<div id="progressBar"></div>
+
+<!-- MENU -->
+<div id="menuLateral" class="menu-lateral">
+  <div class="menu-header">
+    <span>📦 Panel de Gestión</span>
+    <button class="btn-ghost" onclick="toggleMenu()">✕</button>
+  </div>
+  <div id="menuModulos" class="menu-items"></div>
+</div>
+
+<!-- HEADER -->
 <header id="mainHeader">
   <div class="header-top">
     <div class="header-left">
@@ -202,21 +267,19 @@ header.oculto ~ #mapaBox{
       <button id="btnVolver" class="btn-ghost" onclick="volver()" style="display:none">⬅</button>
       <h1 id="tituloSistema">Panel Logístico</h1>
     </div>
-
     <div class="header-right">
       <button class="btn-primary" onclick="recargarPanel()">⟳</button>
       <button class="btn-danger" onclick="cerrarSesion()">⏻</button>
     </div>
   </div>
-
   <div class="user">
     <span id="usuario"></span> · <span id="conexionInfo"></span>
   </div>
 </header>
 
+<!-- MAPA -->
 <div id="mapaBox">
   <div id="mapa"></div>
-
   <div id="dashboardMapa">
     <div><strong>📍 Dirección:</strong> <span id="dirTexto">Detectando…</span></div>
     <div><strong>🌐 Red:</strong> <span id="netTexto">Detectando…</span></div>
@@ -224,14 +287,14 @@ header.oculto ~ #mapaBox{
   </div>
 </div>
 
+<!-- VISOR -->
 <div id="viewer" class="viewer">
   <iframe id="frame"></iframe>
 </div>
 
 <script>
 function toggleHeader(){
- const h=document.getElementById("mainHeader");
- h.classList.toggle("oculto");
+ document.getElementById("mainHeader").classList.toggle("oculto");
 }
 </script>
 
