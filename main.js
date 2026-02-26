@@ -38,9 +38,10 @@ const ICONO_ESTATICO = L.divIcon({
   className:"auto-icon",
   iconSize:[32,32],
   iconAnchor:[16,16],
-  html:`<svg viewBox="0 0 24 24" fill="#dc2626">
-          <path d="M12 2C8 2 4 6 4 10c0 6 8 14 8 14s8-8 8-14c0-4-4-8-8-8z"/>
-        </svg>`
+  html:`
+    <svg viewBox="0 0 24 24" fill="#dc2626">
+      <path d="M12 2C8 2 4 6 4 10c0 6 8 14 8 14s8-8 8-14c0-4-4-8-8-8z"/>
+    </svg>`
 });
 
 /* =====================================================
@@ -54,13 +55,13 @@ function toggleMenu(){
    LOADER
 ===================================================== */
 function iniciarProgreso(){
-  loadingOverlay.style.display="flex";
-  progressBar.style.display="block";
+  loadingOverlay.style.display = "flex";
+  progressBar.style.display = "block";
 }
 
 function finalizarProgreso(){
-  loadingOverlay.style.display="none";
-  progressBar.style.display="none";
+  loadingOverlay.style.display = "none";
+  progressBar.style.display = "none";
 }
 
 /* =====================================================
@@ -71,11 +72,15 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   iniciarProgreso();
 
   if(typeof validarSesionGlobal !== "function"){
-    cerrarSesion(); return;
+    cerrarSesion();
+    return;
   }
 
   const user = await validarSesionGlobal();
-  if(!user){ cerrarSesion(); return; }
+  if(!user){
+    cerrarSesion();
+    return;
+  }
 
   usuario.textContent = `👤 ${user.nombre} · ${user.rol}`;
 
@@ -94,20 +99,20 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 async function cargarMenu(user){
   const r = await fetch(`${API}?action=listarModulos`);
   const res = await r.json();
-  menuModulos.innerHTML="";
+  menuModulos.innerHTML = "";
 
   if(!Array.isArray(res.data)) return;
 
   res.data.forEach(m=>{
     const [id,nombre,archivo,icono,permiso,activo] = m;
-    if(activo!=="SI") return;
-    if(user.rol!=="ADMIN" && !user.permisos.includes(permiso)) return;
+    if(activo !== "SI") return;
+    if(user.rol !== "ADMIN" && !user.permisos.includes(permiso)) return;
 
-    const item=document.createElement("div");
-    item.className="menu-item";
-    item.innerHTML=`${icono||"📦"} ${nombre}`;
-    item.onclick=()=>{
-      abrirModulo(archivo,nombre);
+    const item = document.createElement("div");
+    item.className = "menu-item";
+    item.innerHTML = `${icono || "📦"} ${nombre}`;
+    item.onclick = ()=>{
+      abrirModulo(archivo, nombre);
       toggleMenu();
     };
     menuModulos.appendChild(item);
@@ -115,23 +120,28 @@ async function cargarMenu(user){
 }
 
 /* =====================================================
-   VISOR
+   VISOR (CORREGIDO)
 ===================================================== */
-function abrirModulo(url,titulo){
-  viewer.style.display="flex";
-  frame.src=url;
-  tituloSistema.textContent=titulo;
-  btnMenu.style.display="none";
-  btnVolver.style.display="inline-flex";
+function abrirModulo(url, titulo){
+  viewer.style.display = "flex";
+  frame.src = url;
+  tituloSistema.textContent = titulo;
+
+  // ocultar hamburguesa correctamente
+  btnMenu.classList.add("hidden");
 }
 
 function volver(){
-  viewer.style.display="none";
-  frame.src="";
-  tituloSistema.textContent="Panel Logístico";
-  btnVolver.style.display="none";
-  btnMenu.style.display="inline-flex";
-  if(MAPA) setTimeout(()=>MAPA.invalidateSize(),300);
+  viewer.style.display = "none";
+  frame.src = "";
+  tituloSistema.textContent = "Panel Logístico";
+
+  // mostrar hamburguesa SIEMPRE
+  btnMenu.classList.remove("hidden");
+
+  if(MAPA){
+    setTimeout(()=>MAPA.invalidateSize(),300);
+  }
 }
 
 /* =====================================================
@@ -157,21 +167,21 @@ function iniciarMapa(){
     }
 
     MARCADOR.setLatLng([lat,lng]);
-    MARCADOR.setIcon(speed>2 ? crearIconoAuto(heading) : ICONO_ESTATICO);
+    MARCADOR.setIcon(speed > 2 ? crearIconoAuto(heading) : ICONO_ESTATICO);
 
-    const conn=navigator.connection||{};
-    let r=80;
-    if(conn.effectiveType==="4g") r=150;
-    if(conn.effectiveType==="3g") r=100;
-    if(conn.effectiveType==="2g") r=60;
+    const conn = navigator.connection || {};
+    let r = 80;
+    if(conn.effectiveType === "4g") r = 150;
+    if(conn.effectiveType === "3g") r = 100;
+    if(conn.effectiveType === "2g") r = 60;
 
     CIRCULO.setLatLng([lat,lng]);
     CIRCULO.setRadius(r);
 
     actualizarRedVelocidad(speed);
 
-    if(Date.now()-LAST_GEOCODE>15000){
-      LAST_GEOCODE=Date.now();
+    if(Date.now() - LAST_GEOCODE > 15000){
+      LAST_GEOCODE = Date.now();
       actualizarDireccion(lat,lng);
     }
   },
@@ -184,22 +194,24 @@ function iniciarMapa(){
 ===================================================== */
 async function actualizarDireccion(lat,lng){
   try{
-    const r=await fetch(
+    const r = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
     );
-    const d=await r.json();
-    dirTexto.textContent=d.display_name||"—";
-  }catch{ dirTexto.textContent="—"; }
+    const d = await r.json();
+    dirTexto.textContent = d.display_name || "—";
+  }catch{
+    dirTexto.textContent = "—";
+  }
 }
 
 /* =====================================================
    RED + VELOCIDAD
 ===================================================== */
 function actualizarRedVelocidad(speed){
-  const kmh=(speed*3.6).toFixed(1);
-  const conn=navigator.connection||{};
+  const kmh = (speed * 3.6).toFixed(1);
+  const conn = navigator.connection || {};
   netTexto.textContent =
-    `${navigator.onLine?"Online":"Offline"} · ${conn.effectiveType||"—"}`;
+    `${navigator.onLine ? "Online" : "Offline"} · ${conn.effectiveType || "—"}`;
   speedTexto.textContent = `🚗 ${kmh} km/h`;
 }
 
@@ -208,14 +220,14 @@ function actualizarRedVelocidad(speed){
 ===================================================== */
 async function obtenerIP(){
   try{
-    USER_IP=(await (await fetch("https://api.ipify.org?format=json")).json()).ip;
+    USER_IP = (await (await fetch("https://api.ipify.org?format=json")).json()).ip;
   }catch{}
 }
 
 function iniciarReloj(){
   setInterval(()=>{
-    const n=new Date();
-    conexionInfo.innerHTML=
+    const n = new Date();
+    conexionInfo.innerHTML =
       `📅 ${n.toLocaleDateString("es-CL")}<br>
        ⏰ ${n.toLocaleTimeString("es-CL")}<br>
        🌐 IP: ${USER_IP}`;
@@ -225,11 +237,13 @@ function iniciarReloj(){
 /* =====================================================
    BOTONES
 ===================================================== */
-function recargarPanel(){ location.reload(); }
+function recargarPanel(){
+  location.reload();
+}
 
 function cerrarSesion(){
   if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
   sessionStorage.clear();
   localStorage.clear();
-  location.href="index.html";
+  location.href = "index.html";
 }
