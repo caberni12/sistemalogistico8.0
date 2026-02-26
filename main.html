@@ -5,6 +5,10 @@
 <title>Panel Logístico Integrado</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- ================= LEAFLET ================= -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 :root{
  --bg:#f1f5f9;
@@ -17,19 +21,28 @@
  --danger:#ef4444;
 }
 
-*{ box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+*{
+ box-sizing:border-box;
+ font-family:system-ui,Arial,sans-serif;
+}
 
-body{
+html,body{
  margin:0;
+ padding:0;
+ height:100%;
  background:var(--bg);
  color:var(--text);
- min-height:100vh;
- display:flex;
- flex-direction:column;
+}
+
+/* 🔥 CLAVE: ELIMINA EL MARCADOR ROJO DE LEAFLET 🔥 */
+.leaflet-div-icon{
+  background:none !important;
+  border:none !important;
 }
 
 /* ================= HEADER ================= */
 header{
+ height:72px;
  display:flex;
  align-items:center;
  justify-content:space-between;
@@ -38,6 +51,8 @@ header{
  border-bottom:1px solid var(--border);
  box-shadow:0 4px 12px rgba(0,0,0,.04);
  gap:12px;
+ position:relative;
+ z-index:5;
 }
 
 .header-left{
@@ -46,7 +61,6 @@ header{
  gap:10px;
 }
 
-/* BOTON HAMBURGUESA */
 #btnMenu{
  background:var(--accent);
  border:none;
@@ -55,15 +69,6 @@ header{
  padding:8px 14px;
  border-radius:10px;
  cursor:pointer;
- width:auto;
-}
-
-@media (max-width:768px){
- #btnMenu{
-   font-size:18px;
-   padding:6px 10px;
-   border-radius:8px;
- }
 }
 
 header h1{
@@ -95,7 +100,7 @@ header button{
  font-weight:600;
 }
 
-/* ================= MENU LATERAL ================= */
+/* ================= MENU LATERAL SLIDER ================= */
 .menu-lateral{
  position:fixed;
  top:0;
@@ -152,12 +157,54 @@ header button{
  color:#fff;
 }
 
-/* ================= VIEWER ================= */
+/* ================= MAPA FULL ================= */
+#mapaBox{
+ width:100%;
+ height:calc(100vh - 72px);
+ position:relative;
+}
+
+#mapa{
+ width:100%;
+ height:100%;
+}
+
+/* ================= DASHBOARD MAPA ================= */
+#dashboardMapa{
+ position:absolute;
+ bottom:20px;
+ left:20px;
+ background:#ffffff;
+ border-radius:14px;
+ padding:14px 16px;
+ box-shadow:0 12px 30px rgba(0,0,0,.18);
+ font-size:13px;
+ z-index:500;
+ max-width:340px;
+}
+
+#dashboardMapa strong{
+ display:block;
+ color:#0f172a;
+ margin-bottom:4px;
+}
+
+#dashboardMapa span{
+ color:#334155;
+}
+
+/* ================= PANEL OCULTO ================= */
+#panel{ display:none; }
+
+/* ================= VISOR ================= */
 .viewer{
  display:none;
  flex-direction:column;
  height:100vh;
  background:#ffffff;
+ position:fixed;
+ inset:0;
+ z-index:9996;
 }
 
 .viewer-header{
@@ -218,7 +265,7 @@ header button{
 @media (max-width:768px){
  header{
    flex-direction:column;
-   align-items:flex-start;
+   height:auto;
  }
  header .right{
    width:100%;
@@ -227,19 +274,28 @@ header button{
  header button{
    width:100%;
  }
+ #mapaBox{
+   height:calc(100vh - 120px);
+ }
+ #dashboardMapa{
+   left:10px;
+   right:10px;
+   bottom:10px;
+   max-width:none;
+ }
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOADER -->
+<!-- ================= LOADER ================= -->
 <div id="progressBar"></div>
 <div id="loadingOverlay">
   <span id="loadingText">Iniciando sistema…</span>
 </div>
 
-<!-- MENU LATERAL -->
+<!-- ================= MENU SLIDER ================= -->
 <div id="menuLateral" class="menu-lateral">
   <div class="menu-header">
     <span>📦 Módulos</span>
@@ -248,28 +304,39 @@ header button{
   <div id="menuModulos" class="menu-items"></div>
 </div>
 
-<!-- HEADER -->
+<!-- ================= HEADER ================= -->
 <header>
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
-    <!-- 🔹 TÍTULO DINÁMICO -->
     <h1 id="tituloSistema">Cargando sistema…</h1>
   </div>
 
   <div class="right">
     <div id="usuario" class="user"></div>
-    <!-- 🔹 EMPRESA DINÁMICA -->
     <div id="conexionInfo" class="user">Conectando…</div>
-
     <button onclick="recargarPanel()" style="background:#3b82f6;">⟳ Recargar</button>
     <button onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
   </div>
 </header>
 
-<!-- PANEL -->
+<!-- ================= MAPA ================= -->
+<div id="mapaBox">
+  <div id="mapa"></div>
+
+  <div id="dashboardMapa">
+    <strong>📍 Dirección</strong>
+    <span id="dirTexto">Detectando…</span>
+    <br><br>
+    <strong>🌐 Red</strong>
+    <span id="netTexto">Detectando…</span>
+    <br><br>
+    <strong>🚀 Velocidad</strong>
+    <span id="speedTexto">Midiendo…</span>
+  </div>
+</div>
+
 <div id="panel"></div>
 
-<!-- VISOR -->
 <div id="viewer" class="viewer">
   <div class="viewer-header">
     <span id="viewerTitle"></span>
@@ -278,8 +345,7 @@ header button{
   <iframe id="frame"></iframe>
 </div>
 
-<!-- ================= JS ================= -->
-<!-- ORDEN IMPORTANTE -->
+<!-- ================= SCRIPTS ================= -->
 <script src="empresa.js"></script>
 <script src="auth.js"></script>
 <script src="main.js"></script>
