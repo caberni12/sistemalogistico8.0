@@ -271,3 +271,74 @@ function cerrarModal(){
 /* CRUD */
 async function cargarEmpresas(){
  btnCargar.classList.add("loading");
+
+ const r=await fetch(API+"?action=listarEmpresas");
+ const d=await r.json();
+
+ tablaEmpresas.innerHTML="";
+ if(d.data){
+  d.data.forEach(e=>{
+   const cls=e.estado==="ACTIVA"?"activa":"inactiva";
+   const tr=document.createElement("tr");
+   tr.innerHTML=`
+    <td data-label="ID">${e.id}</td>
+    <td data-label="Empresa">${e.nombre}</td>
+    <td data-label="RUT">${e.rut}</td>
+    <td data-label="Estado">
+     <span class="badge ${cls}">${e.estado}</span>
+    </td>
+    <td data-label="Acciones">
+     <button class="secondary" onclick='abrirModal(${JSON.stringify(e)})'>✏️</button>
+     <button class="danger" onclick='eliminarEmpresa(${e.id})'>🗑</button>
+    </td>
+   `;
+   tablaEmpresas.appendChild(tr);
+  });
+ }
+
+ btnCargar.classList.remove("loading");
+}
+
+async function guardarEmpresa(){
+ btnGuardar.classList.add("loading");
+
+ const payload={
+  action:empresaId.value?"editarEmpresa":"crearEmpresa",
+  id:empresaId.value,
+  nombre:empresaNombre.value,
+  rut:empresaRut.value,
+  estado:empresaEstado.value
+ };
+
+ const r=await fetch(API,{method:"POST",body:JSON.stringify(payload)});
+ const d=await r.json();
+
+ if(!d.ok) alert(d.msg||"Error");
+
+ btnGuardar.classList.remove("loading");
+ cerrarModal();
+ cargarEmpresas();
+}
+
+async function eliminarEmpresa(id){
+ if(!confirm("¿Marcar como INACTIVA?")) return;
+
+ const r=await fetch(API,{
+  method:"POST",
+  body:JSON.stringify({action:"eliminarEmpresa",id})
+ });
+
+ const d=await r.json();
+ if(!d.ok) alert(d.msg||"Error");
+
+ cargarEmpresas();
+}
+
+/* INIT */
+cargarEmpresas();
+</script>
+
+<script src="auth.js"></script>
+<script src="segurity.js"></script>
+</body>
+</html>
