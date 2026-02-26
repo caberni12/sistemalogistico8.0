@@ -5,10 +5,6 @@
 <title>Panel Logístico Integrado</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- ================= LEAFLET ================= -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <style>
 :root{
  --bg:#f1f5f9;
@@ -26,33 +22,25 @@
  font-family:system-ui,Arial,sans-serif;
 }
 
-html,body{
+body{
  margin:0;
- padding:0;
- height:100%;
  background:var(--bg);
  color:var(--text);
-}
-
-/* 🔥 CLAVE: ELIMINA EL MARCADOR ROJO DE LEAFLET 🔥 */
-.leaflet-div-icon{
-  background:none !important;
-  border:none !important;
+ min-height:100vh;
+ display:flex;
+ flex-direction:column;
 }
 
 /* ================= HEADER ================= */
 header{
- height:72px;
  display:flex;
  align-items:center;
  justify-content:space-between;
- padding:14px 18px;
- background:#ffffff;
+ padding:12px 16px;
+ background:#fff;
  border-bottom:1px solid var(--border);
  box-shadow:0 4px 12px rgba(0,0,0,.04);
  gap:12px;
- position:relative;
- z-index:5;
 }
 
 .header-left{
@@ -61,33 +49,40 @@ header{
  gap:10px;
 }
 
+/* BOTÓN HAMBURGUESA */
 #btnMenu{
  background:var(--accent);
  border:none;
  color:#fff;
  font-size:20px;
- padding:8px 14px;
+ width:42px;
+ height:42px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
  border-radius:10px;
  cursor:pointer;
+ padding:0;
 }
 
 header h1{
  margin:0;
  font-size:18px;
  font-weight:700;
+ white-space:nowrap;
 }
 
 header .right{
  display:flex;
- gap:14px;
+ gap:12px;
  align-items:center;
- flex-wrap:wrap;
 }
 
 header .user{
  font-size:13px;
  color:var(--muted);
- line-height:1.4;
+ line-height:1.3;
+ text-align:right;
 }
 
 header button{
@@ -100,14 +95,14 @@ header button{
  font-weight:600;
 }
 
-/* ================= MENU LATERAL SLIDER ================= */
+/* ================= MENU LATERAL ================= */
 .menu-lateral{
  position:fixed;
  top:0;
  left:-300px;
  width:300px;
  height:100vh;
- background:#ffffff;
+ background:#fff;
  box-shadow:4px 0 24px rgba(0,0,0,.18);
  transition:.35s ease;
  z-index:9997;
@@ -139,7 +134,6 @@ header button{
  flex-direction:column;
  gap:10px;
  overflow-y:auto;
- max-height:calc(100vh - 80px);
 }
 
 .menu-item{
@@ -157,54 +151,12 @@ header button{
  color:#fff;
 }
 
-/* ================= MAPA FULL ================= */
-#mapaBox{
- width:100%;
- height:calc(100vh - 72px);
- position:relative;
-}
-
-#mapa{
- width:100%;
- height:100%;
-}
-
-/* ================= DASHBOARD MAPA ================= */
-#dashboardMapa{
- position:absolute;
- bottom:20px;
- left:20px;
- background:#ffffff;
- border-radius:14px;
- padding:14px 16px;
- box-shadow:0 12px 30px rgba(0,0,0,.18);
- font-size:13px;
- z-index:500;
- max-width:340px;
-}
-
-#dashboardMapa strong{
- display:block;
- color:#0f172a;
- margin-bottom:4px;
-}
-
-#dashboardMapa span{
- color:#334155;
-}
-
-/* ================= PANEL OCULTO ================= */
-#panel{ display:none; }
-
-/* ================= VISOR ================= */
+/* ================= VIEWER ================= */
 .viewer{
  display:none;
  flex-direction:column;
  height:100vh;
- background:#ffffff;
- position:fixed;
- inset:0;
- z-index:9996;
+ background:#fff;
 }
 
 .viewer-header{
@@ -263,41 +215,36 @@ header button{
 
 /* ================= MOBILE ================= */
 @media (max-width:768px){
+
  header{
-   flex-direction:column;
-   height:auto;
+   flex-direction:row;
+   align-items:center;
  }
+
+ header h1{
+   font-size:16px;
+ }
+
  header .right{
    width:100%;
-   flex-direction:column;
- }
- header button{
-   width:100%;
- }
- #mapaBox{
-   height:calc(100vh - 120px);
- }
- #dashboardMapa{
-   left:10px;
-   right:10px;
-   bottom:10px;
-   max-width:none;
- }
-}
-
- 
-/* ================= MOBILE ================= */
-@media (max-width:768px){
- header{
    flex-direction:column;
    align-items:flex-start;
+   gap:6px;
  }
- header .right{
-   width:100%;
-   flex-direction:column;
+
+ header .user{
+   text-align:left;
  }
+
  header button{
    width:100%;
+ }
+
+ #btnMenu{
+   width:38px;
+   height:38px;
+   font-size:18px;
+   border-radius:8px;
  }
 }
 </style>
@@ -305,13 +252,13 @@ header button{
 
 <body>
 
-<!-- ================= LOADER ================= -->
+<!-- LOADER -->
 <div id="progressBar"></div>
 <div id="loadingOverlay">
   <span id="loadingText">Iniciando sistema…</span>
 </div>
 
-<!-- ================= MENU SLIDER ================= -->
+<!-- MENU LATERAL -->
 <div id="menuLateral" class="menu-lateral">
   <div class="menu-header">
     <span>📦 Módulos</span>
@@ -320,7 +267,7 @@ header button{
   <div id="menuModulos" class="menu-items"></div>
 </div>
 
-<!-- ================= HEADER ================= -->
+<!-- HEADER -->
 <header>
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
@@ -330,29 +277,16 @@ header button{
   <div class="right">
     <div id="usuario" class="user"></div>
     <div id="conexionInfo" class="user">Conectando…</div>
+
     <button onclick="recargarPanel()" style="background:#3b82f6;">⟳ Recargar</button>
     <button onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
   </div>
 </header>
 
-<!-- ================= MAPA ================= -->
-<div id="mapaBox">
-  <div id="mapa"></div>
-
-  <div id="dashboardMapa">
-    <strong>📍 Dirección</strong>
-    <span id="dirTexto">Detectando…</span>
-    <br><br>
-    <strong>🌐 Red</strong>
-    <span id="netTexto">Detectando…</span>
-    <br><br>
-    <strong>🚀 Velocidad</strong>
-    <span id="speedTexto">Midiendo…</span>
-  </div>
-</div>
-
+<!-- PANEL -->
 <div id="panel"></div>
 
+<!-- VISOR -->
 <div id="viewer" class="viewer">
   <div class="viewer-header">
     <span id="viewerTitle"></span>
@@ -361,12 +295,11 @@ header button{
   <iframe id="frame"></iframe>
 </div>
 
-<!-- ================= SCRIPTS ================= -->
+<!-- ================= JS ================= -->
 <script src="empresa.js"></script>
 <script src="auth.js"></script>
 <script src="main.js"></script>
 <script src="segurity.js"></script>
 
 </body>
-
 </html>
