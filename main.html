@@ -58,20 +58,10 @@ button{
  box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
 
-button:hover{
- transform:translateY(-1px);
- box-shadow:0 10px 26px rgba(0,0,0,.18);
-}
-
 button:active{ transform:scale(.97); }
 
 .btn-primary{
  background:linear-gradient(135deg,#60a5fa,#2563eb);
- color:#fff;
-}
-
-.btn-accent{
- background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
 }
 
@@ -92,32 +82,33 @@ header{
  display:flex;
  align-items:center;
  justify-content:space-between;
- padding:14px 18px;
+ padding:12px 16px;
  background:#fff;
  border-bottom:1px solid var(--border);
- box-shadow:0 6px 20px rgba(0,0,0,.06);
+ box-shadow:0 4px 14px rgba(0,0,0,.06);
  z-index:10;
 }
 
 .header-left{
  display:flex;
  align-items:center;
- gap:12px;
+ gap:10px;
 }
 
+/* Hamburguesa */
 #btnMenu{
- width:42px;
- height:42px;
+ width:40px;
+ height:40px;
  padding:0;
  font-size:20px;
  background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
- flex:0 0 auto;
+ flex-shrink:0;
 }
 
 header h1{
  margin:0;
- font-size:18px;
+ font-size:17px;
  font-weight:700;
  white-space:nowrap;
 }
@@ -129,12 +120,12 @@ header .right{
 }
 
 header .user{
- font-size:13px;
+ font-size:12px;
  color:var(--muted);
- line-height:1.3;
+ line-height:1.2;
 }
 
-/* ================= MENU LATERAL ================= */
+/* ================= MENU ================= */
 .menu-lateral{
  position:fixed;
  top:0;
@@ -172,18 +163,11 @@ header .user{
  padding:14px;
  border-radius:var(--radius);
  background:var(--hover);
- cursor:pointer;
  font-weight:600;
- transition:.2s;
+ cursor:pointer;
 }
 
-.menu-item:hover{
- background:linear-gradient(135deg,#2dd4bf,#0d9488);
- color:#fff;
- transform:translateX(4px);
-}
-
-/* ================= MAPA PRINCIPAL ================= */
+/* ================= MAPA ================= */
 #mapaBox{
  position:relative;
  width:100%;
@@ -198,20 +182,20 @@ header .user{
 /* ================= DASHBOARD ================= */
 #dashboardMapa{
  position:absolute;
- bottom:20px;
- left:20px;
+ bottom:16px;
+ left:16px;
+ right:16px;
  background:#fff;
  border-radius:16px;
- padding:16px 18px;
- box-shadow:0 20px 40px rgba(0,0,0,.25);
- font-size:13px;
- max-width:340px;
+ padding:14px 16px;
+ box-shadow:0 14px 30px rgba(0,0,0,.22);
+ font-size:12px;
  z-index:500;
 }
 
-/* ================= VISOR (🔥 CORREGIDO 🔥) ================= */
+/* ================= VISOR ================= */
 .viewer{
- display:none;            /* 🔴 AHORA SÍ SE OCULTA */
+ display:none;
  position:fixed;
  inset:0;
  height:100vh;
@@ -222,56 +206,57 @@ header .user{
 }
 
 .viewer-header{
- height:56px;
- padding:0 16px;
+ height:52px;
+ padding:0 14px;
  border-bottom:1px solid var(--border);
  display:flex;
  align-items:center;
  justify-content:space-between;
- background:#fff;
 }
 
 .viewer iframe{
  flex:1;
  width:100%;
- height:calc(100vh - 56px);
+ height:calc(100vh - 52px);
  border:none;
 }
 
-/* ================= LOADER ================= */
-#progressBar{
- position:fixed;
- top:0;
- left:0;
- height:3px;
- width:0%;
- background:linear-gradient(90deg,#3b82f6,#14b8a6);
- z-index:9999;
- display:none;
-}
-
-#loadingOverlay{
- position:fixed;
- inset:0;
- background:rgba(241,245,249,.92);
- backdrop-filter:blur(4px);
- z-index:9998;
- display:none;
- align-items:center;
- justify-content:center;
- font-weight:600;
-}
-
-/* ================= MOBILE ================= */
+/* ================= MOBILE FIX ================= */
 @media (max-width:768px){
+
  header{
    flex-direction:column;
+   align-items:flex-start;
    height:auto;
-   gap:10px;
+   gap:8px;
  }
 
- .header-left,
- .right{
+ .header-left{
+   width:100%;
+   justify-content:flex-start;
+ }
+
+ header h1{
+   font-size:15px;
+ }
+
+ /* 🔥 INFO SUPERIOR EN UNA SOLA FILA */
+ .header-info{
+   width:100%;
+   display:flex;
+   justify-content:space-between;
+   align-items:center;
+   gap:8px;
+ }
+
+ header .right{
+   width:100%;
+   display:flex;
+   flex-direction:column;
+   gap:8px;
+ }
+
+ header .right button{
    width:100%;
  }
 
@@ -281,19 +266,8 @@ header .user{
    font-size:18px;
  }
 
- header h1{ font-size:16px; }
-
- .right button{ width:100%; }
-
  #mapaBox{
-   height:calc(100vh - 120px);
- }
-
- #dashboardMapa{
-   left:10px;
-   right:10px;
-   bottom:10px;
-   max-width:none;
+   height:calc(100vh - 128px);
  }
 }
 </style>
@@ -318,9 +292,13 @@ header .user{
     <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
-  <div class="right">
+  <!-- INFO COMPACTA -->
+  <div class="header-info">
     <div id="usuario" class="user"></div>
     <div id="conexionInfo" class="user"></div>
+  </div>
+
+  <div class="right">
     <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
     <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
   </div>
@@ -344,7 +322,7 @@ header .user{
 <div id="viewer" class="viewer">
   <div class="viewer-header">
     <span id="viewerTitle"></span>
-    <button class="btn-accent" onclick="volver()">⬅ Volver</button>
+    <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
   </div>
   <iframe id="frame"></iframe>
 </div>
