@@ -247,3 +247,14 @@ function cerrarSesion(){
   localStorage.clear();
   location.href = "index.html";
 }
+
+/* =====================================================
+   DASHBOARD TOGGLE (+ / -)
+===================================================== */
+function toggleDashboard(){
+  const dash = document.getElementById("dashboardMapa");
+  const btn  = document.getElementById("btnToggleDash");
+
+  const cerrado = dash.classList.toggle("collapsed");
+  btn.textContent = cerrado ? "+" : "−";
+}
