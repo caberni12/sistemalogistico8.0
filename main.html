@@ -12,20 +12,19 @@
 <style>
 :root{
  --bg:#f1f5f9;
+ --card:#ffffff;
+ --hover:#f8fafc;
  --text:#0f172a;
  --muted:#64748b;
+ --accent:#14b8a6;
  --primary:#3b82f6;
  --danger:#ef4444;
  --border:#e2e8f0;
  --radius:12px;
- --header-h:72px;
 }
 
 /* RESET */
-*{
- box-sizing:border-box;
- font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-}
+*{ box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
 
 html,body{
  margin:0;
@@ -33,9 +32,13 @@ html,body{
  height:100%;
  background:var(--bg);
  color:var(--text);
+ overflow:hidden;
 }
 
-/* BOTONES */
+/* Leaflet fix */
+.leaflet-div-icon{ background:none!important; border:none!important; }
+
+/* ================= BOTONES ================= */
 button{
  border:none;
  border-radius:var(--radius);
@@ -46,39 +49,27 @@ button{
  align-items:center;
  justify-content:center;
  gap:8px;
+ transition:.25s ease;
  box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
+button:active{ transform:scale(.97); }
 
-.btn-primary{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;}
-.btn-danger{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff;}
-.btn-ghost{background:#fff;border:1px solid var(--border);box-shadow:none;}
+.btn-primary{ background:linear-gradient(135deg,#60a5fa,#2563eb); color:#fff; }
+.btn-danger{ background:linear-gradient(135deg,#f87171,#dc2626); color:#fff; }
+.btn-ghost{ background:#fff; border:1px solid var(--border); box-shadow:none; }
 
-/* HEADER */
+/* ================= HEADER ================= */
 header{
- position:fixed;
- top:0; left:0; right:0;
- height:var(--header-h);
- background:#fff;
+ min-height:72px;
  display:flex;
- flex-direction:column;
- padding:8px 16px;
+ flex-wrap:wrap;
+ align-items:center;
+ justify-content:space-between;
+ padding:12px 16px;
+ background:#fff;
  border-bottom:1px solid var(--border);
  box-shadow:0 4px 14px rgba(0,0,0,.06);
- z-index:1000;
- transition:.3s ease;
-}
-
-header.oculto{
- height:0;
- padding:0;
- overflow:hidden;
-}
-
-.header-top{
- display:flex;
- justify-content:space-between;
- align-items:center;
- gap:10px;
+ z-index:20;
 }
 
 .header-left{
@@ -92,39 +83,36 @@ header.oculto{
  height:40px;
  padding:0;
  font-size:20px;
- display:flex;
- align-items:center;
- justify-content:center;
  background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
+ flex-shrink:0;
 }
 
 header h1{
  margin:0;
- font-size:16px;
+ font-size:17px;
+ font-weight:700;
+ white-space:nowrap;
 }
 
-.header-right{
+.header-info{
  display:flex;
- gap:10px;
+ gap:12px;
+ align-items:center;
 }
 
-.user{
+header .user{
  font-size:12px;
  color:var(--muted);
+ line-height:1.2;
 }
 
-/* BOTÓN OCULTAR HEADER */
-#toggleHeader{
- position:fixed;
- top:10px;
- right:10px;
- z-index:2000;
- padding:8px 10px;
- font-size:14px;
+header .right{
+ display:flex;
+ gap:12px;
 }
 
-/* MENU */
+/* ================= MENU ================= */
 .menu-lateral{
  position:fixed;
  top:0;
@@ -134,12 +122,12 @@ header h1{
  background:#fff;
  box-shadow:6px 0 28px rgba(0,0,0,.18);
  transition:.35s ease;
- z-index:1500;
+ z-index:9997;
  display:flex;
  flex-direction:column;
 }
 
-.menu-lateral.open{left:0;}
+.menu-lateral.open{ left:0; }
 
 .menu-header{
  padding:16px;
@@ -161,32 +149,24 @@ header h1{
 .menu-item{
  padding:14px;
  border-radius:var(--radius);
- background:#f8fafc;
+ background:var(--hover);
  font-weight:600;
  cursor:pointer;
 }
 
-/* MAPA */
+/* ================= MAPA ================= */
 #mapaBox{
- margin-top:var(--header-h);
- height:calc(100vh - var(--header-h));
- transition:.3s ease;
  position:relative;
+ width:100%;
+ height:calc(100vh - 72px);
 }
 
-header.oculto ~ #mapaBox{
- margin-top:0;
- height:100vh;
+#mapa{
+ width:100%;
+ height:100%;
 }
 
-#mapa{width:100%;height:100%;}
-
-/* LEAFLET FIX */
-.leaflet-top{
- top:calc(var(--header-h) + 8px) !important;
-}
-
-/* DASHBOARD */
+/* ================= DASHBOARD ================= */
 #dashboardMapa{
  position:absolute;
  bottom:16px;
@@ -194,57 +174,105 @@ header.oculto ~ #mapaBox{
  right:16px;
  background:#fff;
  border-radius:16px;
- padding:14px;
- font-size:12px;
+ padding:14px 16px;
  box-shadow:0 14px 30px rgba(0,0,0,.22);
+ font-size:12px;
+ z-index:500;
 }
 
-/* VISOR */
+/* ================= VISOR ================= */
 .viewer{
  display:none;
  position:fixed;
- top:var(--header-h);
- left:0; right:0; bottom:0;
+ inset:0;
+ height:100vh;
  background:#fff;
- z-index:1200;
+ z-index:9996;
+ flex-direction:column;
 }
 
-.viewer iframe{width:100%;height:100%;border:none;}
+.viewer-header{
+ height:52px;
+ padding:0 14px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+}
 
-/* LOADER */
+.viewer iframe{
+ flex:1;
+ width:100%;
+ height:calc(100vh - 52px);
+ border:none;
+}
+
+/* ================= LOADER ================= */
 #loadingOverlay{
  position:fixed;
  inset:0;
  background:rgba(241,245,249,.92);
- z-index:3000;
+ backdrop-filter:blur(4px);
+ z-index:10000;
  display:none;
  align-items:center;
  justify-content:center;
  font-weight:600;
+ font-size:16px;
 }
 
 #progressBar{
  position:fixed;
- top:0; left:0;
+ top:0;
+ left:0;
  height:3px;
  width:0%;
  background:linear-gradient(90deg,#3b82f6,#14b8a6);
- z-index:3001;
+ z-index:10001;
  display:none;
 }
 
-/* MOBILE */
-@media(max-width:768px){
- header{gap:6px;}
- .header-right{flex-direction:column;}
+/* ================= MOBILE ================= */
+@media (max-width:768px){
+
+ header{
+   flex-direction:column;
+   align-items:flex-start;
+   gap:8px;
+ }
+
+ .header-left,
+ .header-info,
+ .right{
+   width:100%;
+ }
+
+ .header-info{
+   justify-content:space-between;
+ }
+
+ .right{
+   flex-direction:column;
+ }
+
+ .right button{
+   width:100%;
+ }
+
+ #btnMenu{
+   width:36px;
+   height:36px;
+   font-size:18px;
+ }
+
+ #mapaBox{
+   height:calc(100vh - 128px);
+ }
 }
 </style>
 </head>
 
 <body>
-
-<!-- BOTÓN OCULTAR HEADER -->
-<button id="toggleHeader" class="btn-ghost" onclick="toggleHeader()">👁</button>
 
 <!-- LOADER -->
 <div id="loadingOverlay">Iniciando sistema…</div>
@@ -260,45 +288,46 @@ header.oculto ~ #mapaBox{
 </div>
 
 <!-- HEADER -->
-<header id="mainHeader">
-  <div class="header-top">
-    <div class="header-left">
-      <button id="btnMenu" onclick="toggleMenu()">☰</button>
-      <button id="btnVolver" class="btn-ghost" onclick="volver()" style="display:none">⬅</button>
-      <h1 id="tituloSistema">Panel Logístico</h1>
-    </div>
-    <div class="header-right">
-      <button class="btn-primary" onclick="recargarPanel()">⟳</button>
-      <button class="btn-danger" onclick="cerrarSesion()">⏻</button>
-    </div>
+<header>
+  <div class="header-left">
+    <button id="btnMenu" onclick="toggleMenu()">☰</button>
+    <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
-  <div class="user">
-    <span id="usuario"></span> · <span id="conexionInfo"></span>
+
+  <div class="header-info">
+    <div id="usuario" class="user"></div>
+    <div id="conexionInfo" class="user"></div>
+  </div>
+
+  <div class="right">
+    <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
+    <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
   </div>
 </header>
 
 <!-- MAPA -->
 <div id="mapaBox">
   <div id="mapa"></div>
+
   <div id="dashboardMapa">
-    <div><strong>📍 Dirección:</strong> <span id="dirTexto">Detectando…</span></div>
-    <div><strong>🌐 Red:</strong> <span id="netTexto">Detectando…</span></div>
-    <div><strong>🚀 Velocidad:</strong> <span id="speedTexto">0 km/h</span></div>
+    <strong>📍 Dirección</strong>
+    <span id="dirTexto">Detectando…</span><br><br>
+    <strong>🌐 Red</strong>
+    <span id="netTexto">Detectando…</span><br><br>
+    <strong>🚀 Velocidad</strong>
+    <span id="speedTexto">0 km/h</span>
   </div>
 </div>
 
 <!-- VISOR -->
 <div id="viewer" class="viewer">
+  <div class="viewer-header">
+    <span id="viewerTitle"></span>
+    <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
+  </div>
   <iframe id="frame"></iframe>
 </div>
 
-<script>
-function toggleHeader(){
- document.getElementById("mainHeader").classList.toggle("oculto");
-}
-</script>
-
-<!-- TUS SCRIPTS -->
 <script src="empresa.js"></script>
 <script src="auth.js"></script>
 <script src="main.js"></script>
