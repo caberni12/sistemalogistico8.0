@@ -2,359 +2,272 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Panel Logístico Integrado</title>
+<title>Gestión de Empresas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<!-- LEAFLET -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 :root{
  --bg:#f1f5f9;
  --card:#ffffff;
- --hover:#f8fafc;
  --text:#0f172a;
  --muted:#64748b;
  --accent:#14b8a6;
- --primary:#3b82f6;
- --danger:#ef4444;
  --border:#e2e8f0;
- --radius:12px;
+ --danger:#ef4444;
 }
 
-/* RESET */
-*{
- box-sizing:border-box;
- font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-}
+*{ box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
 
-html,body{
- margin:0;
- padding:0;
- height:100%;
- background:var(--bg);
- color:var(--text);
-}
+body{ margin:0; background:var(--bg); color:var(--text); }
 
-/* Leaflet fix */
-.leaflet-div-icon{
- background:none !important;
- border:none !important;
-}
-
-/* ================= BOTONES ================= */
-button{
- border:none;
- border-radius:var(--radius);
- padding:10px 16px;
- font-weight:600;
- cursor:pointer;
- display:inline-flex;
- align-items:center;
- justify-content:center;
- gap:8px;
- transition:.25s ease;
- box-shadow:0 6px 18px rgba(0,0,0,.12);
-}
-
-button:active{ transform:scale(.97); }
-
-.btn-primary{
- background:linear-gradient(135deg,#60a5fa,#2563eb);
- color:#fff;
-}
-
-.btn-danger{
- background:linear-gradient(135deg,#f87171,#dc2626);
- color:#fff;
-}
-
-.btn-ghost{
- background:#fff;
- border:1px solid var(--border);
- box-shadow:none;
-}
-
-/* ================= HEADER ================= */
 header{
- height:72px;
- display:flex;
- align-items:center;
- justify-content:space-between;
- padding:12px 16px;
+ padding:16px 20px;
  background:#fff;
  border-bottom:1px solid var(--border);
- box-shadow:0 4px 14px rgba(0,0,0,.06);
- z-index:10;
+ font-weight:700;
+ box-shadow:0 4px 12px rgba(0,0,0,.05);
 }
 
-.header-left{
+.container{
+ max-width:1200px;
+ margin:auto;
+ padding:24px;
+}
+
+.flex{
  display:flex;
+ justify-content:space-between;
  align-items:center;
  gap:10px;
+ flex-wrap:wrap;
 }
 
-#btnMenu{
- width:40px;
- height:40px;
- padding:0;
- font-size:20px;
- background:linear-gradient(135deg,#2dd4bf,#0d9488);
+.mt{ margin-top:16px; }
+
+/* BOTONES + LOADER */
+button{
+ background:var(--accent);
  color:#fff;
- flex-shrink:0;
-}
-
-header h1{
- margin:0;
- font-size:17px;
- font-weight:700;
- white-space:nowrap;
-}
-
-header .right{
- display:flex;
- align-items:center;
- gap:12px;
-}
-
-header .user{
- font-size:12px;
- color:var(--muted);
- line-height:1.2;
-}
-
-/* ================= MENU ================= */
-.menu-lateral{
- position:fixed;
- top:0;
- left:-300px;
- width:300px;
- height:100vh;
- background:#fff;
- box-shadow:6px 0 28px rgba(0,0,0,.18);
- transition:.35s ease;
- z-index:9997;
- display:flex;
- flex-direction:column;
-}
-
-.menu-lateral.open{ left:0; }
-
-.menu-header{
- padding:16px;
- border-bottom:1px solid var(--border);
- display:flex;
- justify-content:space-between;
- align-items:center;
- font-weight:700;
-}
-
-.menu-items{
- padding:14px;
- display:flex;
- flex-direction:column;
- gap:10px;
- overflow-y:auto;
-}
-
-.menu-item{
- padding:14px;
- border-radius:var(--radius);
- background:var(--hover);
- font-weight:600;
- cursor:pointer;
-}
-
-/* ================= MAPA ================= */
-#mapaBox{
- position:relative;
- width:100%;
- height:calc(100vh - 72px);
-}
-
-#mapa{
- width:100%;
- height:100%;
-}
-
-/* ================= DASHBOARD ================= */
-#dashboardMapa{
- position:absolute;
- bottom:16px;
- left:16px;
- right:16px;
- background:#fff;
- border-radius:16px;
- padding:14px 16px;
- box-shadow:0 14px 30px rgba(0,0,0,.22);
- font-size:12px;
- z-index:500;
-}
-
-/* ================= VISOR ================= */
-.viewer{
- display:none;
- position:fixed;
- inset:0;
- height:100vh;
- background:#fff;
- z-index:9996;
- flex-direction:column;
- overflow:hidden;
-}
-
-.viewer-header{
- height:52px;
- padding:0 14px;
- border-bottom:1px solid var(--border);
- display:flex;
- align-items:center;
- justify-content:space-between;
-}
-
-.viewer iframe{
- flex:1;
- width:100%;
- height:calc(100vh - 52px);
  border:none;
-}
-
-/* ================= LOADER (🔥 CORREGIDO 🔥) ================= */
-#loadingOverlay{
- position:fixed;
- inset:0;
- background:rgba(241,245,249,.92);
- backdrop-filter:blur(4px);
- z-index:9999;
- display:none;
- align-items:center;
- justify-content:center;
- text-align:center;
+ padding:10px 14px;
+ border-radius:8px;
+ cursor:pointer;
  font-weight:600;
- font-size:16px;
+ position:relative;
 }
 
-#progressBar{
- position:fixed;
- top:0;
- left:0;
- height:3px;
- width:0%;
- background:linear-gradient(90deg,#3b82f6,#14b8a6);
- z-index:10000;
- display:none;
+button.secondary{ background:#3b82f6; }
+button.danger{ background:var(--danger); }
+
+button.loading{
+ pointer-events:none;
+ opacity:.7;
 }
 
-/* ================= MOBILE ================= */
+button.loading::after{
+ content:"";
+ width:16px;
+ height:16px;
+ border:2px solid #fff;
+ border-top-color:transparent;
+ border-radius:50%;
+ position:absolute;
+ right:10px;
+ top:50%;
+ transform:translateY(-50%);
+ animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+ to{ transform:translateY(-50%) rotate(360deg); }
+}
+
+/* TABLA DESKTOP */
+table{
+ width:100%;
+ border-collapse:collapse;
+ background:#fff;
+ border-radius:14px;
+ overflow:hidden;
+ box-shadow:0 6px 18px rgba(0,0,0,.06);
+}
+
+th,td{
+ padding:12px;
+ border-bottom:1px solid var(--border);
+ font-size:14px;
+}
+
+th{ background:#f8fafc; }
+
+.badge{
+ padding:4px 10px;
+ border-radius:20px;
+ font-size:12px;
+ font-weight:600;
+}
+
+.activa{ background:#dcfce7; color:#166534; }
+.inactiva{ background:#fee2e2; color:#991b1b; }
+
+/* ================================
+   TABLA → TARJETAS (MÓVIL)
+================================ */
 @media (max-width:768px){
 
- header{
-   flex-direction:column;
-   align-items:flex-start;
-   height:auto;
-   gap:8px;
+ table, thead, tbody, th, tr{
+  display:block;
  }
 
- .header-left{
-   width:100%;
+ thead{ display:none; }
+
+ tbody tr{
+  background:#fff;
+  margin-bottom:14px;
+  border-radius:16px;
+  box-shadow:0 6px 16px rgba(0,0,0,.08);
+  padding:14px;
  }
 
- header h1{
-   font-size:15px;
+ tbody td{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 0;
+  border:none;
  }
 
- .header-info{
-   width:100%;
-   display:flex;
-   justify-content:space-between;
+ tbody td::before{
+  content:attr(data-label);
+  font-weight:600;
+  color:var(--muted);
  }
 
- header .right{
-   width:100%;
-   flex-direction:column;
-   gap:8px;
+ tbody td:last-child{
+  justify-content:flex-end;
+  gap:8px;
  }
+}
 
- header .right button{
-   width:100%;
- }
+/* MODAL */
+.modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.45);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:999;
+}
 
- #btnMenu{
-   width:36px;
-   height:36px;
-   font-size:18px;
- }
+.modal-content{
+ background:#fff;
+ padding:22px;
+ border-radius:16px;
+ width:100%;
+ max-width:420px;
+}
 
- #mapaBox{
-   height:calc(100vh - 128px);
- }
+.modal label{
+ display:block;
+ font-size:13px;
+ margin-top:12px;
+ color:var(--muted);
+}
+
+.modal input,
+.modal select{
+ width:100%;
+ padding:10px;
+ margin-top:4px;
+ border-radius:8px;
+ border:1px solid var(--border);
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOADER -->
-<div id="loadingOverlay">Iniciando sistema…</div>
-<div id="progressBar"></div>
+<header>🏢 Gestión de Empresas</header>
 
-<!-- MENU -->
-<div id="menuLateral" class="menu-lateral">
-  <div class="menu-header">
-    <span>📦 Panel de Gestión</span>
-    <button class="btn-ghost" onclick="toggleMenu()">✕</button>
+<div class="container">
+
+ <div class="flex">
+  <h2>Empresas Registradas</h2>
+  <div class="flex">
+   <button id="btnCargar" class="secondary" onclick="cargarEmpresas()">⟳ Recargar</button>
+   <button onclick="abrirModal()">＋ Nueva Empresa</button>
   </div>
-  <div id="menuModulos" class="menu-items"></div>
+ </div>
+
+ <div class="mt">
+  <table>
+   <thead>
+    <tr>
+     <th>ID</th>
+     <th>Empresa</th>
+     <th>RUT</th>
+     <th>Estado</th>
+     <th>Acciones</th>
+    </tr>
+   </thead>
+   <tbody id="tablaEmpresas"></tbody>
+  </table>
+ </div>
+
 </div>
 
-<!-- HEADER -->
-<header>
-  <div class="header-left">
-    <button id="btnMenu" onclick="toggleMenu()">☰</button>
-    <h1 id="tituloSistema">Panel Logístico</h1>
+<!-- MODAL -->
+<div id="modalEmpresa" class="modal">
+ <div class="modal-content">
+  <h3 id="modalTitulo">Nueva Empresa</h3>
+
+  <input type="hidden" id="empresaId">
+
+  <label>Nombre Empresa</label>
+  <input id="empresaNombre">
+
+  <label>RUT</label>
+  <input id="empresaRut">
+
+  <label>Estado</label>
+  <select id="empresaEstado">
+   <option value="ACTIVA">ACTIVA</option>
+   <option value="INACTIVA">INACTIVA</option>
+  </select>
+
+  <div class="flex mt">
+   <button id="btnGuardar" onclick="guardarEmpresa()">💾 Guardar</button>
+   <button class="danger" onclick="cerrarModal()">Cancelar</button>
   </div>
-
-  <div class="header-info">
-    <div id="usuario" class="user"></div>
-    <div id="conexionInfo" class="user"></div>
-  </div>
-
-  <div class="right">
-    <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
-    <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
-  </div>
-</header>
-
-<!-- MAPA -->
-<div id="mapaBox">
-  <div id="mapa"></div>
-
-  <div id="dashboardMapa">
-    <strong>📍 Dirección</strong>
-    <span id="dirTexto">Detectando…</span><br><br>
-
-    <strong>🌐 Red</strong>
-    <span id="netTexto">Detectando…</span><br><br>
-
-    <strong>🚀 Velocidad</strong>
-    <span id="speedTexto">0 km/h</span>
-  </div>
+ </div>
 </div>
 
-<!-- VISOR -->
-<div id="viewer" class="viewer">
-  <div class="viewer-header">
-    <span id="viewerTitle"></span>
-    <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
-  </div>
-  <iframe id="frame"></iframe>
-</div>
+<script>
+const API="https://script.google.com/macros/s/AKfycbyxZ90bDIdYBJjpDIA_g5ha3_MwXPbgV7x0xRx01ypisR0jzJzsPssgX8Bfp1VJoB9v/exec";
 
-<script src="empresa.js"></script>
-<script src="auth.js"></script>
-<script src="main.js"></script>
-<script src="segurity.js"></script>
+/* MODAL */
+function abrirModal(e=null){
+ modalEmpresa.style.display="flex";
+ if(e){
+  modalTitulo.textContent="Editar Empresa";
+  empresaId.value=e.id;
+  empresaNombre.value=e.nombre;
+  empresaRut.value=e.rut;
+  empresaEstado.value=e.estado;
+ }else{
+  modalTitulo.textContent="Nueva Empresa";
+  empresaId.value="";
+  empresaNombre.value="";
+  empresaRut.value="";
+  empresaEstado.value="ACTIVA";
+ }
+}
 
-</body>
-</html>
+function cerrarModal(){
+ modalEmpresa.style.display="none";
+}
+
+/* CRUD */
+async function cargarEmpresas(){
+ btnCargar.classList.add("loading");
