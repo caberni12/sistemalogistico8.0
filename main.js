@@ -10,6 +10,7 @@ let MODULO_ACTIVO = null;
 /* ===== MAPA / TRACKING ===== */
 let MAPA = null;
 let MARCADOR = null;
+let CIRCULO = null;
 let WATCH_ID = null;
 let LAST_GEOCODE = 0;
 
@@ -41,139 +42,90 @@ const ICONO_ESTATICO = L.divIcon({
 });
 
 /* =====================================================
-   MENÚ
+   TOASTS (ALERTAS MODERNAS)
 ===================================================== */
-function toggleMenu(){
-  document.getElementById("menuLateral")?.classList.toggle("open");
+function toast(msg,type="info"){
+  let box=document.getElementById("toastBox");
+  if(!box){
+    box=document.createElement("div");
+    box.id="toastBox";
+    box.style.cssText=`
+      position:fixed;top:20px;right:20px;z-index:99999;
+      display:flex;flex-direction:column;gap:10px`;
+    document.body.appendChild(box);
+  }
+  const t=document.createElement("div");
+  const colors={
+    info:"#3b82f6",success:"#16a34a",warning:"#f59e0b",error:"#dc2626"
+  };
+  t.style.cssText=`
+    background:${colors[type]||"#334155"};
+    color:#fff;padding:12px 16px;border-radius:10px;
+    box-shadow:0 10px 25px rgba(0,0,0,.3);
+    font-size:13px;animation:fadein .3s`;
+  t.textContent=msg;
+  box.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
 }
 
 /* =====================================================
-   LOADER
+   BOT FLOTANTE
 ===================================================== */
-function iniciarProgreso(texto="Procesando…"){
-  const bar = document.getElementById("progressBar");
-  const overlay = document.getElementById("loadingOverlay");
-  const txt = document.getElementById("loadingText");
-
-  if(txt) txt.textContent = texto;
-  overlay.style.display = "flex";
-  bar.style.display = "block";
-  bar.style.width = "0%";
-
-  let p = 0;
-  bar._i = setInterval(()=>{
-    p += Math.random()*10;
-    if(p>90) p=90;
-    bar.style.width = p+"%";
-  },150);
-}
-
-function finalizarProgreso(){
-  const bar = document.getElementById("progressBar");
-  const overlay = document.getElementById("loadingOverlay");
-  clearInterval(bar._i);
-  bar.style.width="100%";
-  setTimeout(()=>{
-    bar.style.display="none";
-    overlay.style.display="none";
-    bar.style.width="0%";
-  },300);
+function crearBot(){
+  const b=document.createElement("div");
+  b.textContent="🤖";
+  b.style.cssText=`
+    position:fixed;bottom:20px;right:20px;
+    width:56px;height:56px;border-radius:50%;
+    background:#2563eb;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    z-index:9999`;
+  b.onclick=()=>{
+    toast(
+      `GPS activo · Red ${navigator.connection?.effectiveType||"—"} · Vel ${document.getElementById("speedTexto").textContent}`,
+      "info"
+    );
+  };
+  document.body.appendChild(b);
 }
 
 /* =====================================================
    INIT
 ===================================================== */
 document.addEventListener("DOMContentLoaded", async ()=>{
-
-  window.viewer       = document.getElementById("viewer");
-  window.frame        = document.getElementById("frame");
-  window.viewerTitle  = document.getElementById("viewerTitle");
-  window.menuModulos  = document.getElementById("menuModulos");
-  window.conexionInfo = document.getElementById("conexionInfo");
-
-  iniciarProgreso("Iniciando sistema…");
-
-  if(typeof validarSesionGlobal !== "function"){
-    alert("Error de sesión");
-    cerrarSesion();
-    return;
-  }
-
-  const user = await validarSesionGlobal();
-  if(!user){
-    cerrarSesion();
-    return;
-  }
-
-  document.getElementById("usuario").innerHTML =
-    `👤 ${user.nombre} · ${user.rol}`;
-
-  await cargarMenuSlider(user);
-
-  iniciarMapaTiempoReal();
-  obtenerIP();
-  iniciarReloj();
-
-  finalizarProgreso();
+  crearBot();
+  toast("Sistema iniciado","success");
 });
 
 /* =====================================================
-   MENÚ DINÁMICO
-===================================================== */
-async function cargarMenuSlider(user){
-  const r = await fetch(`${API}?action=listarModulos`);
-  const res = await r.json();
-  menuModulos.innerHTML="";
-
-  if(!Array.isArray(res.data)) return;
-
-  res.data.forEach(m=>{
-    const [id,nombre,archivo,icono,permiso,activo] = m;
-    if(activo!=="SI") return;
-    if(user.rol!=="ADMIN" && !user.permisos.includes(permiso)) return;
-
-    const div = document.createElement("div");
-    div.className="menu-item";
-    div.innerHTML=`${icono||"📦"} ${nombre}`;
-    div.onclick=()=>{
-      abrirModulo(archivo,nombre);
-      toggleMenu();
-    };
-    menuModulos.appendChild(div);
-  });
-}
-
-/* =====================================================
-   VISOR
-===================================================== */
-function abrirModulo(url,titulo){
-  viewer.style.display="flex";
-  frame.src=url;
-  viewerTitle.textContent=titulo;
-}
-
-function volver(){
-  viewer.style.display="none";
-  frame.src="";
-}
-
-/* =====================================================
-   MAPA + DATOS
+   MAPA + DATOS + RADIO
 ===================================================== */
 function iniciarMapaTiempoReal(){
   if(!navigator.geolocation) return;
 
-  WATCH_ID = navigator.geolocation.watchPosition(pos=>{
-    const {latitude:lat, longitude:lng, speed=0, heading=0} = pos.coords;
+  WATCH_ID=navigator.geolocation.watchPosition(pos=>{
+    const {latitude:lat,longitude:lng,speed=0,heading=0}=pos.coords;
 
     if(!MAPA){
-      MAPA = L.map("mapa").setView([lat,lng],16);
+      MAPA=L.map("mapa").setView([lat,lng],16);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
-      MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
+      MARCADOR=L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
+      CIRCULO=L.circle([lat,lng],{radius:50,color:"#2563eb",fillOpacity:.15}).addTo(MAPA);
     }
 
     MARCADOR.setLatLng([lat,lng]);
-    MARCADOR.setIcon(speed>2 ? crearIconoAuto(heading) : ICONO_ESTATICO);
+    MARCADOR.setIcon(speed>2?crearIconoAuto(heading):ICONO_ESTATICO);
+
+    const conn=navigator.connection||{};
+    let radio=50;
+    if(conn.effectiveType==="4g") radio=120;
+    if(conn.effectiveType==="3g") radio=80;
+    if(conn.effectiveType==="2g") radio=40;
+
+    CIRCULO.setLatLng([lat,lng]);
+    CIRCULO.setRadius(radio);
 
     actualizarRedYVelocidad(speed);
 
@@ -189,14 +141,13 @@ function iniciarMapaTiempoReal(){
 ===================================================== */
 async function actualizarDireccionTexto(lat,lng){
   try{
-    const r = await fetch(
+    const r=await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
     );
-    const d = await r.json();
-    document.getElementById("dirTexto").textContent =
-      d.display_name || "Dirección no disponible";
+    const d=await r.json();
+    document.getElementById("dirTexto").textContent=d.display_name||"—";
   }catch{
-    document.getElementById("dirTexto").textContent="Dirección no disponible";
+    document.getElementById("dirTexto").textContent="—";
   }
 }
 
@@ -204,44 +155,21 @@ async function actualizarDireccionTexto(lat,lng){
    RED + VELOCIDAD
 ===================================================== */
 function actualizarRedYVelocidad(speed){
-  const net = document.getElementById("netTexto");
-  const spd = document.getElementById("speedTexto");
-
-  const kmh = (speed*3.6).toFixed(1);
-  const conn = navigator.connection || {};
-  net.textContent = `${navigator.onLine?"Online":"Offline"} · ${conn.effectiveType||"—"}`;
-  spd.textContent = `🚗 ${kmh} km/h · ↓ ${conn.downlink||"—"} Mbps`;
+  const net=document.getElementById("netTexto");
+  const spd=document.getElementById("speedTexto");
+  const kmh=(speed*3.6).toFixed(1);
+  const conn=navigator.connection||{};
+  net.textContent=`${navigator.onLine?"Online":"Offline"} · ${conn.effectiveType||"—"}`;
+  spd.textContent=`🚗 ${kmh} km/h`;
 }
 
 /* =====================================================
-   IP + RELOJ
+   SESIÓN
 ===================================================== */
-async function obtenerIP(){
-  try{
-    USER_IP=(await (await fetch("https://api.ipify.org?format=json")).json()).ip;
-  }catch{ USER_IP="—"; }
-}
-
-function iniciarReloj(){
-  setInterval(()=>{
-    const n=new Date();
-    conexionInfo.innerHTML=
-      `📅 ${n.toLocaleDateString("es-CL")}<br>
-       ⏰ ${n.toLocaleTimeString("es-CL")}<br>
-       🌐 IP: ${USER_IP}`;
-  },1000);
-}
-
-/* =====================================================
-   BOTONES
-===================================================== */
-function recargarPanel(){
-  location.reload();
-}
-
 function cerrarSesion(){
   if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
   sessionStorage.clear();
   localStorage.clear();
-  window.location.href="index.html";
+  toast("Sesión cerrada","warning");
+  setTimeout(()=>location.href="index.html",1200);
 }
