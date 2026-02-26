@@ -1,5 +1,5 @@
 /* =====================================================
-   CONFIG
+   CONFIGURACIÓN
 ===================================================== */
 const API =
 "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
@@ -7,51 +7,76 @@ const API =
 let USER_IP = "cargando...";
 let MODULO_ACTIVO = null;
 
+/* ===== MAPA / TRACKING ===== */
+let MAPA = null;
+let MARCADOR = null;
+let WATCH_ID = null;
+let LAST_GEOCODE = 0;
+
 /* =====================================================
-   MENU LATERAL
+   ICONOS
+===================================================== */
+function crearIconoAuto(rotacion = 0){
+  return L.divIcon({
+    className: "auto-icon",
+    iconSize: [48,48],
+    iconAnchor: [24,24],
+    html: `
+      <div style="width:48px;height:48px;transform:rotate(${rotacion}deg)">
+        <svg viewBox="0 0 512 512" width="48" height="48" fill="#2563eb">
+          <path d="M256 32c-17.7 0-32 14.3-32 32v32H96c-35.3 0-64 28.7-64 64v160c0 35.3 28.7 64 64 64h16v48c0 17.7 14.3 32 32 32h16c17.7 0 32-14.3 32-32v-48h128v48c0 17.7 14.3 32 32 32h16c17.7 0 32-14.3 32-32v-48h16c35.3 0 64-28.7 64-64V160c0-35.3-28.7-64-64-64H288V64c0-17.7-14.3-32-32-32z"/>
+        </svg>
+      </div>`
+  });
+}
+
+const ICONO_ESTATICO = L.divIcon({
+  className: "static-icon",
+  iconSize: [32,32],
+  iconAnchor: [16,32],
+  html: `
+    <svg viewBox="0 0 384 512" width="32" height="32" fill="#dc2626">
+      <path d="M168 0C75.1 0 0 75.1 0 168c0 87.8 144.5 305.3 160.5 328.1c3.9 5.6 12.2 5.6 16.1 0C239.5 473.3 384 255.8 384 168z"/>
+    </svg>`
+});
+
+/* =====================================================
+   MENÚ
 ===================================================== */
 function toggleMenu(){
-  document.getElementById("menuLateral").classList.toggle("open");
+  document.getElementById("menuLateral")?.classList.toggle("open");
 }
 
 /* =====================================================
    LOADER
 ===================================================== */
-function iniciarProgreso(modo="init"){
+function iniciarProgreso(texto="Procesando…"){
   const bar = document.getElementById("progressBar");
   const overlay = document.getElementById("loadingOverlay");
   const txt = document.getElementById("loadingText");
 
-  if(txt){
-    txt.textContent =
-      modo==="reload" ? "Actualizando sistema…" :
-      modo==="init"   ? "Iniciando sistema…" :
-                        "Procesando…";
-  }
-
+  if(txt) txt.textContent = texto;
   overlay.style.display = "flex";
   bar.style.display = "block";
   bar.style.width = "0%";
 
   let p = 0;
   bar._i = setInterval(()=>{
-    p += Math.random()*12;
-    if(p > 90) p = 90;
-    bar.style.width = p + "%";
+    p += Math.random()*10;
+    if(p>90) p=90;
+    bar.style.width = p+"%";
   },150);
 }
 
 function finalizarProgreso(){
   const bar = document.getElementById("progressBar");
   const overlay = document.getElementById("loadingOverlay");
-
   clearInterval(bar._i);
-  bar.style.width = "100%";
-
+  bar.style.width="100%";
   setTimeout(()=>{
-    bar.style.display = "none";
-    bar.style.width = "0%";
-    overlay.style.display = "none";
+    bar.style.display="none";
+    overlay.style.display="none";
+    bar.style.width="0%";
   },300);
 }
 
@@ -60,26 +85,23 @@ function finalizarProgreso(){
 ===================================================== */
 document.addEventListener("DOMContentLoaded", async ()=>{
 
-  // DOM
   window.viewer       = document.getElementById("viewer");
   window.frame        = document.getElementById("frame");
   window.viewerTitle  = document.getElementById("viewerTitle");
   window.menuModulos  = document.getElementById("menuModulos");
   window.conexionInfo = document.getElementById("conexionInfo");
 
-  // ocultar panel (NO se usa)
-  const panel = document.getElementById("panel");
-  if(panel) panel.style.display = "none";
+  iniciarProgreso("Iniciando sistema…");
 
-  // restaurar módulo activo
-  const saved = sessionStorage.getItem("MODULO_ACTIVO");
-  if(saved) MODULO_ACTIVO = JSON.parse(saved);
-
-  iniciarProgreso("init");
+  if(typeof validarSesionGlobal !== "function"){
+    alert("Error de sesión");
+    cerrarSesion();
+    return;
+  }
 
   const user = await validarSesionGlobal();
   if(!user){
-    finalizarProgreso();
+    cerrarSesion();
     return;
   }
 
@@ -87,137 +109,139 @@ document.addEventListener("DOMContentLoaded", async ()=>{
     `👤 ${user.nombre} · ${user.rol}`;
 
   await cargarMenuSlider(user);
+
+  iniciarMapaTiempoReal();
   obtenerIP();
   iniciarReloj();
-
-  if(MODULO_ACTIVO){
-    abrirModulo(MODULO_ACTIVO.url, MODULO_ACTIVO.titulo, true);
-  }
 
   finalizarProgreso();
 });
 
 /* =====================================================
-   CARGAR MENU SLIDER (CON SCROLL)
+   MENÚ DINÁMICO
 ===================================================== */
 async function cargarMenuSlider(user){
   const r = await fetch(`${API}?action=listarModulos`);
   const res = await r.json();
+  menuModulos.innerHTML="";
 
-  menuModulos.innerHTML = "";
-
-  if(!res.data || !Array.isArray(res.data)) return;
-
-  // scroll vertical garantizado
-  menuModulos.style.overflowY = "auto";
-  menuModulos.style.maxHeight = "calc(100vh - 80px)";
+  if(!Array.isArray(res.data)) return;
 
   res.data.forEach(m=>{
     const [id,nombre,archivo,icono,permiso,activo] = m;
+    if(activo!=="SI") return;
+    if(user.rol!=="ADMIN" && !user.permisos.includes(permiso)) return;
 
-    if(activo !== "SI") return;
-    if(user.rol !== "ADMIN" && !user.permisos.includes(permiso)) return;
-
-    const item = document.createElement("div");
-    item.className = "menu-item";
-
-    if(MODULO_ACTIVO && MODULO_ACTIVO.url === archivo){
-      item.classList.add("active");
-    }
-
-    item.innerHTML = `${icono || "📦"} ${nombre}`;
-
-    item.onclick = ()=>{
+    const div = document.createElement("div");
+    div.className="menu-item";
+    div.innerHTML=`${icono||"📦"} ${nombre}`;
+    div.onclick=()=>{
       abrirModulo(archivo,nombre);
       toggleMenu();
     };
-
-    menuModulos.appendChild(item);
+    menuModulos.appendChild(div);
   });
 }
 
 /* =====================================================
    VISOR
 ===================================================== */
-function abrirModulo(url,titulo,restaurando=false){
-  MODULO_ACTIVO = { url, titulo };
-  sessionStorage.setItem("MODULO_ACTIVO", JSON.stringify(MODULO_ACTIVO));
-
-  document.querySelectorAll(".menu-item").forEach(i=>{
-    i.classList.toggle("active", i.innerText.includes(titulo));
-  });
-
-  viewer.style.display = "flex";
-  if(!restaurando) frame.src = url;
-  viewerTitle.textContent = titulo;
+function abrirModulo(url,titulo){
+  viewer.style.display="flex";
+  frame.src=url;
+  viewerTitle.textContent=titulo;
 }
 
 function volver(){
-  MODULO_ACTIVO = null;
-  sessionStorage.removeItem("MODULO_ACTIVO");
+  viewer.style.display="none";
+  frame.src="";
+}
 
-  document.querySelectorAll(".menu-item").forEach(i=>{
-    i.classList.remove("active");
+/* =====================================================
+   MAPA + DATOS
+===================================================== */
+function iniciarMapaTiempoReal(){
+  if(!navigator.geolocation) return;
+
+  WATCH_ID = navigator.geolocation.watchPosition(pos=>{
+    const {latitude:lat, longitude:lng, speed=0, heading=0} = pos.coords;
+
+    if(!MAPA){
+      MAPA = L.map("mapa").setView([lat,lng],16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(MAPA);
+      MARCADOR = L.marker([lat,lng],{icon:ICONO_ESTATICO}).addTo(MAPA);
+    }
+
+    MARCADOR.setLatLng([lat,lng]);
+    MARCADOR.setIcon(speed>2 ? crearIconoAuto(heading) : ICONO_ESTATICO);
+
+    actualizarRedYVelocidad(speed);
+
+    if(Date.now()-LAST_GEOCODE>15000){
+      LAST_GEOCODE=Date.now();
+      actualizarDireccionTexto(lat,lng);
+    }
   });
-
-  viewer.style.display = "none";
-  frame.src = "";
 }
 
 /* =====================================================
-   RECARGAR
+   DIRECCIÓN
 ===================================================== */
-async function recargarPanel(){
-  iniciarProgreso("reload");
-
-  const user = await validarSesionGlobal();
-  if(!user){
-    finalizarProgreso();
-    return;
+async function actualizarDireccionTexto(lat,lng){
+  try{
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+    );
+    const d = await r.json();
+    document.getElementById("dirTexto").textContent =
+      d.display_name || "Dirección no disponible";
+  }catch{
+    document.getElementById("dirTexto").textContent="Dirección no disponible";
   }
-
-  await cargarMenuSlider(user);
-
-  if(MODULO_ACTIVO){
-    viewer.style.display = "flex";
-    frame.src = MODULO_ACTIVO.url;
-    viewerTitle.textContent = MODULO_ACTIVO.titulo;
-  }
-
-  finalizarProgreso();
 }
 
 /* =====================================================
-   LOGOUT
+   RED + VELOCIDAD
 ===================================================== */
-function cerrarSesion(){
-  sessionStorage.removeItem("MODULO_ACTIVO");
-  cerrarSesionGlobal();
+function actualizarRedYVelocidad(speed){
+  const net = document.getElementById("netTexto");
+  const spd = document.getElementById("speedTexto");
+
+  const kmh = (speed*3.6).toFixed(1);
+  const conn = navigator.connection || {};
+  net.textContent = `${navigator.onLine?"Online":"Offline"} · ${conn.effectiveType||"—"}`;
+  spd.textContent = `🚗 ${kmh} km/h · ↓ ${conn.downlink||"—"} Mbps`;
 }
 
 /* =====================================================
-   FECHA / IP
+   IP + RELOJ
 ===================================================== */
-function iniciarReloj(){
-  actualizarConexion();
-  setInterval(actualizarConexion,1000);
-}
-
-function actualizarConexion(){
-  const n = new Date();
-  conexionInfo.innerHTML = `
-    📅 ${n.toLocaleDateString("es-CL")}<br>
-    ⏰ ${n.toLocaleTimeString("es-CL")}<br>
-    🌐 IP: ${USER_IP}
-  `;
-}
-
 async function obtenerIP(){
   try{
-    const r = await fetch("https://api.ipify.org?format=json");
-    const d = await r.json();
-    USER_IP = d.ip;
-  }catch{
-    USER_IP = "no disponible";
-  }
+    USER_IP=(await (await fetch("https://api.ipify.org?format=json")).json()).ip;
+  }catch{ USER_IP="—"; }
+}
+
+function iniciarReloj(){
+  setInterval(()=>{
+    const n=new Date();
+    conexionInfo.innerHTML=
+      `📅 ${n.toLocaleDateString("es-CL")}<br>
+       ⏰ ${n.toLocaleTimeString("es-CL")}<br>
+       🌐 IP: ${USER_IP}`;
+  },1000);
+}
+
+/* =====================================================
+   BOTONES
+===================================================== */
+function recargarPanel(){
+  location.reload();
+}
+
+function cerrarSesion(){
+  if(WATCH_ID) navigator.geolocation.clearWatch(WATCH_ID);
+  sessionStorage.clear();
+  localStorage.clear();
+  window.location.href="index.html";
 }

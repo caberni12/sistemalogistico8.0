@@ -5,6 +5,10 @@
 <title>Panel Logístico Integrado</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- LEAFLET -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
 :root{
  --bg:#f1f5f9;
@@ -13,86 +17,121 @@
  --text:#0f172a;
  --muted:#64748b;
  --accent:#14b8a6;
- --border:#e2e8f0;
+ --primary:#3b82f6;
  --danger:#ef4444;
+ --border:#e2e8f0;
+ --radius:12px;
 }
 
-*{ box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+/* RESET */
+*{
+ box-sizing:border-box;
+ font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+}
 
-body{
+html,body{
  margin:0;
+ padding:0;
+ height:100%;
  background:var(--bg);
  color:var(--text);
- min-height:100vh;
- display:flex;
- flex-direction:column;
+}
+
+/* Leaflet fix */
+.leaflet-div-icon{
+ background:none !important;
+ border:none !important;
+}
+
+/* ================= BOTONES ================= */
+button{
+ border:none;
+ border-radius:var(--radius);
+ padding:10px 16px;
+ font-weight:600;
+ cursor:pointer;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ transition:.25s ease;
+ box-shadow:0 6px 18px rgba(0,0,0,.12);
+}
+
+button:hover{
+ transform:translateY(-1px);
+ box-shadow:0 10px 26px rgba(0,0,0,.18);
+}
+
+button:active{ transform:scale(.97); }
+
+.btn-primary{
+ background:linear-gradient(135deg,#60a5fa,#2563eb);
+ color:#fff;
+}
+
+.btn-accent{
+ background:linear-gradient(135deg,#2dd4bf,#0d9488);
+ color:#fff;
+}
+
+.btn-danger{
+ background:linear-gradient(135deg,#f87171,#dc2626);
+ color:#fff;
+}
+
+.btn-ghost{
+ background:#fff;
+ border:1px solid var(--border);
+ box-shadow:none;
 }
 
 /* ================= HEADER ================= */
 header{
+ height:72px;
  display:flex;
  align-items:center;
  justify-content:space-between;
  padding:14px 18px;
- background:#ffffff;
+ background:#fff;
  border-bottom:1px solid var(--border);
- box-shadow:0 4px 12px rgba(0,0,0,.04);
- gap:12px;
+ box-shadow:0 6px 20px rgba(0,0,0,.06);
+ z-index:10;
 }
 
 .header-left{
  display:flex;
  align-items:center;
- gap:10px;
+ gap:12px;
 }
 
-/* BOTON HAMBURGUESA */
 #btnMenu{
- background:var(--accent);
- border:none;
- color:#fff;
+ width:42px;
+ height:42px;
+ padding:0;
  font-size:20px;
- padding:8px 14px;
- border-radius:10px;
- cursor:pointer;
- width:auto;
-}
-
-@media (max-width:768px){
- #btnMenu{
-   font-size:18px;
-   padding:6px 10px;
-   border-radius:8px;
- }
+ background:linear-gradient(135deg,#2dd4bf,#0d9488);
+ color:#fff;
+ flex:0 0 auto;
 }
 
 header h1{
  margin:0;
  font-size:18px;
  font-weight:700;
+ white-space:nowrap;
 }
 
 header .right{
  display:flex;
- gap:14px;
  align-items:center;
- flex-wrap:wrap;
+ gap:12px;
 }
 
 header .user{
  font-size:13px;
  color:var(--muted);
- line-height:1.4;
-}
-
-header button{
- background:var(--danger);
- color:#fff;
- border:none;
- padding:8px 14px;
- border-radius:8px;
- cursor:pointer;
- font-weight:600;
+ line-height:1.3;
 }
 
 /* ================= MENU LATERAL ================= */
@@ -102,8 +141,8 @@ header button{
  left:-300px;
  width:300px;
  height:100vh;
- background:#ffffff;
- box-shadow:4px 0 24px rgba(0,0,0,.18);
+ background:#fff;
+ box-shadow:6px 0 28px rgba(0,0,0,.18);
  transition:.35s ease;
  z-index:9997;
  display:flex;
@@ -121,66 +160,82 @@ header button{
  font-weight:700;
 }
 
-.menu-header button{
- background:none;
- border:none;
- font-size:18px;
- cursor:pointer;
-}
-
 .menu-items{
  padding:14px;
  display:flex;
  flex-direction:column;
  gap:10px;
  overflow-y:auto;
- max-height:calc(100vh - 80px);
 }
 
 .menu-item{
- padding:12px 14px;
- border-radius:10px;
- background:#f8fafc;
+ padding:14px;
+ border-radius:var(--radius);
+ background:var(--hover);
  cursor:pointer;
  font-weight:600;
+ transition:.2s;
 }
 
-.menu-item:hover{ background:#e2e8f0; }
-
-.menu-item.active{
- background:var(--accent);
+.menu-item:hover{
+ background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
+ transform:translateX(4px);
 }
 
-/* ================= VIEWER ================= */
+/* ================= MAPA PRINCIPAL ================= */
+#mapaBox{
+ position:relative;
+ width:100%;
+ height:calc(100vh - 72px);
+}
+
+#mapa{
+ width:100%;
+ height:100%;
+}
+
+/* ================= DASHBOARD ================= */
+#dashboardMapa{
+ position:absolute;
+ bottom:20px;
+ left:20px;
+ background:#fff;
+ border-radius:16px;
+ padding:16px 18px;
+ box-shadow:0 20px 40px rgba(0,0,0,.25);
+ font-size:13px;
+ max-width:340px;
+ z-index:500;
+}
+
+/* ================= VISOR (🔥 CORREGIDO 🔥) ================= */
 .viewer{
- display:none;
- flex-direction:column;
+ display:none;            /* 🔴 AHORA SÍ SE OCULTA */
+ position:fixed;
+ inset:0;
  height:100vh;
- background:#ffffff;
+ background:#fff;
+ z-index:9996;
+ flex-direction:column;
+ overflow:hidden;
 }
 
 .viewer-header{
+ height:56px;
+ padding:0 16px;
  border-bottom:1px solid var(--border);
- padding:12px 16px;
  display:flex;
- justify-content:space-between;
  align-items:center;
-}
-
-.viewer-header button{
- background:var(--accent);
- color:#fff;
- border:none;
- padding:8px 14px;
- border-radius:8px;
- cursor:pointer;
+ justify-content:space-between;
+ background:#fff;
 }
 
 .viewer iframe{
  flex:1;
- border:none;
  width:100%;
+ height:calc(100vh - 56px);
+ border:none;
 }
 
 /* ================= LOADER ================= */
@@ -198,34 +253,47 @@ header button{
 #loadingOverlay{
  position:fixed;
  inset:0;
- background:rgba(241,245,249,.95);
+ background:rgba(241,245,249,.92);
  backdrop-filter:blur(4px);
  z-index:9998;
  display:none;
  align-items:center;
  justify-content:center;
- flex-direction:column;
- gap:16px;
-}
-
-#loadingOverlay span{
- font-size:14px;
  font-weight:600;
- color:#334155;
 }
 
 /* ================= MOBILE ================= */
 @media (max-width:768px){
  header{
    flex-direction:column;
-   align-items:flex-start;
+   height:auto;
+   gap:10px;
  }
- header .right{
+
+ .header-left,
+ .right{
    width:100%;
-   flex-direction:column;
  }
- header button{
-   width:100%;
+
+ #btnMenu{
+   width:36px;
+   height:36px;
+   font-size:18px;
+ }
+
+ header h1{ font-size:16px; }
+
+ .right button{ width:100%; }
+
+ #mapaBox{
+   height:calc(100vh - 120px);
+ }
+
+ #dashboardMapa{
+   left:10px;
+   right:10px;
+   bottom:10px;
+   max-width:none;
  }
 }
 </style>
@@ -233,53 +301,54 @@ header button{
 
 <body>
 
-<!-- LOADER -->
 <div id="progressBar"></div>
-<div id="loadingOverlay">
-  <span id="loadingText">Iniciando sistema…</span>
-</div>
+<div id="loadingOverlay">Iniciando sistema…</div>
 
-<!-- MENU LATERAL -->
 <div id="menuLateral" class="menu-lateral">
   <div class="menu-header">
     <span>📦 Módulos</span>
-    <button onclick="toggleMenu()">✕</button>
+    <button class="btn-ghost" onclick="toggleMenu()">✕</button>
   </div>
   <div id="menuModulos" class="menu-items"></div>
 </div>
 
-<!-- HEADER -->
 <header>
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
-    <!-- 🔹 TÍTULO DINÁMICO -->
-    <h1 id="tituloSistema">Cargando sistema…</h1>
+    <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
   <div class="right">
     <div id="usuario" class="user"></div>
-    <!-- 🔹 EMPRESA DINÁMICA -->
-    <div id="conexionInfo" class="user">Conectando…</div>
-
-    <button onclick="recargarPanel()" style="background:#3b82f6;">⟳ Recargar</button>
-    <button onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
+    <div id="conexionInfo" class="user"></div>
+    <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
+    <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
   </div>
 </header>
 
-<!-- PANEL -->
-<div id="panel"></div>
+<div id="mapaBox">
+  <div id="mapa"></div>
 
-<!-- VISOR -->
+  <div id="dashboardMapa">
+    <strong>📍 Dirección</strong>
+    <span id="dirTexto">Detectando…</span><br><br>
+
+    <strong>🌐 Red</strong>
+    <span id="netTexto">Detectando…</span><br><br>
+
+    <strong>🚀 Velocidad</strong>
+    <span id="speedTexto">0 km/h</span>
+  </div>
+</div>
+
 <div id="viewer" class="viewer">
   <div class="viewer-header">
     <span id="viewerTitle"></span>
-    <button onclick="volver()">⬅ Volver</button>
+    <button class="btn-accent" onclick="volver()">⬅ Volver</button>
   </div>
   <iframe id="frame"></iframe>
 </div>
 
-<!-- ================= JS ================= -->
-<!-- ORDEN IMPORTANTE -->
 <script src="empresa.js"></script>
 <script src="auth.js"></script>
 <script src="main.js"></script>
