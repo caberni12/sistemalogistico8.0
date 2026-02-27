@@ -264,26 +264,21 @@ button{
 
 /* ============ MOBILE ============ */
 @media (max-width:768px){
-
  header{
    flex-direction:column;
    align-items:flex-start;
  }
-
  .header-left,
  .header-info,
  .right{
    width:100%;
  }
-
  .right{
    flex-direction:column;
  }
-
  .right button{
    width:100%;
  }
-
  #btnMenu{
    width:36px;
    height:36px;
@@ -313,23 +308,16 @@ button{
 <!-- HEADER -->
 <header>
   <div class="header-left">
-  <button id="btnMenu" onclick="toggleMenu()">☰</button>
+    <button id="btnMenu" onclick="toggleMenu()">☰</button>
 
-  <!-- LOGO EMPRESA -->
-  <img
-    id="logoEmpresa"
-    alt="Logo Empresa"
-    style="
-      height:36px;
-      max-width:120px;
-      object-fit:contain;
-      display:none;
-    "
-  >
+    <!-- LOGO EMPRESA -->
+    <img id="logoEmpresa"
+         alt="Logo Empresa"
+         style="height:36px;max-width:120px;object-fit:contain;display:none">
 
-  <!-- TÍTULO SISTEMA -->
-  <h1 id="tituloSistema">Panel Logístico</h1>
-</div>
+    <!-- TÍTULO SISTEMA -->
+    <h1 id="tituloSistema">Panel Logístico</h1>
+  </div>
 
   <div class="header-info">
     <div id="usuario"></div>
