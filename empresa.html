@@ -5,117 +5,175 @@
 <title>Gestión de Empresas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- LEAFLET -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
 <style>
+/* =====================================================
+   VARIABLES
+===================================================== */
 :root{
- --bg:#f1f5f9;
+ --bg:#f4f7fb;
  --card:#ffffff;
  --text:#0f172a;
- --muted:#64748b;
+ --muted:#6b7280;
  --accent:#14b8a6;
- --border:#e2e8f0;
+ --blue:#3b82f6;
  --danger:#ef4444;
+ --border:#e5e7eb;
 }
 
-*{ box-sizing:border-box; font-family:system-ui,Arial,sans-serif; }
+/* =====================================================
+   RESET
+===================================================== */
+*{
+ box-sizing:border-box;
+ font-family:Inter, system-ui, Arial, sans-serif;
+}
 
-body{ margin:0; background:var(--bg); color:var(--text); }
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--text);
+}
 
+/* =====================================================
+   HEADER
+===================================================== */
 header{
- padding:16px 20px;
- background:#fff;
+ padding:18px 24px;
+ background:var(--card);
  border-bottom:1px solid var(--border);
- font-weight:700;
- box-shadow:0 4px 12px rgba(0,0,0,.05);
+ font-weight:800;
+ font-size:18px;
+ box-shadow:0 6px 20px rgba(0,0,0,.04);
 }
 
+/* =====================================================
+   LAYOUT
+===================================================== */
 .container{
- max-width:1200px;
+ max-width:1400px;
  margin:auto;
- padding:24px;
+ padding:28px;
 }
 
 .flex{
  display:flex;
- justify-content:space-between;
- align-items:center;
- gap:10px;
+ gap:12px;
  flex-wrap:wrap;
+ align-items:center;
+ justify-content:space-between;
 }
 
-.mt{ margin-top:16px; }
+.mt{ margin-top:18px; }
 
+/* =====================================================
+   CONTROLES
+===================================================== */
+input, select{
+ padding:10px 12px;
+ border-radius:10px;
+ border:1px solid var(--border);
+ font-size:14px;
+}
+
+input::placeholder{ color:var(--muted); }
+
+/* =====================================================
+   BOTONES
+===================================================== */
 button{
  background:var(--accent);
  color:#fff;
  border:none;
- padding:10px 14px;
- border-radius:8px;
+ padding:10px 16px;
+ border-radius:10px;
  cursor:pointer;
- font-weight:600;
- position:relative;
+ font-weight:700;
+ display:inline-flex;
+ align-items:center;
+ gap:6px;
 }
-
-button.secondary{ background:#3b82f6; }
+button.secondary{ background:var(--blue); }
 button.danger{ background:var(--danger); }
 
-button.loading{
- pointer-events:none;
- opacity:.7;
-}
-
-button.loading::after{
- content:"";
- width:16px;
- height:16px;
- border:2px solid #fff;
- border-top-color:transparent;
- border-radius:50%;
- position:absolute;
- right:10px;
- top:50%;
- transform:translateY(-50%);
- animation:spin 1s linear infinite;
-}
-
-@keyframes spin{ to{ transform:translateY(-50%) rotate(360deg); } }
-
+/* =====================================================
+   TABLA
+===================================================== */
 table{
  width:100%;
- border-collapse:collapse;
- background:#fff;
- border-radius:14px;
+ border-collapse:separate;
+ border-spacing:0;
+ background:var(--card);
+ border-radius:18px;
  overflow:hidden;
- box-shadow:0 6px 18px rgba(0,0,0,.06);
+ box-shadow:0 12px 30px rgba(0,0,0,.06);
 }
 
-th,td{
- padding:12px;
- border-bottom:1px solid var(--border);
+thead{ background:#f9fafb; }
+
+th{
+ padding:14px;
+ font-size:13px;
+ text-transform:uppercase;
+ color:var(--muted);
+ text-align:left;
+}
+
+td{
+ padding:14px;
+ border-top:1px solid var(--border);
  font-size:14px;
 }
 
-th{ background:#f8fafc; }
-
-.badge{
- padding:4px 10px;
- border-radius:20px;
- font-size:12px;
- font-weight:600;
+/* =====================================================
+   EMPRESA (LOGO + NOMBRE)
+===================================================== */
+.empresa-cell{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ font-weight:700;
 }
 
-.activa{ background:#dcfce7; color:#166534; }
-.inactiva{ background:#fee2e2; color:#991b1b; }
+.logo-tabla{
+ width:42px;
+ height:42px;
+ object-fit:contain;
+ border-radius:8px;
+ border:1px solid var(--border);
+ background:#fff;
+}
 
-@media (max-width:768px){
- table, thead, tbody, th, tr{ display:block; }
+/* =====================================================
+   ESTADOS
+===================================================== */
+.badge{
+ min-width:110px;
+ padding:6px 16px;
+ border-radius:999px;
+ font-size:12px;
+ font-weight:800;
+ text-align:center;
+}
+
+.badge.activa{ background:#dcfce7; color:#166534; }
+.badge.inactiva{ background:#fee2e2; color:#991b1b; }
+
+/* =====================================================
+   RESPONSIVE TABLA
+===================================================== */
+@media(max-width:768px){
+ table, thead, tbody, tr{ display:block; }
  thead{ display:none; }
 
  tbody tr{
-  background:#fff;
-  margin-bottom:14px;
-  border-radius:16px;
-  box-shadow:0 6px 16px rgba(0,0,0,.08);
+  margin-bottom:16px;
   padding:14px;
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.08);
  }
 
  tbody td{
@@ -127,28 +185,97 @@ th{ background:#f8fafc; }
 
  tbody td::before{
   content:attr(data-label);
-  font-weight:600;
+  font-weight:700;
   color:var(--muted);
  }
 }
 
+/* =====================================================
+   MODAL
+===================================================== */
 .modal{
  position:fixed;
  inset:0;
- background:rgba(0,0,0,.45);
+ background:rgba(0,0,0,.55);
  display:none;
  align-items:center;
  justify-content:center;
- z-index:999;
+ z-index:1000;
 }
 
 .modal-content{
  background:#fff;
- padding:22px;
- border-radius:16px;
+ padding:26px;
+ border-radius:20px;
  width:100%;
- max-width:420px;
+ max-width:900px;
+ max-height:90vh;
+ overflow:auto;
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:16px;
 }
+
+.modal-content h3,
+#map,
+.logo-preview,
+.acciones-modal{
+ grid-column:1 / -1;
+}
+
+.modal label{
+ font-size:13px;
+ font-weight:700;
+ color:var(--muted);
+}
+
+.logo-preview{
+ width:150px;
+ height:150px;
+ border-radius:16px;
+ object-fit:contain;
+ border:1px solid var(--border);
+}
+
+/* =====================================================
+   MAPA
+===================================================== */
+#map{
+ height:260px;
+ border-radius:16px;
+}
+
+/* =====================================================
+   ACCIONES MODAL
+===================================================== */
+.acciones-modal{
+ display:flex;
+ justify-content:flex-end;
+ gap:12px;
+}
+
+/* =====================================================
+   LOADER
+===================================================== */
+#globalLoader{
+ position:fixed;
+ inset:0;
+ background:rgba(255,255,255,.7);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:2000;
+}
+#globalLoader::after{
+ content:"";
+ width:50px;
+ height:50px;
+ border:6px solid var(--accent);
+ border-top-color:transparent;
+ border-radius:50%;
+ animation:spin 1s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
 </style>
 </head>
 
@@ -158,8 +285,15 @@ th{ background:#f8fafc; }
 
 <div class="container">
 
- <div class="flex">
-  <h2>Empresas Registradas</h2>
+ <div class="flex mt">
+  <div class="flex">
+   <input id="buscarEmpresa" placeholder="Buscar empresa">
+   <select id="filtroEstado">
+    <option value="TODAS">Todas</option>
+    <option value="ACTIVA">Activas</option>
+    <option value="INACTIVA">Inactivas</option>
+   </select>
+  </div>
   <div class="flex">
    <button id="btnCargar" class="secondary">⟳ Recargar</button>
    <button id="btnNueva">＋ Nueva Empresa</button>
@@ -173,6 +307,7 @@ th{ background:#f8fafc; }
      <th>ID</th>
      <th>Empresa</th>
      <th>RUT</th>
+     <th>Comuna</th>
      <th>Estado</th>
      <th>Acciones</th>
     </tr>
@@ -183,127 +318,361 @@ th{ background:#f8fafc; }
 
 </div>
 
-<!-- MODAL -->
+<div id="globalLoader"></div>
+
+<!-- LEAFLET -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- ================= MODAL EMPRESA ================= -->
 <div id="modalEmpresa" class="modal">
- <div class="modal-content">
-  <h3 id="modalTitulo">Nueva Empresa</h3>
-
-  <input type="hidden" id="empresaId">
-
-  <label>Nombre Empresa</label>
-  <input id="empresaNombre">
-
-  <label>RUT</label>
-  <input id="empresaRut">
-
-  <label>Estado</label>
-  <select id="empresaEstado">
-   <option value="ACTIVA">ACTIVA</option>
-   <option value="INACTIVA">INACTIVA</option>
-  </select>
-
-  <div class="flex mt">
-   <button id="btnGuardar">💾 Guardar</button>
-   <button class="danger" id="btnCancelar">Cancelar</button>
-  </div>
+   <div class="modal-content">
+ 
+     <h3 id="modalTitulo">Empresa</h3>
+ 
+     <input type="hidden" id="empresaId">
+ 
+     <label>Nombre</label>
+     <input id="empresaNombre">
+ 
+     <label>RUT</label>
+     <input id="empresaRut">
+ 
+     <label>Giro</label>
+     <input id="empresaGiro">
+ 
+     <label>Correo</label>
+     <input id="empresaCorreo" type="email">
+ 
+     <label>Teléfono</label>
+     <input id="empresaTelefono">
+ 
+     <label>Dirección</label>
+     <input id="empresaDireccion">
+ 
+     <label>Comuna</label>
+     <input id="empresaComuna">
+ 
+     <label>Logo</label>
+     <input type="file" id="empresaLogo" accept="image/*">
+     <img id="logoPreview" class="logo-preview" style="display:none">
+ 
+     <div id="map"></div>
+ 
+     <label>Estado</label>
+     <select id="empresaEstado">
+       <option value="ACTIVA">ACTIVA</option>
+       <option value="INACTIVA">INACTIVA</option>
+     </select>
+ 
+     <div class="acciones-modal">
+       <button id="btnGuardar">💾 Guardar</button>
+       <button id="btnCancelar" class="danger">Cancelar</button>
+     </div>
+ 
+   </div>
  </div>
-</div>
 
-<script>
-const API = "https://script.google.com/macros/s/AKfycbyxZ90bDIdYBJjpDIA_g5ha3_MwXPbgV7x0xRx01ypisR0jzJzsPssgX8Bfp1VJoB9v/exec";
+ <script>
+   /* =====================================================
+      CONFIGURACIÓN
+   ===================================================== */
+   const API = "https://script.google.com/macros/s/AKfycbxnmGEQXTkJhpFFb0VloCUREawb_xTQILOcsOJiDggeod0yu-fj8GWrrpRbwjZtd9b9/exec";
+   
+   /* =====================================================
+      ESTADO GLOBAL
+   ===================================================== */
+   let empresasCache = [];
+   let logoBase64 = "";
+   let map = null;
+   let marker = null;
+   let cargando = false;
+   let eliminando = false;
+   let circle = null;
+   const RADIO_METROS = 200; // 👈 radio visible (ajústalo)
+   /* =====================================================
+      HELPERS
+   ===================================================== */
+   const $ = id => document.getElementById(id);
+   
+   function showLoader(){
+     $("globalLoader").style.display = "flex";
+   }
+   function hideLoader(){
+     $("globalLoader").style.display = "none";
+   }
+   
+   function normalizarEstado(v){
+     return String(v || "INACTIVA").trim().toUpperCase();
+   }
+   
+   /* =====================================================
+      EVENTOS
+   ===================================================== */
+   $("btnNueva").onclick   = () => abrirModal();
+   $("btnCargar").onclick = () => cargarEmpresas();
+   
+   $("buscarEmpresa").oninput = aplicarFiltros;
+   $("filtroEstado").onchange = aplicarFiltros;
+   
+   $("btnCancelar").onclick = () => {
+     $("modalEmpresa").style.display = "none";
+   };
+   
+   $("btnGuardar").onclick = guardarEmpresa;
+   
+   /* =====================================================
+      LOGO – PREVIEW (MISMO MÉTODO DEL PROYECTO QUE FUNCIONA)
+   ===================================================== */
+   $("empresaLogo").onchange = function(){
+     const file = this.files[0];
+     if(!file) return;
+   
+     const reader = new FileReader();
+     reader.onload = e => {
+       logoBase64 = e.target.result;
+       $("logoPreview").src = logoBase64;
+       $("logoPreview").style.display = "block";
+     };
+     reader.readAsDataURL(file);
+   };
+   
+   /* =====================================================
+      MODAL
+   ===================================================== */
+   function abrirModal(e = null){
+     $("modalEmpresa").style.display = "flex";
+     $("modalTitulo").textContent = e ? "Editar Empresa" : "Nueva Empresa";
+   
+     $("empresaId").value        = e?.id || "";
+     $("empresaNombre").value    = e?.nombre || "";
+     $("empresaRut").value       = e?.rut || "";
+     $("empresaGiro").value      = e?.giro || "";
+     $("empresaCorreo").value    = e?.correo || "";
+     $("empresaTelefono").value  = e?.telefono || "";
+     $("empresaDireccion").value = e?.direccion || "";
+     $("empresaComuna").value    = e?.comuna || "";
+     $("empresaEstado").value    = normalizarEstado(e?.estado);
+   
+     if(e?.logo){
+       $("logoPreview").src = e.logo;
+       $("logoPreview").style.display = "block";
+     }else{
+       $("logoPreview").style.display = "none";
+     }
+   
+     logoBase64 = "";
+     $("empresaLogo").value = "";
+   
+     setTimeout(()=>{
+     initMap(
+    e?.lat ? Number(e.lat) : null,
+    e?.lng ? Number(e.lng) : null
+  );
+}, 300);
+   }
+   
+   /* =====================================================
+      MAPA
+   ===================================================== */
+   function initMap(lat = null, lng = null){
+  if(!map){
+    map = L.map("map").setView([-33.45, -70.66], 14);
 
-const modal = document.getElementById("modalEmpresa");
-const tabla = document.getElementById("tablaEmpresas");
-const btnCargar = document.getElementById("btnCargar");
-const btnGuardar = document.getElementById("btnGuardar");
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
 
-document.getElementById("btnNueva").onclick = () => abrirModal();
-document.getElementById("btnCancelar").onclick = cerrarModal;
-btnCargar.onclick = cargarEmpresas;
-btnGuardar.onclick = guardarEmpresa;
+    marker = L.marker([-33.45, -70.66]).addTo(map);
+  }
 
-function abrirModal(data=null){
- modal.style.display="flex";
- document.getElementById("modalTitulo").textContent = data ? "Editar Empresa" : "Nueva Empresa";
- empresaId.value = data?.id || "";
- empresaNombre.value = data?.nombre || "";
- empresaRut.value = data?.rut || "";
- empresaEstado.value = data?.estado || "ACTIVA";
+  // si llegan coordenadas reales
+  if(lat && lng){
+    const pos = [lat, lng];
+
+    marker.setLatLng(pos);
+    map.setView(pos, 16);
+
+    // borrar círculo anterior
+    if(circle){
+      map.removeLayer(circle);
+    }
+
+    // dibujar radio
+    circle = L.circle(pos, {
+      radius: RADIO_METROS,
+      color: "#2563eb",
+      fillColor: "#3b82f6",
+      fillOpacity: 0.25
+    }).addTo(map);
+  }
+
+  setTimeout(()=> map.invalidateSize(), 200);
 }
+   
+   /* =====================================================
+      CARGAR EMPRESAS
+   ===================================================== */
+   async function cargarEmpresas(){
+     if(cargando) return;
+     cargando = true;
+     showLoader();
+   
+     try{
+       const r = await fetch(API + "?action=listarEmpresas");
+       const d = await r.json();
+       if(!d.ok) throw d.msg;
+   
+       empresasCache = d.data.map(e => ({
+         ...e,
+         estado: normalizarEstado(e.estado)
+       }));
+   
+       aplicarFiltros();
+   
+     }catch(err){
+       alert("Error al cargar empresas: " + err);
+     }finally{
+       hideLoader();
+       cargando = false;
+     }
+   }
+   
+   /* =====================================================
+      FILTROS + RENDER
+   ===================================================== */
+   function aplicarFiltros(){
+     const tbody  = $("tablaEmpresas");
+     const texto  = $("buscarEmpresa").value.toLowerCase();
+     const estado = $("filtroEstado").value;
+   
+     tbody.innerHTML = "";
+   
+     empresasCache
+       .filter(e =>
+         (!texto || e.nombre.toLowerCase().includes(texto)) &&
+         (estado === "TODAS" || e.estado === estado)
+       )
+       .forEach(e => {
+   
+         const tr = document.createElement("tr");
+   
+         tr.innerHTML = `
+           <td data-label="ID">${e.id}</td>
+   
+           <td data-label="Empresa">
+             <div class="empresa-cell">
+               <img class="logo-tabla"
+                 src="${e.logo || 'https://via.placeholder.com/42'}"
+                 loading="lazy"
+               >
+               <span>${e.nombre}</span>
+             </div>
+           </td>
+   
+           <td data-label="RUT">${e.rut}</td>
+           <td data-label="Comuna">${e.comuna || ""}</td>
+   
+           <td data-label="Estado">
+             <span class="badge ${e.estado === "ACTIVA" ? "activa" : "inactiva"}">
+               ${e.estado}
+             </span>
+           </td>
+   
+           <td data-label="Acciones">
+             <button class="secondary">✏️</button>
+             <button class="danger">🗑</button>
+           </td>
+         `;
+   
+         tr.querySelector(".secondary").onclick = () => abrirModal(e);
+         tr.querySelector(".danger").onclick    = () => eliminarEmpresa(e.id);
+   
+         tbody.appendChild(tr);
+       });
+   }
+   
+   /* =====================================================
+      GUARDAR (CREAR / EDITAR)
+   ===================================================== */
+   async function guardarEmpresa(){
+     showLoader();
+   
+     try{
+       const payload = {
+         action: $("empresaId").value ? "editarEmpresa" : "crearEmpresa",
+         id: $("empresaId").value,
+         nombre: $("empresaNombre").value.trim(),
+         rut: $("empresaRut").value.trim(),
+         giro: $("empresaGiro").value,
+         correo: $("empresaCorreo").value,
+         telefono: $("empresaTelefono").value,
+         direccion: $("empresaDireccion").value,
+         comuna: $("empresaComuna").value,
+         estado: $("empresaEstado").value,
+         logoBase64
+       };
+   
+       if(!payload.nombre || !payload.rut){
+         throw "Nombre y RUT son obligatorios";
+       }
+   
+       const r = await fetch(API, {
+         method: "POST",
+         headers: { "Content-Type": "text/plain;charset=utf-8" },
+         body: JSON.stringify(payload)
+       });
+   
+       const d = await r.json();
+       if(!d.ok) throw d.msg;
+   
+       $("modalEmpresa").style.display = "none";
+       await cargarEmpresas();
+   
+     }catch(err){
+       alert("Error al guardar: " + err);
+     }finally{
+       hideLoader();
+     }
+   }
+   
+   /* =====================================================
+      ELIMINAR (INACTIVA)
+   ===================================================== */
+   async function eliminarEmpresa(id){
+  if(!id) return;
 
-function cerrarModal(){ modal.style.display="none"; }
+  if(!confirm("¿Marcar empresa como INACTIVA?")) return;
 
-async function cargarEmpresas(){
- btnCargar.classList.add("loading");
- tabla.innerHTML="";
+  showLoader();
 
- try{
-  const r = await fetch(API+"?action=listarEmpresas");
-  const d = await r.json();
+  try{
+    const payload = {
+      action: "eliminarEmpresa",
+      id: String(id)   // 👈 CLAVE
+    };
 
-  d.data?.forEach(e=>{
-   const tr=document.createElement("tr");
-   tr.innerHTML=`
-    <td data-label="ID">${e.id}</td>
-    <td data-label="Empresa">${e.nombre}</td>
-    <td data-label="RUT">${e.rut}</td>
-    <td data-label="Estado">
-     <span class="badge ${e.estado==="ACTIVA"?"activa":"inactiva"}">${e.estado}</span>
-    </td>
-    <td data-label="Acciones">
-     <button class="secondary">✏️</button>
-     <button class="danger">🗑</button>
-    </td>`;
-   tr.querySelector(".secondary").onclick=()=>abrirModal(e);
-   tr.querySelector(".danger").onclick=()=>eliminarEmpresa(e.id);
-   tabla.appendChild(tr);
-  });
- }catch(err){
-  alert("Error al cargar empresas");
- }
+    const r = await fetch(API,{
+      method: "POST",
+      headers: { "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
 
- btnCargar.classList.remove("loading");
+    const d = await r.json();
+    if(!d.ok) throw d.msg;
+
+    await cargarEmpresas();
+
+  }catch(err){
+    alert("Error al eliminar: " + err);
+  }finally{
+    hideLoader();
+  }
 }
-
-async function guardarEmpresa(){
- btnGuardar.classList.add("loading");
-
- const payload={
-  action: empresaId.value ? "editarEmpresa" : "crearEmpresa",
-  id: empresaId.value,
-  nombre: empresaNombre.value.trim(),
-  rut: empresaRut.value.trim(),
-  estado: empresaEstado.value
- };
-
- const r = await fetch(API,{
-  method:"POST",
-  headers:{ "Content-Type":"application/json" },
-  body:JSON.stringify(payload)
- });
-
- const d = await r.json();
- if(!d.ok) alert(d.msg||"Error");
-
- btnGuardar.classList.remove("loading");
- cerrarModal();
- cargarEmpresas();
-}
-
-async function eliminarEmpresa(id){
- if(!confirm("¿Marcar como INACTIVA?")) return;
-
- await fetch(API,{
-  method:"POST",
-  headers:{ "Content-Type":"application/json" },
-  body:JSON.stringify({action:"eliminarEmpresa",id})
- });
-
- cargarEmpresas();
-}
-
-cargarEmpresas();
-</script>
+   /* =====================================================
+      INIT
+   ===================================================== */
+   cargarEmpresas();
+   </script>
 
 </body>
 </html>
