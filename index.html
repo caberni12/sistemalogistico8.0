@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* ================= BASE ================= */
 body{
   margin:0;
   font-family:'Segoe UI', Arial, sans-serif;
@@ -16,8 +15,6 @@ body{
   justify-content:center;
   height:100vh;
 }
-
-/* ================= CARD ================= */
 .card{
   background:#fff;
   padding:45px 40px;
@@ -27,7 +24,7 @@ body{
   text-align:center;
 }
 
-/* ================= LOGO EMPRESA ================= */
+/* LOGO EMPRESA */
 .logo-empresa{
   width:120px;
   max-height:120px;
@@ -36,14 +33,12 @@ body{
   display:none;
 }
 
-/* ================= TITULO ================= */
 h3{
   margin:0 0 30px;
   color:#1e293b;
   font-weight:600;
 }
 
-/* ================= FORM ================= */
 .form-group{
   display:flex;
   justify-content:center;
@@ -58,12 +53,6 @@ input{
   border:1px solid #ddd;
   font-size:14px;
   text-align:center;
-}
-
-input:disabled{
-  background:#f1f5f9;
-  color:#94a3b8;
-  cursor:not-allowed;
 }
 
 button{
@@ -85,10 +74,8 @@ button{
 
 button:disabled{
   background:#94a3b8;
-  cursor:not-allowed;
 }
 
-/* ================= LOADER ================= */
 .loader{
   width:16px;
   height:16px;
@@ -103,18 +90,11 @@ button:disabled{
   to{ transform:rotate(360deg); }
 }
 
-/* ================= MENSAJE ================= */
 .msg{
   margin-top:18px;
   font-size:13px;
   color:#ef4444;
   min-height:18px;
-}
-
-/* ================= BLOQUEO INICIAL ================= */
-.bloqueado{
-  opacity:.55;
-  pointer-events:none;
 }
 </style>
 </head>
@@ -123,35 +103,28 @@ button:disabled{
 
 <div class="card">
 
-  <!-- LOGO (lo carga empresa-header.js) -->
+  <!-- Empresa (JS la llena) -->
   <img id="logoEmpresa" class="logo-empresa">
+  <h3 id="tituloSistema">Acceso de Usuario</h3>
 
-  <!-- TÍTULO (lo carga empresa-header.js) -->
-  <h3 id="tituloSistema">Cargando empresa...</h3>
-
-  <!-- FORM BLOQUEADO -->
-  <div id="formLogin" class="bloqueado">
-
-    <div class="form-group">
-      <input id="user" placeholder="Usuario" disabled>
-    </div>
-
-    <div class="form-group">
-      <input id="pass" type="password" placeholder="Contraseña" disabled>
-    </div>
-
-    <button id="btnLogin" disabled>
-      <span id="btnText">Ingresar</span>
-      <div class="loader" id="loader"></div>
-    </button>
-
+  <div class="form-group">
+    <input id="user" placeholder="Usuario">
   </div>
+
+  <div class="form-group">
+    <input id="pass" type="password" placeholder="Contraseña">
+  </div>
+
+  <button id="btnLogin">
+    <span id="btnText">Ingresar</span>
+    <div class="loader" id="loader"></div>
+  </button>
 
   <div class="msg" id="mensaje"></div>
 </div>
 
-<!-- ================= LOGIN ================= -->
 <script>
+/* ================= LOGIN ================= */
 const API_LOGIN =
 "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
@@ -161,31 +134,38 @@ const btnLogin = document.getElementById("btnLogin");
 const btnText  = document.getElementById("btnText");
 const loader   = document.getElementById("loader");
 const mensaje  = document.getElementById("mensaje");
-const form     = document.getElementById("formLogin");
 const logo     = document.getElementById("logoEmpresa");
 const titulo   = document.getElementById("tituloSistema");
 
-/* ===== ACTIVAR FORM CUANDO CARGA EMPRESA ===== */
-function habilitarLogin(){
-  form.classList.remove("bloqueado");
-  user.disabled = false;
-  pass.disabled = false;
-  btnLogin.disabled = false;
-}
+/* ===== ESTADO EMPRESA ===== */
+let empresaCargada = false;
 
-/* ===== OBSERVA CUANDO empresa-header.js PINTA ===== */
+/* ===== OBSERVA CUANDO CARGA LA EMPRESA ===== */
 const observer = new MutationObserver(() => {
   if(
-    logo.src && logo.style.display !== "none" &&
-    titulo.textContent && titulo.textContent !== "Cargando empresa..."
+    logo.src &&
+    logo.style.display !== "none" &&
+    titulo.textContent.trim() !== "Acceso de Usuario"
   ){
-    habilitarLogin();
+    empresaCargada = true;
+    mensaje.textContent = "";
     observer.disconnect();
   }
 });
 
 observer.observe(logo,   { attributes:true });
 observer.observe(titulo,{ childList:true });
+
+/* ===== REGLA ADMIN ===== */
+user.addEventListener("input", () => {
+  if(!empresaCargada && user.value.trim().toLowerCase() !== "admin"){
+    mensaje.textContent = "Solo el usuario ADMIN puede ingresar sin empresa activa";
+    btnLogin.disabled = true;
+  }else{
+    mensaje.textContent = "";
+    btnLogin.disabled = false;
+  }
+});
 
 /* ===== LOGIN ===== */
 function activarLoader(){
@@ -207,6 +187,11 @@ async function login(){
 
   if(!username || !password){
     mensaje.textContent = "Debe ingresar usuario y contraseña";
+    return;
+  }
+
+  if(!empresaCargada && username.toLowerCase() !== "admin"){
+    mensaje.textContent = "Acceso permitido solo para ADMIN";
     return;
   }
 
@@ -244,14 +229,14 @@ async function login(){
 
 btnLogin.addEventListener("click", login);
 document.addEventListener("keydown", e=>{
-  if(e.key === "Enter" && !btnLogin.disabled) login();
+  if(e.key === "Enter") login();
 });
 </script>
 
-<!-- ================= EMPRESA (REAL) ================= -->
+<!-- ===== EMPRESA REAL ===== -->
 <script src="empresa-header.js"></script>
 <script>
-/* DOM YA EXISTE → llamada directa */
+/* llamada directa */
 if(typeof cargarEmpresaHeader === "function"){
   cargarEmpresaHeader();
 }
