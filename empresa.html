@@ -81,6 +81,12 @@ input, select{
 }
 input::placeholder{ color:var(--muted); }
 
+.modal-content input,
+.modal-content select{
+ width:100%;
+}
+
+
 /* =====================================================
    BOTONES
 ===================================================== */
@@ -300,6 +306,20 @@ td{
 
 @keyframes spin{
  to{ transform:rotate(360deg); }
+}
+
+@media(max-width:768px){
+
+  /* Empresa (logo + nombre) alineados a la derecha */
+  td[data-label="Empresa"] .empresa-cell{
+    justify-content:flex-end;
+    text-align:right;
+    width:100%;
+  }
+
+  td[data-label="Empresa"] .empresa-cell span{
+    display:block;
+  }
 }
 </style>
 </head>
