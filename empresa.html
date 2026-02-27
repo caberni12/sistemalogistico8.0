@@ -362,6 +362,29 @@ td{
     gap:16px;
   }
 }
+
+@media(max-width:768px){
+
+  /* Empresa: logo separado del texto */
+  td[data-label="Empresa"] .empresa-cell{
+    flex-direction:column;        /* 🔥 logo arriba, texto abajo */
+    align-items:flex-end;         /* alineado a la derecha */
+    gap:6px;
+    width:100%;
+    text-align:right;
+  }
+
+  td[data-label="Empresa"] .logo-tabla{
+    width:56px;                   /* logo un poco más grande */
+    height:56px;
+  }
+
+  td[data-label="Empresa"] .empresa-cell span{
+    font-size:15px;
+    font-weight:800;
+    line-height:1.2;
+  }
+}
 </style>
 </head>
 
