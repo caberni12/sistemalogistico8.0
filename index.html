@@ -6,18 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* ================= BASE ================= */
 body{
   margin:0;
-  font-family:'Segoe UI', Arial, sans-serif;
+  font-family:'Segoe UI',Arial;
   background:linear-gradient(135deg,#cdcdce,#33768a);
   display:flex;
   align-items:center;
   justify-content:center;
   height:100vh;
 }
-
-/* ================= CARD ================= */
 .card{
   background:#fff;
   padding:45px 40px;
@@ -27,8 +24,7 @@ body{
   text-align:center;
 }
 
-/* ================= LOGO EMPRESA ================= */
-/* ⚠️ ESTE LOGO LO CARGA empresa-header.js */
+/* LOGO EMPRESA (JS lo muestra) */
 .logo-empresa{
   width:120px;
   max-height:120px;
@@ -37,14 +33,12 @@ body{
   display:none;
 }
 
-/* ================= TITULO ================= */
 h3{
   margin:0 0 30px;
   color:#1e293b;
   font-weight:600;
 }
 
-/* ================= FORM ================= */
 .form-group{
   display:flex;
   justify-content:center;
@@ -67,7 +61,6 @@ input:focus{
   box-shadow:0 0 0 3px rgba(59,130,246,.15);
 }
 
-/* ================= BOTON ================= */
 button{
   width:100%;
   max-width:300px;
@@ -89,7 +82,6 @@ button:disabled{
   background:#94a3b8;
 }
 
-/* ================= LOADER ================= */
 .loader{
   width:16px;
   height:16px;
@@ -101,10 +93,9 @@ button:disabled{
 }
 
 @keyframes spin{
-  to{ transform:rotate(360deg); }
+  to{transform:rotate(360deg)}
 }
 
-/* ================= MENSAJE ================= */
 .msg{
   margin-top:18px;
   font-size:13px;
@@ -118,10 +109,10 @@ button:disabled{
 
 <div class="card">
 
-  <!-- 🔵 LOGO DE EMPRESA (lo pinta empresa-header.js) -->
+  <!-- 👇 ESTE LOGO LO LLENA empresa-header.js -->
   <img id="logoEmpresa" class="logo-empresa">
 
-  <!-- 🔵 TITULO (empresa-header.js puede reemplazarlo) -->
+  <!-- 👇 ESTE TITULO TAMBIÉN -->
   <h3 id="tituloSistema">Acceso de Usuario</h3>
 
   <div class="form-group">
@@ -132,7 +123,7 @@ button:disabled{
     <input id="pass" type="password" placeholder="Contraseña">
   </div>
 
-  <button id="btnLogin">
+  <button id="btnLogin" onclick="login()">
     <span id="btnText">Ingresar</span>
     <div class="loader" id="loader"></div>
   </button>
@@ -145,32 +136,24 @@ button:disabled{
 const API_LOGIN =
 "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
-const btnLogin = document.getElementById("btnLogin");
-const loader   = document.getElementById("loader");
-const btnText  = document.getElementById("btnText");
-const mensaje  = document.getElementById("mensaje");
-const user     = document.getElementById("user");
-const pass     = document.getElementById("pass");
-
 function activarLoader(){
   btnLogin.disabled = true;
   loader.style.display = "block";
-  btnText.textContent = "Validando...";
+  btnText.innerText = "Validando...";
 }
-
 function desactivarLoader(){
   btnLogin.disabled = false;
   loader.style.display = "none";
-  btnText.textContent = "Ingresar";
+  btnText.innerText = "Ingresar";
 }
 
 async function login(){
   const username = user.value.trim();
   const password = pass.value.trim();
-  mensaje.textContent = "";
+  mensaje.innerText = "";
 
   if(!username || !password){
-    mensaje.textContent = "Debe ingresar usuario y contraseña";
+    mensaje.innerText = "Debe ingresar usuario y contraseña";
     return;
   }
 
@@ -190,12 +173,11 @@ async function login(){
     const res = await r.json();
 
     if(!res.ok){
-      mensaje.textContent = res.msg || "Credenciales inválidas";
+      mensaje.innerText = res.msg || "Credenciales inválidas";
       desactivarLoader();
       return;
     }
 
-    /* ===== Guardar sesión ===== */
     localStorage.setItem("token", res.token);
     localStorage.setItem("usuario", res.data.user);
     localStorage.setItem("nombre", res.data.nombre);
@@ -205,31 +187,21 @@ async function login(){
 
     window.location.href = "main.html";
 
-  }catch(err){
-    console.error(err);
-    mensaje.textContent = "Error de conexión con el servidor";
+  }catch(e){
+    mensaje.innerText = "Error de conexión con el servidor";
     desactivarLoader();
   }
 }
-
-btnLogin.addEventListener("click", login);
-
-document.addEventListener("keydown", e=>{
-  if(e.key === "Enter") login();
-});
 </script>
 
-<!-- ================= EMPRESA (LOGO + NOMBRE) ================= -->
-<!-- ⚠️ ESTE SCRIPT ES EL ÚNICO QUE CARGA EL LOGO -->
+<!-- 👇 ESTE ES EL ÚNICO JS QUE CARGA EL LOGO -->
 <script src="empresa-header.js"></script>
 <script>
-/* 👉 LLAMADA DIRECTA (DOM YA EXISTE) */
-if (typeof cargarEmpresaHeader === "function") {
-  cargarEmpresaHeader();
-}
+  if(typeof cargarEmpresaHeader === "function"){
+    cargarEmpresaHeader();
+  }
 </script>
 
-<!-- ================= SEGURIDAD ================= -->
 <script src="segurity.js"></script>
 
 </body>
