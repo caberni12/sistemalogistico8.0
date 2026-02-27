@@ -8,7 +8,8 @@
  * - Variable global EMPRESA_ACTIVA
  ************************************************/
 
-const API_EMPRESAS = "https://script.google.com/macros/s/AKfycbxnmGEQXTkJhpFFb0VloCUREawb_xTQILOcsOJiDggeod0yu-fj8GWrrpRbwjZtd9b9/exec";
+const API_EMPRESAS =
+"https://script.google.com/macros/s/AKfycbxnmGEQXTkJhpFFb0VloCUREawb_xTQILOcsOJiDggeod0yu-fj8GWrrpRbwjZtd9b9/exec";
 
 /* =================================================
    VARIABLE GLOBAL
@@ -26,7 +27,10 @@ async function cargarEmpresaActiva(){
   try{
     if(overlay) overlay.style.display = "flex";
 
-    const r = await fetch(API_EMPRESAS + "?action=empresaActiva");
+    const r = await fetch(API_EMPRESAS + "?action=empresaActiva", {
+      cache: "no-store"
+    });
+
     const d = await r.json();
 
     /* =============================
@@ -37,17 +41,24 @@ async function cargarEmpresaActiva(){
       return;
     }
 
+    const empresa = d.data;
+
+    if(!empresa.nombre || !empresa.rut || !empresa.estado){
+      mostrarSistemaNoConfigurado();
+      return;
+    }
+
     /* =============================
        GUARDAR GLOBAL
     ============================== */
-    window.EMPRESA_ACTIVA = d.data;
+    window.EMPRESA_ACTIVA = empresa;
 
     /* =============================
-       LOGO
+       LOGO (SIN CACHE)
     ============================== */
     if(logoEl){
-      if(window.EMPRESA_ACTIVA.logo){
-        logoEl.src = window.EMPRESA_ACTIVA.logo;
+      if(empresa.logo){
+        logoEl.src = empresa.logo + "?v=" + Date.now();
         logoEl.style.display = "block";
       }else{
         logoEl.style.display = "none";
@@ -65,22 +76,22 @@ async function cargarEmpresaActiva(){
           gap:8px;
           font-weight:700;
         ">
-          ${window.EMPRESA_ACTIVA.nombre}
+          ${empresa.nombre}
 
           <span style="
             font-size:11px;
             padding:2px 8px;
             border-radius:999px;
             font-weight:700;
-            background:${window.EMPRESA_ACTIVA.estado === "ACTIVA" ? "#dcfce7" : "#fee2e2"};
-            color:${window.EMPRESA_ACTIVA.estado === "ACTIVA" ? "#166534" : "#991b1b"};
+            background:${empresa.estado === "ACTIVA" ? "#dcfce7" : "#fee2e2"};
+            color:${empresa.estado === "ACTIVA" ? "#166534" : "#991b1b"};
           ">
-            ${window.EMPRESA_ACTIVA.estado}
+            ${empresa.estado}
           </span>
         </div>
 
         <div style="font-size:12px;color:#64748b">
-          RUT: ${window.EMPRESA_ACTIVA.rut}
+          RUT: ${empresa.rut}
         </div>
       </div>
     `);
@@ -88,14 +99,14 @@ async function cargarEmpresaActiva(){
     /* =============================
        INFO LATERAL
     ============================== */
-    setInfoEmpresa(`🏢 ${window.EMPRESA_ACTIVA.sistema || "Sistema activo"}`);
+    setInfoEmpresa(`🏢 ${empresa.sistema || "Sistema activo"}`);
 
     /* =============================
        BLOQUEO SI INACTIVA (OPCIONAL)
     ============================== */
-    if(window.EMPRESA_ACTIVA.estado !== "ACTIVA"){
+    if(empresa.estado !== "ACTIVA"){
       console.warn("Empresa INACTIVA");
-      // Aquí puedes bloquear módulos o redirigir si lo deseas
+      // Aquí puedes bloquear módulos, botones o redirigir
     }
 
   }catch(err){
@@ -128,6 +139,7 @@ function mostrarSistemaNoConfigurado(){
       Sistema no configurado
     </div>
   `);
+
   setInfoEmpresa("⚠ No hay empresa activa");
 
   const logoEl = document.getElementById("logoEmpresa");
@@ -140,6 +152,7 @@ function mostrarErrorConexion(){
       Error al iniciar sistema
     </div>
   `);
+
   setInfoEmpresa("❌ Error de conexión");
 
   const logoEl = document.getElementById("logoEmpresa");
@@ -150,4 +163,3 @@ function mostrarErrorConexion(){
    INIT
 ================================================= */
 window.addEventListener("load", cargarEmpresaActiva);
-
