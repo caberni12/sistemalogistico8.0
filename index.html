@@ -65,10 +65,31 @@ button{
   color:#fff;
   font-weight:600;
   cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin:0 auto;
 }
 
 button:disabled{
   background:#94a3b8;
+  cursor:not-allowed;
+}
+
+/* LOADER */
+.loader{
+  width:16px;
+  height:16px;
+  border:3px solid #fff;
+  border-top:3px solid transparent;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  display:none;
+}
+
+@keyframes spin{
+  to{ transform:rotate(360deg); }
 }
 
 .msg{
@@ -84,7 +105,7 @@ button:disabled{
 
 <div class="card">
 
-  <!-- Empresa (se pinta si existe) -->
+  <!-- Empresa (JS la pinta si existe) -->
   <img id="logoEmpresa" class="logo-empresa">
   <h3 id="tituloSistema">Acceso de Usuario</h3>
 
@@ -96,7 +117,10 @@ button:disabled{
     <input id="pass" type="password" placeholder="Contraseña">
   </div>
 
-  <button id="btnLogin">Ingresar</button>
+  <button id="btnLogin">
+    <span id="btnText">Ingresar</span>
+    <div class="loader" id="loader"></div>
+  </button>
 
   <div class="msg" id="mensaje"></div>
 </div>
@@ -109,12 +133,27 @@ const API_LOGIN =
 const user     = document.getElementById("user");
 const pass     = document.getElementById("pass");
 const btnLogin = document.getElementById("btnLogin");
+const btnText  = document.getElementById("btnText");
+const loader   = document.getElementById("loader");
 const mensaje  = document.getElementById("mensaje");
 const logo     = document.getElementById("logoEmpresa");
 
 /* Detectar si empresa se cargó (visual) */
 function empresaCargada(){
   return logo && logo.src && logo.style.display !== "none";
+}
+
+/* Loader */
+function activarLoader(){
+  btnLogin.disabled = true;
+  loader.style.display = "block";
+  btnText.textContent = "Validando...";
+}
+
+function desactivarLoader(){
+  btnLogin.disabled = false;
+  loader.style.display = "none";
+  btnText.textContent = "Ingresar";
 }
 
 /* ===== LOGIN ===== */
@@ -129,6 +168,8 @@ btnLogin.addEventListener("click", async () => {
     return;
   }
 
+  activarLoader();
+
   try{
     const r = await fetch(API_LOGIN,{
       method:"POST",
@@ -140,12 +181,14 @@ btnLogin.addEventListener("click", async () => {
 
     if(!res.ok){
       mensaje.textContent = res.msg || "Credenciales inválidas";
+      desactivarLoader();
       return;
     }
 
-    /* === VALIDACIÓN POR ROL === */
+    /* VALIDACIÓN POR ROL */
     if(!empresaCargada() && res.data.rol !== "ADMIN"){
       mensaje.textContent = "Solo Administrador puede ingresar sin empresa configurada";
+      desactivarLoader();
       return;
     }
 
@@ -161,6 +204,7 @@ btnLogin.addEventListener("click", async () => {
 
   }catch(e){
     mensaje.textContent = "Error de conexión";
+    desactivarLoader();
   }
 });
 </script>
@@ -168,7 +212,6 @@ btnLogin.addEventListener("click", async () => {
 <!-- ===== EMPRESA REAL ===== -->
 <script src="empresa-header.js"></script>
 <script>
-/* Se ejecuta cuando ya existe el DOM */
 if(typeof cargarEmpresaHeader === "function"){
   cargarEmpresaHeader();
 }
