@@ -313,9 +313,23 @@ button{
 <!-- HEADER -->
 <header>
   <div class="header-left">
-    <button id="btnMenu" onclick="toggleMenu()">☰</button>
-    <h1 id="tituloSistema">Panel Logístico</h1>
-  </div>
+  <button id="btnMenu" onclick="toggleMenu()">☰</button>
+
+  <!-- LOGO EMPRESA -->
+  <img
+    id="logoEmpresa"
+    alt="Logo Empresa"
+    style="
+      height:36px;
+      max-width:120px;
+      object-fit:contain;
+      display:none;
+    "
+  >
+
+  <!-- TÍTULO SISTEMA -->
+  <h1 id="tituloSistema">Panel Logístico</h1>
+</div>
 
   <div class="header-info">
     <div id="usuario"></div>
