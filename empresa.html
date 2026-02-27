@@ -399,108 +399,113 @@ td{
  </div>
 
  <script>
-   /* =====================================================
-      CONFIGURACIÓN
-   ===================================================== */
-   const API = "https://script.google.com/macros/s/AKfycbyHl6EiTfVB9qoyUSRNMmr9qgrzz7C1yEIDRHQmDw0nAGnDJWKjbvF_PgCsFMPfzcV3/exec";
-   
-   /* =====================================================
-      ESTADO GLOBAL
-   ===================================================== */
-   let empresasCache = [];
-   let logoBase64 = "";
-   let map = null;
-   let marker = null;
-   let cargando = false;
-   let eliminando = false;
-   let circle = null;
-   const RADIO_METROS = 200; // 👈 radio visible (ajústalo)
-   /* =====================================================
-      HELPERS
-   ===================================================== */
-   const $ = id => document.getElementById(id);
-   
-   function showLoader(){
-     $("globalLoader").style.display = "flex";
-   }
-   function hideLoader(){
-     $("globalLoader").style.display = "none";
-   }
-   
-   function normalizarEstado(v){
-     return String(v || "INACTIVA").trim().toUpperCase();
-   }
-   
-   /* =====================================================
-      EVENTOS
-   ===================================================== */
-   $("btnNueva").onclick   = () => abrirModal();
-   $("btnCargar").onclick = () => cargarEmpresas();
-   
-   $("buscarEmpresa").oninput = aplicarFiltros;
-   $("filtroEstado").onchange = aplicarFiltros;
-   
-   $("btnCancelar").onclick = () => {
-     $("modalEmpresa").style.display = "none";
-   };
-   
-   $("btnGuardar").onclick = guardarEmpresa;
-   
-   /* =====================================================
-      LOGO – PREVIEW (MISMO MÉTODO DEL PROYECTO QUE FUNCIONA)
-   ===================================================== */
-   $("empresaLogo").onchange = function(){
-     const file = this.files[0];
-     if(!file) return;
-   
-     const reader = new FileReader();
-     reader.onload = e => {
-       logoBase64 = e.target.result;
-       $("logoPreview").src = logoBase64;
-       $("logoPreview").style.display = "block";
-     };
-     reader.readAsDataURL(file);
-   };
-   
-   /* =====================================================
-      MODAL
-   ===================================================== */
-   function abrirModal(e = null){
-     $("modalEmpresa").style.display = "flex";
-     $("modalTitulo").textContent = e ? "Editar Empresa" : "Nueva Empresa";
-   
-     $("empresaId").value        = e?.id || "";
-     $("empresaNombre").value    = e?.nombre || "";
-     $("empresaRut").value       = e?.rut || "";
-     $("empresaGiro").value      = e?.giro || "";
-     $("empresaCorreo").value    = e?.correo || "";
-     $("empresaTelefono").value  = e?.telefono || "";
-     $("empresaDireccion").value = e?.direccion || "";
-     $("empresaComuna").value    = e?.comuna || "";
-     $("empresaEstado").value    = normalizarEstado(e?.estado);
-   
-     if(e?.logo){
-       $("logoPreview").src = e.logo;
-       $("logoPreview").style.display = "block";
-     }else{
-       $("logoPreview").style.display = "none";
-     }
-   
-     logoBase64 = "";
-     $("empresaLogo").value = "";
-   
-     setTimeout(()=>{
-     initMap(
-    e?.lat ? Number(e.lat) : null,
-    e?.lng ? Number(e.lng) : null
-  );
-}, 300);
-   }
-   
-   /* =====================================================
-      MAPA
-   ===================================================== */
-   function initMap(lat = null, lng = null){
+   document.addEventListener("DOMContentLoaded", () => {
+
+/* =====================================================
+   CONFIGURACIÓN
+===================================================== */
+const API = "https://script.google.com/macros/s/AKfycbyHl6EiTfVB9qoyUSRNMmr9qgrzz7C1yEIDRHQmDw0nAGnDJWKjbvF_PgCsFMPfzcV3/exec";
+
+/* =====================================================
+   ESTADO GLOBAL
+===================================================== */
+let empresasCache = [];
+let logoBase64 = "";
+let map = null;
+let marker = null;
+let circle = null;
+let cargando = false;
+
+const RADIO_METROS = 200;
+
+/* =====================================================
+   HELPERS
+===================================================== */
+const $ = id => document.getElementById(id);
+
+function showLoader(){
+  const l = $("globalLoader");
+  if(l) l.style.display = "flex";
+}
+function hideLoader(){
+  const l = $("globalLoader");
+  if(l) l.style.display = "none";
+}
+
+function normalizarEstado(v){
+  return String(v || "INACTIVA").trim().toUpperCase();
+}
+
+/* =====================================================
+   EVENTOS
+===================================================== */
+$("btnNueva")?.addEventListener("click", () => abrirModal());
+$("btnCargar")?.addEventListener("click", cargarEmpresas);
+
+$("buscarEmpresa")?.addEventListener("input", aplicarFiltros);
+$("filtroEstado")?.addEventListener("change", aplicarFiltros);
+
+$("btnCancelar")?.addEventListener("click", () => {
+  $("modalEmpresa").style.display = "none";
+});
+
+$("btnGuardar")?.addEventListener("click", guardarEmpresa);
+
+/* =====================================================
+   LOGO PREVIEW
+===================================================== */
+$("empresaLogo")?.addEventListener("change", function(){
+  const file = this.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    logoBase64 = e.target.result;
+    $("logoPreview").src = logoBase64;
+    $("logoPreview").style.display = "block";
+  };
+  reader.readAsDataURL(file);
+});
+
+/* =====================================================
+   MODAL
+===================================================== */
+function abrirModal(e = null){
+  $("modalEmpresa").style.display = "flex";
+  $("modalTitulo").textContent = e ? "Editar Empresa" : "Nueva Empresa";
+
+  $("empresaId").value        = e?.id || "";
+  $("empresaNombre").value    = e?.nombre || "";
+  $("empresaRut").value       = e?.rut || "";
+  $("empresaGiro").value      = e?.giro || "";
+  $("empresaCorreo").value    = e?.correo || "";
+  $("empresaTelefono").value  = e?.telefono || "";
+  $("empresaDireccion").value = e?.direccion || "";
+  $("empresaComuna").value    = e?.comuna || "";
+  $("empresaEstado").value    = normalizarEstado(e?.estado);
+
+  if(e?.logo){
+    $("logoPreview").src = e.logo;
+    $("logoPreview").style.display = "block";
+  }else{
+    $("logoPreview").style.display = "none";
+  }
+
+  logoBase64 = "";
+  $("empresaLogo").value = "";
+
+  setTimeout(() => {
+    initMap(
+      e?.lat ? Number(e.lat) : null,
+      e?.lng ? Number(e.lng) : null
+    );
+  }, 300);
+}
+
+/* =====================================================
+   MAPA
+===================================================== */
+function initMap(lat = null, lng = null){
   if(!map){
     map = L.map("map").setView([-33.45, -70.66], 14);
 
@@ -511,19 +516,13 @@ td{
     marker = L.marker([-33.45, -70.66]).addTo(map);
   }
 
-  // si llegan coordenadas reales
   if(lat && lng){
     const pos = [lat, lng];
-
     marker.setLatLng(pos);
     map.setView(pos, 16);
 
-    // borrar círculo anterior
-    if(circle){
-      map.removeLayer(circle);
-    }
+    if(circle) map.removeLayer(circle);
 
-    // dibujar radio
     circle = L.circle(pos, {
       radius: RADIO_METROS,
       color: "#2563eb",
@@ -532,155 +531,137 @@ td{
     }).addTo(map);
   }
 
-  setTimeout(()=> map.invalidateSize(), 200);
+  setTimeout(() => map.invalidateSize(), 200);
 }
-   
-   /* =====================================================
-      CARGAR EMPRESAS
-   ===================================================== */
-   async function cargarEmpresas(){
-     if(cargando) return;
-     cargando = true;
-     showLoader();
-   
-     try{
-       const r = await fetch(API + "?action=listarEmpresas");
-       const d = await r.json();
-       if(!d.ok) throw d.msg;
-   
-       empresasCache = d.data.map(e => ({
-         ...e,
-         estado: normalizarEstado(e.estado)
-       }));
-   
-       aplicarFiltros();
-   
-     }catch(err){
-       alert("Error al cargar empresas: " + err);
-     }finally{
-       hideLoader();
-       cargando = false;
-     }
-   }
-   
-   /* =====================================================
-      FILTROS + RENDER
-   ===================================================== */
-   function aplicarFiltros(){
-     const tbody  = $("tablaEmpresas");
-     const texto  = $("buscarEmpresa").value.toLowerCase();
-     const estado = $("filtroEstado").value;
-   
-     tbody.innerHTML = "";
-   
-     empresasCache
-       .filter(e =>
-         (!texto || e.nombre.toLowerCase().includes(texto)) &&
-         (estado === "TODAS" || e.estado === estado)
-       )
-       .forEach(e => {
-   
-         const tr = document.createElement("tr");
-   
-         tr.innerHTML = `
-           <td data-label="ID">${e.id}</td>
-   
-           <td data-label="Empresa">
-             <div class="empresa-cell">
-               <img class="logo-tabla"
-                 src="${e.logo || 'https://via.placeholder.com/42'}"
-                 loading="lazy"
-               >
-               <span>${e.nombre}</span>
-             </div>
-           </td>
-   
-           <td data-label="RUT">${e.rut}</td>
-           <td data-label="Comuna">${e.comuna || ""}</td>
-   
-           <td data-label="Estado">
-             <span class="badge ${e.estado === "ACTIVA" ? "activa" : "inactiva"}">
-               ${e.estado}
-             </span>
-           </td>
-   
-           <td data-label="Acciones">
-             <button class="secondary">✏️</button>
-             <button class="danger">🗑</button>
-           </td>
-         `;
-   
-         tr.querySelector(".secondary").onclick = () => abrirModal(e);
-         tr.querySelector(".danger").onclick    = () => eliminarEmpresa(e.id);
-   
-         tbody.appendChild(tr);
-       });
-   }
-   
-   /* =====================================================
-      GUARDAR (CREAR / EDITAR)
-   ===================================================== */
-   async function guardarEmpresa(){
-     showLoader();
-   
-     try{
-       const payload = {
-         action: $("empresaId").value ? "editarEmpresa" : "crearEmpresa",
-         id: $("empresaId").value,
-         nombre: $("empresaNombre").value.trim(),
-         rut: $("empresaRut").value.trim(),
-         giro: $("empresaGiro").value,
-         correo: $("empresaCorreo").value,
-         telefono: $("empresaTelefono").value,
-         direccion: $("empresaDireccion").value,
-         comuna: $("empresaComuna").value,
-         estado: $("empresaEstado").value,
-         logoBase64
-       };
-   
-       if(!payload.nombre || !payload.rut){
-         throw "Nombre y RUT son obligatorios";
-       }
-   
-       const r = await fetch(API, {
-         method: "POST",
-         headers: { "Content-Type": "text/plain;charset=utf-8" },
-         body: JSON.stringify(payload)
-       });
-   
-       const d = await r.json();
-       if(!d.ok) throw d.msg;
-   
-       $("modalEmpresa").style.display = "none";
-       await cargarEmpresas();
-   
-     }catch(err){
-       alert("Error al guardar: " + err);
-     }finally{
-       hideLoader();
-     }
-   }
-   
-   /* =====================================================
-      ELIMINAR (INACTIVA)
-   ===================================================== */
-   async function eliminarEmpresa(id){
-  if(!id) return;
 
+/* =====================================================
+   CARGAR EMPRESAS
+===================================================== */
+async function cargarEmpresas(){
+  if(cargando) return;
+  cargando = true;
+  showLoader();
+
+  try{
+    const r = await fetch(API + "?action=listarEmpresas");
+    const d = await r.json();
+    if(!d.ok) throw d.msg;
+
+    empresasCache = d.data.map(e => ({
+      ...e,
+      estado: normalizarEstado(e.estado)
+    }));
+
+    aplicarFiltros();
+
+  }catch(err){
+    alert("Error al cargar empresas: " + err);
+  }finally{
+    hideLoader();
+    cargando = false;
+  }
+}
+
+/* =====================================================
+   FILTROS + RENDER
+===================================================== */
+function aplicarFiltros(){
+  const tbody  = $("tablaEmpresas");
+  const texto  = $("buscarEmpresa").value.toLowerCase();
+  const estado = $("filtroEstado").value;
+
+  tbody.innerHTML = "";
+
+  empresasCache
+    .filter(e =>
+      (!texto || e.nombre.toLowerCase().includes(texto)) &&
+      (estado === "TODAS" || e.estado === estado)
+    )
+    .forEach(e => {
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td data-label="ID">${e.id}</td>
+        <td data-label="Empresa">
+          <div class="empresa-cell">
+            <img class="logo-tabla" src="${e.logo || 'https://via.placeholder.com/42'}">
+            <span>${e.nombre}</span>
+          </div>
+        </td>
+        <td data-label="RUT">${e.rut}</td>
+        <td data-label="Comuna">${e.comuna || ""}</td>
+        <td data-label="Estado">
+          <span class="badge ${e.estado === "ACTIVA" ? "activa" : "inactiva"}">${e.estado}</span>
+        </td>
+        <td data-label="Acciones">
+          <button class="secondary">✏️</button>
+          <button class="danger">🗑</button>
+        </td>
+      `;
+
+      tr.querySelector(".secondary").onclick = () => abrirModal(e);
+      tr.querySelector(".danger").onclick    = () => eliminarEmpresa(e.id);
+
+      tbody.appendChild(tr);
+    });
+}
+
+/* =====================================================
+   GUARDAR
+===================================================== */
+async function guardarEmpresa(){
+  showLoader();
+
+  try{
+    const payload = {
+      action: $("empresaId").value ? "editarEmpresa" : "crearEmpresa",
+      id: $("empresaId").value,
+      nombre: $("empresaNombre").value.trim(),
+      rut: $("empresaRut").value.trim(),
+      giro: $("empresaGiro").value,
+      correo: $("empresaCorreo").value,
+      telefono: $("empresaTelefono").value,
+      direccion: $("empresaDireccion").value,
+      comuna: $("empresaComuna").value,
+      estado: $("empresaEstado").value,
+      logoBase64
+    };
+
+    if(!payload.nombre || !payload.rut)
+      throw "Nombre y RUT son obligatorios";
+
+    const r = await fetch(API,{
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body:JSON.stringify(payload)
+    });
+
+    const d = await r.json();
+    if(!d.ok) throw d.msg;
+
+    $("modalEmpresa").style.display = "none";
+    await cargarEmpresas();
+
+  }catch(err){
+    alert("Error al guardar: " + err);
+  }finally{
+    hideLoader();
+  }
+}
+
+/* =====================================================
+   ELIMINAR
+===================================================== */
+async function eliminarEmpresa(id){
   if(!confirm("¿Marcar empresa como INACTIVA?")) return;
 
   showLoader();
 
   try{
-    const payload = {
-      action: "eliminarEmpresa",
-      id: String(id)   // 👈 CLAVE
-    };
-
     const r = await fetch(API,{
-      method: "POST",
-      headers: { "Content-Type":"text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body:JSON.stringify({ action:"eliminarEmpresa", id:String(id) })
     });
 
     const d = await r.json();
@@ -694,10 +675,13 @@ td{
     hideLoader();
   }
 }
-   /* =====================================================
-      INIT
-   ===================================================== */
-   cargarEmpresas();
+
+/* =====================================================
+   INIT
+===================================================== */
+cargarEmpresas();
+
+});
    </script>
 
 </body>
