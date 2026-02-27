@@ -44,7 +44,6 @@ header{
 
 .mt{ margin-top:16px; }
 
-/* BOTONES + LOADER */
 button{
  background:var(--accent);
  color:#fff;
@@ -78,11 +77,8 @@ button.loading::after{
  animation:spin 1s linear infinite;
 }
 
-@keyframes spin{
- to{ transform:translateY(-50%) rotate(360deg); }
-}
+@keyframes spin{ to{ transform:translateY(-50%) rotate(360deg); } }
 
-/* TABLA DESKTOP */
 table{
  width:100%;
  border-collapse:collapse;
@@ -110,15 +106,8 @@ th{ background:#f8fafc; }
 .activa{ background:#dcfce7; color:#166534; }
 .inactiva{ background:#fee2e2; color:#991b1b; }
 
-/* ================================
-   TABLA → TARJETAS (MÓVIL)
-================================ */
 @media (max-width:768px){
-
- table, thead, tbody, th, tr{
-  display:block;
- }
-
+ table, thead, tbody, th, tr{ display:block; }
  thead{ display:none; }
 
  tbody tr{
@@ -132,7 +121,6 @@ th{ background:#f8fafc; }
  tbody td{
   display:flex;
   justify-content:space-between;
-  align-items:center;
   padding:8px 0;
   border:none;
  }
@@ -142,14 +130,8 @@ th{ background:#f8fafc; }
   font-weight:600;
   color:var(--muted);
  }
-
- tbody td:last-child{
-  justify-content:flex-end;
-  gap:8px;
- }
 }
 
-/* MODAL */
 .modal{
  position:fixed;
  inset:0;
@@ -167,22 +149,6 @@ th{ background:#f8fafc; }
  width:100%;
  max-width:420px;
 }
-
-.modal label{
- display:block;
- font-size:13px;
- margin-top:12px;
- color:var(--muted);
-}
-
-.modal input,
-.modal select{
- width:100%;
- padding:10px;
- margin-top:4px;
- border-radius:8px;
- border:1px solid var(--border);
-}
 </style>
 </head>
 
@@ -195,8 +161,8 @@ th{ background:#f8fafc; }
  <div class="flex">
   <h2>Empresas Registradas</h2>
   <div class="flex">
-   <button id="btnCargar" class="secondary" onclick="cargarEmpresas()">⟳ Recargar</button>
-   <button onclick="abrirModal()">＋ Nueva Empresa</button>
+   <button id="btnCargar" class="secondary">⟳ Recargar</button>
+   <button id="btnNueva">＋ Nueva Empresa</button>
   </div>
  </div>
 
@@ -237,63 +203,63 @@ th{ background:#f8fafc; }
   </select>
 
   <div class="flex mt">
-   <button id="btnGuardar" onclick="guardarEmpresa()">💾 Guardar</button>
-   <button class="danger" onclick="cerrarModal()">Cancelar</button>
+   <button id="btnGuardar">💾 Guardar</button>
+   <button class="danger" id="btnCancelar">Cancelar</button>
   </div>
  </div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbyxZ90bDIdYBJjpDIA_g5ha3_MwXPbgV7x0xRx01ypisR0jzJzsPssgX8Bfp1VJoB9v/exec";
+const API = "https://script.google.com/macros/s/AKfycbyxZ90bDIdYBJjpDIA_g5ha3_MwXPbgV7x0xRx01ypisR0jzJzsPssgX8Bfp1VJoB9v/exec";
 
-/* MODAL */
-function abrirModal(e=null){
- modalEmpresa.style.display="flex";
- if(e){
-  modalTitulo.textContent="Editar Empresa";
-  empresaId.value=e.id;
-  empresaNombre.value=e.nombre;
-  empresaRut.value=e.rut;
-  empresaEstado.value=e.estado;
- }else{
-  modalTitulo.textContent="Nueva Empresa";
-  empresaId.value="";
-  empresaNombre.value="";
-  empresaRut.value="";
-  empresaEstado.value="ACTIVA";
- }
+const modal = document.getElementById("modalEmpresa");
+const tabla = document.getElementById("tablaEmpresas");
+const btnCargar = document.getElementById("btnCargar");
+const btnGuardar = document.getElementById("btnGuardar");
+
+document.getElementById("btnNueva").onclick = () => abrirModal();
+document.getElementById("btnCancelar").onclick = cerrarModal;
+btnCargar.onclick = cargarEmpresas;
+btnGuardar.onclick = guardarEmpresa;
+
+function abrirModal(data=null){
+ modal.style.display="flex";
+ document.getElementById("modalTitulo").textContent = data ? "Editar Empresa" : "Nueva Empresa";
+ empresaId.value = data?.id || "";
+ empresaNombre.value = data?.nombre || "";
+ empresaRut.value = data?.rut || "";
+ empresaEstado.value = data?.estado || "ACTIVA";
 }
 
-function cerrarModal(){
- modalEmpresa.style.display="none";
-}
+function cerrarModal(){ modal.style.display="none"; }
 
-/* CRUD */
 async function cargarEmpresas(){
  btnCargar.classList.add("loading");
+ tabla.innerHTML="";
 
- const r=await fetch(API+"?action=listarEmpresas");
- const d=await r.json();
+ try{
+  const r = await fetch(API+"?action=listarEmpresas");
+  const d = await r.json();
 
- tablaEmpresas.innerHTML="";
- if(d.data){
-  d.data.forEach(e=>{
-   const cls=e.estado==="ACTIVA"?"activa":"inactiva";
+  d.data?.forEach(e=>{
    const tr=document.createElement("tr");
    tr.innerHTML=`
     <td data-label="ID">${e.id}</td>
     <td data-label="Empresa">${e.nombre}</td>
     <td data-label="RUT">${e.rut}</td>
     <td data-label="Estado">
-     <span class="badge ${cls}">${e.estado}</span>
+     <span class="badge ${e.estado==="ACTIVA"?"activa":"inactiva"}">${e.estado}</span>
     </td>
     <td data-label="Acciones">
-     <button class="secondary" onclick='abrirModal(${JSON.stringify(e)})'>✏️</button>
-     <button class="danger" onclick='eliminarEmpresa(${e.id})'>🗑</button>
-    </td>
-   `;
-   tablaEmpresas.appendChild(tr);
+     <button class="secondary">✏️</button>
+     <button class="danger">🗑</button>
+    </td>`;
+   tr.querySelector(".secondary").onclick=()=>abrirModal(e);
+   tr.querySelector(".danger").onclick=()=>eliminarEmpresa(e.id);
+   tabla.appendChild(tr);
   });
+ }catch(err){
+  alert("Error al cargar empresas");
  }
 
  btnCargar.classList.remove("loading");
@@ -303,16 +269,20 @@ async function guardarEmpresa(){
  btnGuardar.classList.add("loading");
 
  const payload={
-  action:empresaId.value?"editarEmpresa":"crearEmpresa",
-  id:empresaId.value,
-  nombre:empresaNombre.value,
-  rut:empresaRut.value,
-  estado:empresaEstado.value
+  action: empresaId.value ? "editarEmpresa" : "crearEmpresa",
+  id: empresaId.value,
+  nombre: empresaNombre.value.trim(),
+  rut: empresaRut.value.trim(),
+  estado: empresaEstado.value
  };
 
- const r=await fetch(API,{method:"POST",body:JSON.stringify(payload)});
- const d=await r.json();
+ const r = await fetch(API,{
+  method:"POST",
+  headers:{ "Content-Type":"application/json" },
+  body:JSON.stringify(payload)
+ });
 
+ const d = await r.json();
  if(!d.ok) alert(d.msg||"Error");
 
  btnGuardar.classList.remove("loading");
@@ -323,22 +293,17 @@ async function guardarEmpresa(){
 async function eliminarEmpresa(id){
  if(!confirm("¿Marcar como INACTIVA?")) return;
 
- const r=await fetch(API,{
+ await fetch(API,{
   method:"POST",
+  headers:{ "Content-Type":"application/json" },
   body:JSON.stringify({action:"eliminarEmpresa",id})
  });
-
- const d=await r.json();
- if(!d.ok) alert(d.msg||"Error");
 
  cargarEmpresas();
 }
 
-/* INIT */
 cargarEmpresas();
 </script>
 
-<script src="auth.js"></script>
-<script src="segurity.js"></script>
 </body>
 </html>
