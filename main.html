@@ -4,8 +4,12 @@
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
 
-<!-- VIEWPORT CORRECTO -->
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<!-- VIEWPORT APP -->
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1,
+               maximum-scale=1,
+               user-scalable=no">
 
 <!-- LEAFLET -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -37,7 +41,6 @@ html,body{
  height:100%;
  background:var(--bg);
  color:var(--text);
- overscroll-behavior:none;
 }
 
 /* Leaflet fix */
@@ -76,12 +79,12 @@ header{
 #btnMenu{
  width:40px;
  height:40px;
- padding:0;
  font-size:20px;
  background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
  border:none;
  border-radius:12px;
+ cursor:pointer;
 }
 
 header h1{
@@ -104,7 +107,7 @@ header .right{
  gap:12px;
 }
 
-/* BOTONES */
+/* BUTTONS */
 button{
  border:none;
  border-radius:var(--radius);
@@ -138,10 +141,9 @@ button{
 .main{
  flex:1;
  overflow-y:auto;
- -webkit-overflow-scrolling:touch;
 }
 
-/* MAPA */
+/* MAP */
 #mapaBox{
  position:relative;
  width:100%;
@@ -154,7 +156,7 @@ button{
  height:100%;
 }
 
-/* DASHBOARD MAPA */
+/* DASHBOARD MAP */
 #dashboardMapa{
  position:absolute;
  bottom:16px;
@@ -278,7 +280,6 @@ button{
  #btnMenu{
    width:36px;
    height:36px;
-   font-size:18px;
  }
 }
 </style>
@@ -306,12 +307,10 @@ button{
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
 
-    <!-- LOGO EMPRESA -->
     <img id="logoEmpresa"
          alt="Logo Empresa"
-         style="height:36px;max-width:120px;object-fit:contain;display:none">
+         style="height:36px;max-width:120px;object-fit:contain;display:none;">
 
-    <!-- TITULO -->
     <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
@@ -353,8 +352,10 @@ button{
 
 </div>
 
-<!-- SCRIPTS -->
-<script src="empresa.js"></script>
+<!-- SCRIPTS (ORDEN CORRECTO) -->
+
+<!-- SCRIPTS (ORDEN CORRECTO) -->
+<script src="empresa-header.js"></script>
 <script src="auth.js"></script>
 <script src="main.js"></script>
 <script src="segurity.js"></script>
