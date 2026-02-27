@@ -8,8 +8,7 @@
  * - Variable global EMPRESA_ACTIVA
  ************************************************/
 
-const API_EMPRESAS =
-"https://script.google.com/macros/s/AKfycbxnmGEQXTkJhpFFb0VloCUREawb_xTQILOcsOJiDggeod0yu-fj8GWrrpRbwjZtd9b9/exec";
+const API_EMPRESAS = "https://script.google.com/macros/s/AKfycbxnmGEQXTkJhpFFb0VloCUREawb_xTQILOcsOJiDggeod0yu-fj8GWrrpRbwjZtd9b9/exec";
 
 /* =================================================
    VARIABLE GLOBAL
@@ -151,3 +150,4 @@ function mostrarErrorConexion(){
    INIT
 ================================================= */
 window.addEventListener("load", cargarEmpresaActiva);
+
