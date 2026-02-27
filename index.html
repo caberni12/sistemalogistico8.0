@@ -74,6 +74,7 @@ button{
 
 button:disabled{
   background:#94a3b8;
+  cursor:not-allowed;
 }
 
 .loader{
@@ -86,9 +87,7 @@ button:disabled{
   display:none;
 }
 
-@keyframes spin{
-  to{ transform:rotate(360deg); }
-}
+@keyframes spin{ to{ transform:rotate(360deg); } }
 
 .msg{
   margin-top:18px;
@@ -103,7 +102,7 @@ button:disabled{
 
 <div class="card">
 
-  <!-- Empresa (se carga desde empresa-header.js) -->
+  <!-- Empresa (JS la carga) -->
   <img id="logoEmpresa" class="logo-empresa">
   <h3 id="tituloSistema">Acceso de Usuario</h3>
 
@@ -115,7 +114,8 @@ button:disabled{
     <input id="pass" type="password" placeholder="Contraseña">
   </div>
 
-  <button id="btnLogin">
+  <!-- Botón inicialmente deshabilitado -->
+  <button id="btnLogin" disabled>
     <span id="btnText">Ingresar</span>
     <div class="loader" id="loader"></div>
   </button>
@@ -140,7 +140,7 @@ const titulo   = document.getElementById("tituloSistema");
 /* ===== ESTADO EMPRESA ===== */
 let empresaCargada = false;
 
-/* Detectar cuando empresa-header.js pinta logo/título */
+/* Detecta cuando empresa-header.js pinta logo/título */
 const observer = new MutationObserver(() => {
   if(
     logo.src &&
@@ -148,12 +148,18 @@ const observer = new MutationObserver(() => {
     titulo.textContent.trim() !== "Acceso de Usuario"
   ){
     empresaCargada = true;
-    observer.disconnect();
   }
 });
-
 observer.observe(logo,   { attributes:true });
 observer.observe(titulo,{ childList:true });
+
+/* ===== ESPERA 3 SEGUNDOS ANTES DE HABILITAR ===== */
+setTimeout(() => {
+  btnLogin.disabled = false;
+  mensaje.textContent = empresaCargada
+    ? ""
+    : "Empresa no cargada. Solo Administrador podrá ingresar.";
+}, 3000);
 
 /* ===== LOGIN ===== */
 function activarLoader(){
@@ -195,17 +201,14 @@ async function login(){
       return;
     }
 
-    /* ===== REGLA CLAVE =====
-       Si NO hay empresa cargada,
-       SOLO entra rol ADMIN
-    */
+    /* Regla por ROL */
     if(!empresaCargada && res.data.rol !== "ADMIN"){
       mensaje.textContent = "Solo un Administrador puede ingresar sin empresa activa";
       desactivarLoader();
       return;
     }
 
-    /* ===== Guardar sesión ===== */
+    /* Guardar sesión */
     localStorage.setItem("token", res.token);
     localStorage.setItem("usuario", res.data.user);
     localStorage.setItem("nombre", res.data.nombre);
@@ -223,13 +226,14 @@ async function login(){
 
 btnLogin.addEventListener("click", login);
 document.addEventListener("keydown", e=>{
-  if(e.key === "Enter") login();
+  if(e.key === "Enter" && !btnLogin.disabled) login();
 });
 </script>
 
-<!-- ===== EMPRESA REAL ===== -->
+<!-- ===== EMPRESA (REAL) ===== -->
 <script src="empresa-header.js"></script>
 <script>
+/* Llamada directa: DOM ya existe */
 if(typeof cargarEmpresaHeader === "function"){
   cargarEmpresaHeader();
 }
