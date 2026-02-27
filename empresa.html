@@ -321,6 +321,47 @@ td{
     display:block;
   }
 }
+
+/* =====================================================
+   MODAL – CORRECCIÓN MOBILE
+===================================================== */
+@media(max-width:768px){
+
+  /* Modal a una sola columna */
+  .modal-content{
+    grid-template-columns: 1fr;
+    padding:20px;
+  }
+
+  /* Label arriba, input abajo */
+  .modal-content label{
+    font-size:13px;
+    margin-bottom:4px;
+  }
+
+  /* Inputs ocupan todo el ancho */
+  .modal-content input,
+  .modal-content select{
+    width:100%;
+    min-width:100%;
+  }
+
+  /* Campo archivo */
+  .modal-content input[type="file"]{
+    padding:10px;
+  }
+
+  /* Logo centrado */
+  .logo-preview{
+    margin:0 auto;
+  }
+
+  /* Acciones del modal centradas */
+  .acciones-modal{
+    justify-content:center;
+    gap:16px;
+  }
+}
 </style>
 </head>
 
