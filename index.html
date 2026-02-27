@@ -29,8 +29,15 @@ body{
   width:120px;
   max-height:120px;
   object-fit:contain;
-  margin:0 auto 18px;
+  margin:0 auto 10px;
   display:none;
+}
+
+/* TEXTO CARGA EMPRESA */
+.empresa-loading{
+  font-size:13px;
+  color:#64748b;
+  margin-bottom:20px;
 }
 
 h3{
@@ -77,7 +84,7 @@ button:disabled{
   cursor:not-allowed;
 }
 
-/* LOADER */
+/* LOADER BOTÓN */
 .loader{
   width:16px;
   height:16px;
@@ -87,10 +94,7 @@ button:disabled{
   animation:spin .7s linear infinite;
   display:none;
 }
-
-@keyframes spin{
-  to{ transform:rotate(360deg); }
-}
+@keyframes spin{ to{ transform:rotate(360deg); } }
 
 .msg{
   margin-top:18px;
@@ -105,8 +109,10 @@ button:disabled{
 
 <div class="card">
 
-  <!-- Empresa (JS la pinta si existe) -->
+  <!-- Empresa -->
   <img id="logoEmpresa" class="logo-empresa">
+  <div id="empresaLoading" class="empresa-loading">Cargando empresa…</div>
+
   <h3 id="tituloSistema">Acceso de Usuario</h3>
 
   <div class="form-group">
@@ -137,28 +143,36 @@ const btnText  = document.getElementById("btnText");
 const loader   = document.getElementById("loader");
 const mensaje  = document.getElementById("mensaje");
 const logo     = document.getElementById("logoEmpresa");
+const loading  = document.getElementById("empresaLoading");
 
-/* Detectar si empresa se cargó (visual) */
+/* Detectar si empresa se cargó */
 function empresaCargada(){
   return logo && logo.src && logo.style.display !== "none";
 }
 
-/* Loader */
+/* Ocultar texto de carga cuando llegue el logo */
+const obs = new MutationObserver(()=>{
+  if(empresaCargada()){
+    loading.style.display = "none";
+    obs.disconnect();
+  }
+});
+obs.observe(logo,{ attributes:true });
+
+/* Loader botón */
 function activarLoader(){
   btnLogin.disabled = true;
   loader.style.display = "block";
   btnText.textContent = "Validando...";
 }
-
 function desactivarLoader(){
   btnLogin.disabled = false;
   loader.style.display = "none";
   btnText.textContent = "Ingresar";
 }
 
-/* ===== LOGIN ===== */
-btnLogin.addEventListener("click", async () => {
-
+/* LOGIN */
+btnLogin.addEventListener("click", async ()=>{
   const username = user.value.trim();
   const password = pass.value.trim();
   mensaje.textContent = "";
@@ -178,7 +192,6 @@ btnLogin.addEventListener("click", async () => {
     });
 
     const res = await r.json();
-
     if(!res.ok){
       mensaje.textContent = res.msg || "Credenciales inválidas";
       desactivarLoader();
@@ -187,18 +200,18 @@ btnLogin.addEventListener("click", async () => {
 
     /* VALIDACIÓN POR ROL */
     if(!empresaCargada() && res.data.rol !== "ADMIN"){
-      mensaje.textContent = "Solo Administrador puede ingresar sin empresa configurada";
+      mensaje.textContent =
+        "Empresa aún no cargada. Solo Administrador puede ingresar.";
       desactivarLoader();
       return;
     }
 
-    /* Guardar sesión */
     localStorage.setItem("token", res.token);
     localStorage.setItem("usuario", res.data.user);
     localStorage.setItem("nombre", res.data.nombre);
     localStorage.setItem("rol", res.data.rol);
     localStorage.setItem("permisos", JSON.stringify(res.data.permisos || []));
-    localStorage.setItem("login_ok", "1");
+    localStorage.setItem("login_ok","1");
 
     window.location.href = "main.html";
 
@@ -209,7 +222,7 @@ btnLogin.addEventListener("click", async () => {
 });
 </script>
 
-<!-- ===== EMPRESA REAL ===== -->
+<!-- EMPRESA -->
 <script src="empresa-header.js"></script>
 <script>
 if(typeof cargarEmpresaHeader === "function"){
