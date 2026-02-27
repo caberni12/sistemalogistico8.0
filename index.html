@@ -28,7 +28,7 @@ body{
 }
 
 /* ================= LOGO EMPRESA ================= */
-/* 👉 este logo lo llena empresa-header.js */
+/* ⚠️ ESTE LOGO LO CARGA empresa-header.js */
 .logo-empresa{
   width:120px;
   max-height:120px;
@@ -118,10 +118,10 @@ button:disabled{
 
 <div class="card">
 
-  <!-- LOGO DE EMPRESA (cargado automáticamente) -->
+  <!-- 🔵 LOGO DE EMPRESA (lo pinta empresa-header.js) -->
   <img id="logoEmpresa" class="logo-empresa">
 
-  <!-- TÍTULO (empresa-header.js puede reemplazarlo) -->
+  <!-- 🔵 TITULO (empresa-header.js puede reemplazarlo) -->
   <h3 id="tituloSistema">Acceso de Usuario</h3>
 
   <div class="form-group">
@@ -195,7 +195,7 @@ async function login(){
       return;
     }
 
-    /* Guardar sesión */
+    /* ===== Guardar sesión ===== */
     localStorage.setItem("token", res.token);
     localStorage.setItem("usuario", res.data.user);
     localStorage.setItem("nombre", res.data.nombre);
@@ -220,14 +220,13 @@ document.addEventListener("keydown", e=>{
 </script>
 
 <!-- ================= EMPRESA (LOGO + NOMBRE) ================= -->
+<!-- ⚠️ ESTE SCRIPT ES EL ÚNICO QUE CARGA EL LOGO -->
 <script src="empresa-header.js"></script>
 <script>
-/* 👉 Se ejecuta AUTOMÁTICAMENTE al iniciar el index */
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof cargarEmpresaHeader === "function") {
-    cargarEmpresaHeader();
-  }
-});
+/* 👉 LLAMADA DIRECTA (DOM YA EXISTE) */
+if (typeof cargarEmpresaHeader === "function") {
+  cargarEmpresaHeader();
+}
 </script>
 
 <!-- ================= SEGURIDAD ================= -->
