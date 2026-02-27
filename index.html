@@ -28,7 +28,6 @@ body{
 }
 
 /* ================= LOGO EMPRESA ================= */
-/* ⚠️ ESTE LOGO LO CARGA empresa-header.js */
 .logo-empresa{
   width:120px;
   max-height:120px;
@@ -61,13 +60,12 @@ input{
   text-align:center;
 }
 
-input:focus{
-  outline:none;
-  border-color:#3bdaf6;
-  box-shadow:0 0 0 3px rgba(59,130,246,.15);
+input:disabled{
+  background:#f1f5f9;
+  color:#94a3b8;
+  cursor:not-allowed;
 }
 
-/* ================= BOTON ================= */
 button{
   width:100%;
   max-width:300px;
@@ -87,6 +85,7 @@ button{
 
 button:disabled{
   background:#94a3b8;
+  cursor:not-allowed;
 }
 
 /* ================= LOADER ================= */
@@ -111,6 +110,12 @@ button:disabled{
   color:#ef4444;
   min-height:18px;
 }
+
+/* ================= BLOQUEO INICIAL ================= */
+.bloqueado{
+  opacity:.55;
+  pointer-events:none;
+}
 </style>
 </head>
 
@@ -118,24 +123,29 @@ button:disabled{
 
 <div class="card">
 
-  <!-- 🔵 LOGO DE EMPRESA (lo pinta empresa-header.js) -->
+  <!-- LOGO (lo carga empresa-header.js) -->
   <img id="logoEmpresa" class="logo-empresa">
 
-  <!-- 🔵 TITULO (empresa-header.js puede reemplazarlo) -->
-  <h3 id="tituloSistema">Acceso de Usuario</h3>
+  <!-- TÍTULO (lo carga empresa-header.js) -->
+  <h3 id="tituloSistema">Cargando empresa...</h3>
 
-  <div class="form-group">
-    <input id="user" placeholder="Usuario">
+  <!-- FORM BLOQUEADO -->
+  <div id="formLogin" class="bloqueado">
+
+    <div class="form-group">
+      <input id="user" placeholder="Usuario" disabled>
+    </div>
+
+    <div class="form-group">
+      <input id="pass" type="password" placeholder="Contraseña" disabled>
+    </div>
+
+    <button id="btnLogin" disabled>
+      <span id="btnText">Ingresar</span>
+      <div class="loader" id="loader"></div>
+    </button>
+
   </div>
-
-  <div class="form-group">
-    <input id="pass" type="password" placeholder="Contraseña">
-  </div>
-
-  <button id="btnLogin">
-    <span id="btnText">Ingresar</span>
-    <div class="loader" id="loader"></div>
-  </button>
 
   <div class="msg" id="mensaje"></div>
 </div>
@@ -145,13 +155,39 @@ button:disabled{
 const API_LOGIN =
 "https://script.google.com/macros/s/AKfycbxDUcEzMGw9LWnzn-YUV89So3AFCEnplOHQuGmzq-EV_hnIMhQvgQIPY1AxvlKJPZNx/exec";
 
-const btnLogin = document.getElementById("btnLogin");
-const loader   = document.getElementById("loader");
-const btnText  = document.getElementById("btnText");
-const mensaje  = document.getElementById("mensaje");
 const user     = document.getElementById("user");
 const pass     = document.getElementById("pass");
+const btnLogin = document.getElementById("btnLogin");
+const btnText  = document.getElementById("btnText");
+const loader   = document.getElementById("loader");
+const mensaje  = document.getElementById("mensaje");
+const form     = document.getElementById("formLogin");
+const logo     = document.getElementById("logoEmpresa");
+const titulo   = document.getElementById("tituloSistema");
 
+/* ===== ACTIVAR FORM CUANDO CARGA EMPRESA ===== */
+function habilitarLogin(){
+  form.classList.remove("bloqueado");
+  user.disabled = false;
+  pass.disabled = false;
+  btnLogin.disabled = false;
+}
+
+/* ===== OBSERVA CUANDO empresa-header.js PINTA ===== */
+const observer = new MutationObserver(() => {
+  if(
+    logo.src && logo.style.display !== "none" &&
+    titulo.textContent && titulo.textContent !== "Cargando empresa..."
+  ){
+    habilitarLogin();
+    observer.disconnect();
+  }
+});
+
+observer.observe(logo,   { attributes:true });
+observer.observe(titulo,{ childList:true });
+
+/* ===== LOGIN ===== */
 function activarLoader(){
   btnLogin.disabled = true;
   loader.style.display = "block";
@@ -180,11 +216,7 @@ async function login(){
     const r = await fetch(API_LOGIN,{
       method:"POST",
       headers:{ "Content-Type":"text/plain;charset=UTF-8" },
-      body: JSON.stringify({
-        action:"login",
-        username,
-        password
-      })
+      body: JSON.stringify({ action:"login", username, password })
     });
 
     const res = await r.json();
@@ -195,7 +227,6 @@ async function login(){
       return;
     }
 
-    /* ===== Guardar sesión ===== */
     localStorage.setItem("token", res.token);
     localStorage.setItem("usuario", res.data.user);
     localStorage.setItem("nombre", res.data.nombre);
@@ -205,31 +236,27 @@ async function login(){
 
     window.location.href = "main.html";
 
-  }catch(err){
-    console.error(err);
-    mensaje.textContent = "Error de conexión con el servidor";
+  }catch(e){
+    mensaje.textContent = "Error de conexión";
     desactivarLoader();
   }
 }
 
 btnLogin.addEventListener("click", login);
-
 document.addEventListener("keydown", e=>{
-  if(e.key === "Enter") login();
+  if(e.key === "Enter" && !btnLogin.disabled) login();
 });
 </script>
 
-<!-- ================= EMPRESA (LOGO + NOMBRE) ================= -->
-<!-- ⚠️ ESTE SCRIPT ES EL ÚNICO QUE CARGA EL LOGO -->
+<!-- ================= EMPRESA (REAL) ================= -->
 <script src="empresa-header.js"></script>
 <script>
-/* 👉 LLAMADA DIRECTA (DOM YA EXISTE) */
-if (typeof cargarEmpresaHeader === "function") {
+/* DOM YA EXISTE → llamada directa */
+if(typeof cargarEmpresaHeader === "function"){
   cargarEmpresaHeader();
 }
 </script>
 
-<!-- ================= SEGURIDAD ================= -->
 <script src="segurity.js"></script>
 
 </body>
