@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 
-<!-- PWA -->
+<!-- ================= PWA ================= -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
 
@@ -21,6 +21,9 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
+/* =====================================================
+   VARIABLES
+===================================================== */
 :root{
  --bg:#f1f5f9;
  --card:#ffffff;
@@ -41,7 +44,7 @@
  -webkit-tap-highlight-color:transparent;
 }
 
-/* FULLSCREEN APP */
+/* APP FULLSCREEN */
 html, body{
  margin:0;
  padding:0;
@@ -49,17 +52,19 @@ html, body{
  height:100%;
  background:var(--bg);
  color:var(--text);
- overflow:hidden;
+ overflow:hidden; /* body NO scrollea */
 }
 
-/* APP */
+/* CONTENEDOR APP */
 .app{
  display:flex;
  flex-direction:column;
  height:100vh;
 }
 
-/* HEADER */
+/* =====================================================
+   HEADER
+===================================================== */
 header{
  position:sticky;
  top:0;
@@ -73,7 +78,6 @@ header{
  gap:8px;
 }
 
-/* HEADER CONTENT */
 .header-left{
  display:flex;
  align-items:center;
@@ -111,7 +115,7 @@ header .right{
  gap:12px;
 }
 
-/* BUTTONS */
+/* BOTONES */
 button{
  border:none;
  border-radius:var(--radius);
@@ -141,37 +145,43 @@ button{
  box-shadow:none;
 }
 
-/* MAIN (SCROLL AQUÍ) */
+/* =====================================================
+   MAIN (SCROLL REAL)
+===================================================== */
 .main{
  flex:1;
- overflow-y:auto;
+ overflow-y:auto;               /* SCROLL AQUÍ */
  -webkit-overflow-scrolling:touch;
 }
 
-/* MAP */
+/* =====================================================
+   MAPA + CONTENIDO
+===================================================== */
 #mapaBox{
- position:relative;
  width:100%;
- min-height:520px;
+ display:flex;
+ flex-direction:column;
+ gap:12px;
 }
 
 #mapa{
  width:100%;
- height:420px;
+ height:55vh; /* mapa flexible */
 }
 
-/* DASHBOARD MAP */
+/* TARJETA INFO (VISIBLE SIEMPRE) */
 #dashboardMapa{
- position:relative;
- margin:16px;
+ margin:12px;
  background:#fff;
  border-radius:16px;
  padding:14px 16px;
  box-shadow:0 14px 30px rgba(0,0,0,.22);
- font-size:11px;
+ font-size:12px;
 }
 
-/* MENU */
+/* =====================================================
+   MENU LATERAL
+===================================================== */
 .menu-lateral{
  position:fixed;
  top:0;
@@ -212,7 +222,9 @@ button{
  cursor:pointer;
 }
 
-/* VISOR */
+/* =====================================================
+   VISOR
+===================================================== */
 .viewer{
  display:none;
  position:fixed;
@@ -237,7 +249,9 @@ button{
  border:none;
 }
 
-/* LOADER */
+/* =====================================================
+   LOADER
+===================================================== */
 #loadingOverlay{
  position:fixed;
  inset:0;
@@ -261,7 +275,9 @@ button{
  display:none;
 }
 
-/* MOBILE */
+/* =====================================================
+   MOBILE
+===================================================== */
 @media (max-width:768px){
  header{
    flex-direction:column;
@@ -330,8 +346,10 @@ button{
     <div id="dashboardMapa">
       <strong>📍 Dirección</strong><br>
       <span id="dirTexto">Detectando…</span><br><br>
+
       <strong>🌐 Red</strong><br>
       <span id="netTexto">Detectando…</span><br><br>
+
       <strong>🚀 Velocidad</strong><br>
       <span id="speedTexto">0 km/h</span>
     </div>
@@ -349,7 +367,7 @@ button{
 
 </div>
 
-<!-- SCRIPTS -->
+<!-- ================= SCRIPTS ================= -->
 <script src="app-global.js"></script>
 <script src="empresa-header.js"></script>
 <script src="auth.js"></script>
