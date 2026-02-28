@@ -2,12 +2,10 @@
 <html lang="es">
 <head>
 
-<!-- ================= PWA ================= -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
-
 <meta charset="UTF-8">
-<title>Panel Logístico</title>
+<title>Panel Logístico Integrado</title>
 
 <meta name="viewport"
       content="width=device-width,
@@ -15,7 +13,6 @@
                maximum-scale=1,
                user-scalable=no">
 
-<!-- LEAFLET -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -26,6 +23,7 @@
  --hover:#f8fafc;
  --text:#0f172a;
  --muted:#64748b;
+ --accent:#14b8a6;
  --primary:#3b82f6;
  --danger:#ef4444;
  --border:#e2e8f0;
@@ -41,22 +39,19 @@
 
 html,body{
  margin:0;
- padding:0;
- width:100%;
  height:100%;
  background:var(--bg);
  color:var(--text);
- overflow:hidden; /* body NO scrollea */
 }
 
 /* APP */
 .app{
  display:flex;
  flex-direction:column;
- min-height:100dvh;
+ height:100%;
 }
 
-/* ================= HEADER ================= */
+/* HEADER */
 header{
  position:sticky;
  top:0;
@@ -64,13 +59,13 @@ header{
  background:#fff;
  border-bottom:1px solid var(--border);
  box-shadow:0 4px 14px rgba(0,0,0,.06);
- padding:10px 12px;
+ padding:12px 16px;
  display:flex;
- flex-direction:column;
+ flex-wrap:wrap;
  gap:8px;
 }
 
-.header-top{
+.header-left{
  display:flex;
  align-items:center;
  gap:10px;
@@ -89,65 +84,52 @@ header{
 
 header h1{
  margin:0;
- font-size:16px;
+ font-size:17px;
  font-weight:700;
+ white-space:nowrap;
 }
 
-/* INFO REAL (rellenada por JS) */
 .header-info{
  display:flex;
- flex-wrap:wrap;
- gap:10px;
+ gap:12px;
+ align-items:center;
  font-size:12px;
  color:var(--muted);
+ flex-wrap:wrap;
 }
 
-.header-info div{
+/* 👉 BOTONES EN PARALELO */
+header .right{
  display:flex;
- align-items:center;
- gap:6px;
+ gap:12px;
+ width:100%;
 }
 
-/* BOTONES EN PARALELO */
-.header-actions{
- display:flex;
- gap:10px;
-}
-
-.header-actions button{
+header .right button{
  flex:1;
- padding:10px;
- border-radius:14px;
- font-weight:600;
- border:none;
- color:#fff;
- cursor:pointer;
 }
 
-.btn-primary{
- background:linear-gradient(135deg,#60a5fa,#2563eb);
-}
-
-.btn-danger{
- background:linear-gradient(135deg,#f87171,#dc2626);
-}
-
-/* ================= MAIN (SCROLL ANDROID) ================= */
+/* MAIN — SCROLL ANDROID REAL */
 .main{
  flex:1;
- overflow-y:auto;                  /* scroll nativo */
- -webkit-overflow-scrolling:touch; /* Android */
+ overflow-y:auto;
+ -webkit-overflow-scrolling:touch;
 }
 
 /* MAPA */
+#mapaBox{
+ position:relative;
+ width:100%;
+}
+
 #mapa{
  width:100%;
  min-height:320px;
 }
 
-/* TARJETA INFO */
+/* DASHBOARD */
 #dashboardMapa{
- margin:12px;
+ margin:16px;
  background:#fff;
  border-radius:16px;
  padding:14px 16px;
@@ -155,43 +137,36 @@ header h1{
  font-size:12px;
 }
 
-/* ================= MENU ================= */
-.menu-lateral{
- position:fixed;
- top:0;
- left:-300px;
- width:300px;
- height:100dvh;
- background:#fff;
- box-shadow:6px 0 28px rgba(0,0,0,.18);
- transition:.35s ease;
- z-index:9997;
- display:flex;
- flex-direction:column;
-}
-
-.menu-lateral.open{ left:0; }
-
-/* ================= VISOR ================= */
-.viewer{
- display:none;
- position:fixed;
- inset:0;
- background:#fff;
- z-index:9996;
- flex-direction:column;
-}
-
-/* ================= LOADER ================= */
+/* LOADER — NO SE TOCA */
 #loadingOverlay{
  position:fixed;
  inset:0;
  background:rgba(241,245,249,.92);
+ backdrop-filter:blur(4px);
  z-index:10000;
  display:none;
  align-items:center;
  justify-content:center;
  font-weight:600;
+}
+
+#progressBar{
+ position:fixed;
+ top:0;
+ left:0;
+ height:3px;
+ width:0%;
+ background:linear-gradient(90deg,#3b82f6,#14b8a6);
+ z-index:10001;
+ display:none;
+}
+
+/* MOBILE */
+@media (max-width:768px){
+ header{
+   flex-direction:column;
+   align-items:flex-start;
+ }
 }
 </style>
 </head>
@@ -202,65 +177,52 @@ header h1{
 
 <!-- LOADER -->
 <div id="loadingOverlay">Iniciando sistema…</div>
+<div id="progressBar"></div>
 
-<!-- MENU -->
-<div id="menuLateral" class="menu-lateral">
-  <div class="menu-header">
-    <span>📦 Panel de Gestión</span>
-    <button onclick="toggleMenu()">✕</button>
-  </div>
-  <div id="menuModulos"></div>
-</div>
-
-<!-- ================= HEADER ================= -->
+<!-- HEADER -->
 <header>
-
-  <div class="header-top">
+  <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
 
     <img id="logoEmpresa"
          alt="Logo Empresa"
-         style="height:34px;max-width:120px;object-fit:contain;display:none;">
+         style="height:36px;max-width:120px;object-fit:contain;display:none;">
 
     <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
-  <!-- DATOS REALES (JS) -->
   <div class="header-info">
     <div id="usuario"></div>
-    <div id="fechaHora"></div>
     <div id="conexionInfo"></div>
   </div>
 
-  <!-- BOTONES -->
-  <div class="header-actions">
+  <div class="right">
     <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
     <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
   </div>
-
 </header>
 
-<!-- ================= MAIN ================= -->
+<!-- MAIN -->
 <div class="main">
+  <div id="mapaBox">
+    <div id="mapa"></div>
 
-  <div id="mapa"></div>
+    <div id="dashboardMapa">
+      <strong>📍 Dirección</strong><br>
+      <span id="dirTexto">Detectando…</span><br><br>
 
-  <div id="dashboardMapa">
-    <strong>📍 Dirección</strong><br>
-    <span id="dirTexto">Detectando…</span><br><br>
+      <strong>🌐 Red</strong><br>
+      <span id="netTexto">Detectando…</span><br><br>
 
-    <strong>🌐 Red</strong><br>
-    <span id="netTexto">Detectando…</span><br><br>
-
-    <strong>🚀 Velocidad</strong><br>
-    <span id="speedTexto">0 km/h</span>
+      <strong>🚀 Velocidad</strong><br>
+      <span id="speedTexto">0 km/h</span>
+    </div>
   </div>
-
 </div>
 
 </div>
 
-<!-- ================= SCRIPTS (TUS ARCHIVOS) ================= -->
+<!-- TUS SCRIPTS (SIN CAMBIOS) -->
 <script src="app-global.js"></script>
 <script src="empresa-header.js"></script>
 <script src="auth.js"></script>
