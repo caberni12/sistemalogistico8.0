@@ -2,21 +2,28 @@
 <html lang="es">
 <head>
 
+<!-- ================= PWA ================= -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
+
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
 
+<!-- VIEWPORT (compacto + app) -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=0.9,
                maximum-scale=1,
                user-scalable=no">
 
+<!-- LEAFLET -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
+/* =====================================================
+   VARIABLES
+===================================================== */
 :root{
  --bg:#f1f5f9;
  --card:#ffffff;
@@ -30,28 +37,41 @@
  --radius:12px;
 }
 
-/* RESET */
+/* =====================================================
+   RESET
+===================================================== */
 *{
  box-sizing:border-box;
  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
  -webkit-tap-highlight-color:transparent;
 }
 
-html,body{
+/* =====================================================
+   APP FULLSCREEN (SIN SCROLL AQUÍ)
+===================================================== */
+html, body{
  margin:0;
+ padding:0;
+ width:100%;
  height:100%;
  background:var(--bg);
  color:var(--text);
+ overflow:hidden;
+ overflow-x:hidden;
 }
 
-/* APP */
+/* =====================================================
+   CONTENEDOR APP (ALTO REAL DEL DISPOSITIVO)
+===================================================== */
 .app{
  display:flex;
  flex-direction:column;
- height:100%;
+ min-height:100dvh; /* CLAVE: corrige Android */
 }
 
-/* HEADER */
+/* =====================================================
+   HEADER
+===================================================== */
 header{
  position:sticky;
  top:0;
@@ -84,7 +104,7 @@ header{
 
 header h1{
  margin:0;
- font-size:17px;
+ font-size:16px;
  font-weight:700;
  white-space:nowrap;
 }
@@ -98,38 +118,88 @@ header h1{
  flex-wrap:wrap;
 }
 
-/* 👉 BOTONES EN PARALELO */
 header .right{
  display:flex;
  gap:12px;
- width:100%;
 }
 
-header .right button{
- flex:1;
+/* =====================================================
+   BOTONES
+===================================================== */
+button{
+ border:none;
+ border-radius:var(--radius);
+ padding:10px 16px;
+ font-weight:600;
+ cursor:pointer;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
 
-/* MAIN — SCROLL ANDROID REAL */
+.btn-primary{
+ background:linear-gradient(135deg,#60a5fa,#2563eb);
+ color:#fff;
+}
+
+.btn-danger{
+ background:linear-gradient(135deg,#f87171,#dc2626);
+ color:#fff;
+}
+
+.btn-ghost{
+ background:#fff;
+ border:1px solid var(--border);
+ box-shadow:none;
+}
+
+/* =====================================================
+   MAIN (SCROLL REAL SIN LÍMITE)
+===================================================== */
 .main{
  flex:1;
  overflow-y:auto;
  -webkit-overflow-scrolling:touch;
+
+ padding-right:18px;        /* carril del scroll */
+ box-sizing:content-box;   /* como tu otro proyecto */
 }
 
-/* MAPA */
+/* Scroll visible y estable */
+.main::-webkit-scrollbar{
+ width:8px;
+}
+.main::-webkit-scrollbar-track{
+ background:#e5e7eb;
+}
+.main::-webkit-scrollbar-thumb{
+ background:#9ca3af;
+ border-radius:8px;
+}
+
+/* =====================================================
+   MAPA + CONTENIDO (SIN vh)
+===================================================== */
 #mapaBox{
- position:relative;
  width:100%;
+ display:flex;
+ flex-direction:column;
+ gap:12px;
 }
 
 #mapa{
  width:100%;
- min-height:320px;
+ min-height:320px;   /* tamaño mínimo */
+ height:auto;        /* NO limita el scroll */
 }
 
-/* DASHBOARD */
+/* =====================================================
+   TARJETA INFO
+===================================================== */
 #dashboardMapa{
- margin:16px;
+ margin:12px;
  background:#fff;
  border-radius:16px;
  padding:14px 16px;
@@ -137,7 +207,78 @@ header .right button{
  font-size:12px;
 }
 
-/* LOADER — NO SE TOCA */
+/* =====================================================
+   MENU LATERAL
+===================================================== */
+.menu-lateral{
+ position:fixed;
+ top:0;
+ left:-300px;
+ width:300px;
+ height:100dvh;
+ background:#fff;
+ box-shadow:6px 0 28px rgba(0,0,0,.18);
+ transition:.35s ease;
+ z-index:9997;
+ display:flex;
+ flex-direction:column;
+}
+.menu-lateral.open{ left:0; }
+
+.menu-header{
+ padding:16px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ justify-content:space-between;
+ font-weight:700;
+}
+
+.menu-items{
+ padding:14px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+ overflow-y:auto;
+}
+
+.menu-item{
+ padding:14px;
+ border-radius:var(--radius);
+ background:var(--hover);
+ font-weight:600;
+ cursor:pointer;
+}
+
+/* =====================================================
+   VISOR
+===================================================== */
+.viewer{
+ display:none;
+ position:fixed;
+ inset:0;
+ background:#fff;
+ z-index:9996;
+ flex-direction:column;
+}
+
+.viewer-header{
+ height:52px;
+ padding:0 14px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+}
+
+.viewer iframe{
+ flex:1;
+ width:100%;
+ border:none;
+}
+
+/* =====================================================
+   LOADER
+===================================================== */
 #loadingOverlay{
  position:fixed;
  inset:0;
@@ -161,11 +302,26 @@ header .right button{
  display:none;
 }
 
-/* MOBILE */
+/* =====================================================
+   MOBILE
+===================================================== */
 @media (max-width:768px){
  header{
+   padding:8px 12px;
+ }
+ header h1{
+   font-size:14px;
+ }
+ .right{
    flex-direction:column;
-   align-items:flex-start;
+ }
+ .right button{
+   width:100%;
+   padding:8px 12px;
+   font-size:13px;
+ }
+ #dashboardMapa{
+   font-size:11px;
  }
 }
 </style>
@@ -178,6 +334,15 @@ header .right button{
 <!-- LOADER -->
 <div id="loadingOverlay">Iniciando sistema…</div>
 <div id="progressBar"></div>
+
+<!-- MENU -->
+<div id="menuLateral" class="menu-lateral">
+  <div class="menu-header">
+    <span>📦 Panel de Gestión</span>
+    <button class="btn-ghost" onclick="toggleMenu()">✕</button>
+  </div>
+  <div id="menuModulos" class="menu-items"></div>
+</div>
 
 <!-- HEADER -->
 <header>
@@ -220,9 +385,18 @@ header .right button{
   </div>
 </div>
 
+<!-- VISOR -->
+<div id="viewer" class="viewer">
+  <div class="viewer-header">
+    <span id="viewerTitle"></span>
+    <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
+  </div>
+  <iframe id="frame"></iframe>
 </div>
 
-<!-- TUS SCRIPTS (SIN CAMBIOS) -->
+</div>
+
+<!-- ================= SCRIPTS ================= -->
 <script src="app-global.js"></script>
 <script src="empresa-header.js"></script>
 <script src="auth.js"></script>
