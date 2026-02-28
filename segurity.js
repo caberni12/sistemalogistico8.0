@@ -1,7 +1,8 @@
 /* ===================================================
    DISUASIÓN FRONTEND
-   (Solo bloqueo de teclas, mouse y devtools)
+   (Bloqueo de teclas, mouse y devtools)
    NO maneja sesión
+   COMPATIBLE PWA
 =================================================== */
 
 (function () {
@@ -64,20 +65,5 @@
       console.warn("DevTools detectado");
     }
   }, 1000);
-
-  /* ===================================================
-     PANTALLA COMPLETA (OPCIONAL)
-  =================================================== */
-  function activarPantallaCompleta() {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen();
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-    else if (el.msRequestFullscreen) el.msRequestFullscreen();
-  }
-
-  window.addEventListener("load", () => {
-    document.addEventListener("click", activarPantallaCompleta, { once: true });
-  });
 
 })();
