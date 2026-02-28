@@ -9,7 +9,7 @@
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
 
-<!-- VIEWPORT (menos zoom + app) -->
+<!-- VIEWPORT (compacto + app) -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=0.9,
@@ -37,14 +37,18 @@
  --radius:12px;
 }
 
-/* RESET */
+/* =====================================================
+   RESET
+===================================================== */
 *{
  box-sizing:border-box;
  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
  -webkit-tap-highlight-color:transparent;
 }
 
-/* APP FULLSCREEN */
+/* =====================================================
+   APP FULLSCREEN
+===================================================== */
 html, body{
  margin:0;
  padding:0;
@@ -52,10 +56,13 @@ html, body{
  height:100%;
  background:var(--bg);
  color:var(--text);
- overflow:hidden; /* body NO scrollea */
+ overflow:hidden;          /* body NO scrollea */
+ overflow-x:hidden;
 }
 
-/* CONTENEDOR APP */
+/* =====================================================
+   CONTENEDOR APP
+===================================================== */
 .app{
  display:flex;
  flex-direction:column;
@@ -115,7 +122,9 @@ header .right{
  gap:12px;
 }
 
-/* BOTONES */
+/* =====================================================
+   BOTONES
+===================================================== */
 button{
  border:none;
  border-radius:var(--radius);
@@ -146,12 +155,29 @@ button{
 }
 
 /* =====================================================
-   MAIN (SCROLL REAL)
+   MAIN (SCROLL + CARRIL RESERVADO)
 ===================================================== */
 .main{
  flex:1;
- overflow-y:auto;               /* SCROLL AQUÍ */
+ overflow-y:auto;
  -webkit-overflow-scrolling:touch;
+
+ padding-right:18px;       /* CARRIL DEL SCROLL */
+ box-sizing:content-box;  /* CLAVE (igual a tu otro proyecto) */
+}
+
+/* Scroll visible y estable */
+.main::-webkit-scrollbar{
+ width:8px;
+}
+
+.main::-webkit-scrollbar-track{
+ background:#e5e7eb;
+}
+
+.main::-webkit-scrollbar-thumb{
+ background:#9ca3af;
+ border-radius:8px;
 }
 
 /* =====================================================
@@ -166,10 +192,10 @@ button{
 
 #mapa{
  width:100%;
- height:55vh; /* mapa flexible */
+ height:55vh;
 }
 
-/* TARJETA INFO (VISIBLE SIEMPRE) */
+/* TARJETA INFO */
 #dashboardMapa{
  margin:12px;
  background:#fff;
