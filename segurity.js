@@ -1,108 +1,83 @@
 /* ===================================================
-   SEGURIDAD FRONTEND – CAPA DE DISUASIÓN
-   (NO REEMPLAZA SEGURIDAD BACKEND)
+   DISUASIÓN FRONTEND
+   (Solo bloqueo de teclas, mouse y devtools)
+   NO maneja sesión
 =================================================== */
 
-(function(){
+(function () {
+
+  const DEVTOOLS_THRESHOLD = 160;
 
   /* ===================================================
-     BLOQUEAR BOTONES DEL MOUSE
-     button:
-     0 = izquierdo
-     1 = rueda / botón central
-     2 = derecho
+     BLOQUEO DE MOUSE
   =================================================== */
-  document.addEventListener("mousedown", function(e){
-
-    // Bloquear botón central (rueda / segundo click)
-    if(e.button === 1){
+  document.addEventListener("mousedown", e => {
+    if (e.button === 1 || e.button === 2) {
       e.preventDefault();
       e.stopImmediatePropagation();
       return false;
     }
+  }, true);
 
-    // Bloquear botón derecho
-    if(e.button === 2){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return false;
-    }
-
-  }, true); // <-- CAPTURING PHASE (CLAVE)
-
-  /* ===================================================
-     BLOQUEAR MENÚ CONTEXTUAL
-  =================================================== */
-  document.addEventListener("contextmenu", function(e){
+  document.addEventListener("contextmenu", e => {
     e.preventDefault();
     return false;
   }, true);
 
   /* ===================================================
-     BLOQUEAR TECLAS
+     BLOQUEO DE TECLAS
   =================================================== */
-  document.addEventListener("keydown", function(e){
+  document.addEventListener("keydown", e => {
+    const key = e.key.toUpperCase();
 
     // F12 / F11
-    if(e.key === "F12" || e.key === "F11"){
+    if (key === "F12" || key === "F11") {
       e.preventDefault();
-      bloquear();
       return false;
     }
 
-    // Ctrl + Shift + I / J / C
-    if(e.ctrlKey && e.shiftKey && ["I","J","C"].includes(e.key.toUpperCase())){
+    // Ctrl + Shift + I / J / C / K
+    if (e.ctrlKey && e.shiftKey && ["I", "J", "C", "K"].includes(key)) {
       e.preventDefault();
-      bloquear();
       return false;
     }
 
-    // Ctrl + U (ver código fuente)
-    if(e.ctrlKey && e.key.toUpperCase() === "U"){
+    // Ctrl / Cmd combinaciones comunes
+    if (
+      (e.ctrlKey && ["U", "S", "P", "F", "C"].includes(key)) ||
+      (e.metaKey && ["U", "S", "P", "F"].includes(key))
+    ) {
       e.preventDefault();
-      bloquear();
-      return false;
-    }
-
-    // Ctrl + S
-    if(e.ctrlKey && e.key.toUpperCase() === "S"){
-      e.preventDefault();
-      bloquear();
       return false;
     }
 
   }, true);
 
   /* ===================================================
-     DETECTAR DEVTOOLS
+     DETECCIÓN DE DEVTOOLS (DISUASIÓN)
   =================================================== */
-  const threshold = 160;
-
-  setInterval(function(){
-
+  setInterval(() => {
     const w = window.outerWidth - window.innerWidth;
     const h = window.outerHeight - window.innerHeight;
 
-    if(w > threshold || h > threshold){
-      bloquear();
+    if (w > DEVTOOLS_THRESHOLD || h > DEVTOOLS_THRESHOLD) {
+      console.warn("DevTools detectado");
     }
-
   }, 1000);
 
   /* ===================================================
-     ACCIÓN DE BLOQUEO
+     PANTALLA COMPLETA (OPCIONAL)
   =================================================== */
-  function bloquear(){
-
-    // No actuar si no hay sesión (ej: login.html)
-    if(!localStorage.getItem("token")) return;
-
-    try{
-      localStorage.clear();
-      sessionStorage.clear();
-    }catch{}
-
-    location.href = "index.html";
+  function activarPantallaCompleta() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+    else if (el.msRequestFullscreen) el.msRequestFullscreen();
   }
+
+  window.addEventListener("load", () => {
+    document.addEventListener("click", activarPantallaCompleta, { once: true });
+  });
 
 })();
