@@ -38,7 +38,7 @@
 }
 
 /* =====================================================
-   RESET
+   RESET GLOBAL
 ===================================================== */
 *{
  box-sizing:border-box;
@@ -46,14 +46,14 @@
  -webkit-tap-highlight-color:transparent;
 }
 
-html, body{
+html,body{
  margin:0;
  padding:0;
  width:100%;
  height:100%;
  background:var(--bg);
  color:var(--text);
- overflow:hidden;           /* CLAVE: sin scroll lateral */
+ overflow:hidden; /* nunca scroll lateral */
 }
 
 /* =====================================================
@@ -67,7 +67,7 @@ html, body{
 }
 
 /* =====================================================
-   HEADER (ESTABLE EN MÓVIL)
+   HEADER (MÓVIL PRIMERO)
 ===================================================== */
 header{
  position:sticky;
@@ -79,15 +79,15 @@ header{
  padding:10px 12px;
 
  display:flex;
- align-items:center;
- justify-content:space-between;
- gap:8px;
+ flex-direction:column; /* CLAVE */
+ gap:10px;
 
  width:100%;
  max-width:100%;
- overflow:hidden;           /* CLAVE */
+ overflow:hidden;
 }
 
+/* ----- FILA SUPERIOR ----- */
 .header-left{
  display:flex;
  align-items:center;
@@ -98,13 +98,13 @@ header{
 #btnMenu{
  width:38px;
  height:38px;
- font-size:18px;
+ border-radius:10px;
  background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
+ font-size:18px;
  border:none;
- border-radius:10px;
- cursor:pointer;
  flex-shrink:0;
+ cursor:pointer;
 }
 
 header h1{
@@ -116,20 +116,23 @@ header h1{
  text-overflow:ellipsis;
 }
 
+/* ----- FILA INFO ----- */
 .header-info{
  display:flex;
+ flex-wrap:wrap;
  gap:8px;
- align-items:center;
  font-size:11px;
  color:var(--muted);
- min-width:0;
 }
 
-/* BOTONES SIEMPRE EN PARALELO */
+/* ----- FILA BOTONES ----- */
 header .right{
  display:flex;
  gap:8px;
- flex-shrink:0;
+}
+
+header .right button{
+ flex:1;
 }
 
 /* =====================================================
@@ -146,8 +149,8 @@ button{
  justify-content:center;
  gap:6px;
  box-shadow:0 6px 18px rgba(0,0,0,.12);
- white-space:nowrap;
  font-size:13px;
+ white-space:nowrap;
 }
 
 .btn-primary{
@@ -167,7 +170,7 @@ button{
 }
 
 /* =====================================================
-   MAIN (SCROLL REAL)
+   MAIN (SCROLL CONTROLADO)
 ===================================================== */
 .main{
  flex:1;
@@ -177,13 +180,13 @@ button{
 }
 
 /* =====================================================
-   MAPA (FULL WIDTH SIN ROMPER LAYOUT)
+   MAPA
 ===================================================== */
 #mapaBox{
  width:100%;
  max-width:100%;
- margin:0;
  padding:0;
+ margin:0;
 }
 
 #mapa{
@@ -192,7 +195,7 @@ button{
 }
 
 /* =====================================================
-   TARJETA INFO (NUNCA SE CORTA)
+   TARJETA INFO
 ===================================================== */
 #dashboardMapa{
  margin:12px;
@@ -200,9 +203,7 @@ button{
  background:#fff;
  border-radius:16px;
  box-shadow:0 14px 30px rgba(0,0,0,.22);
-
- width:auto;
- max-width:calc(100% - 24px); /* CLAVE */
+ max-width:calc(100% - 24px);
  font-size:12px;
 }
 
@@ -222,7 +223,10 @@ button{
  display:flex;
  flex-direction:column;
 }
-.menu-lateral.open{ left:0; }
+
+.menu-lateral.open{
+ left:0;
+}
 
 .menu-header{
  padding:16px;
@@ -302,16 +306,21 @@ button{
 }
 
 /* =====================================================
-   MOBILE FINO
+   ESCRITORIO
 ===================================================== */
-@media (max-width:768px){
- header h1{
-   font-size:14px;
-   max-width:140px;
+@media (min-width:769px){
+
+ header{
+   flex-direction:row;
+   align-items:center;
  }
 
- #dashboardMapa{
-   font-size:11px;
+ .header-info{
+   font-size:12px;
+ }
+
+ header .right{
+   flex:0 0 auto;
  }
 }
 </style>
