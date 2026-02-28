@@ -47,7 +47,7 @@
 }
 
 /* =====================================================
-   APP FULLSCREEN
+   APP FULLSCREEN (SIN SCROLL AQUÍ)
 ===================================================== */
 html, body{
  margin:0;
@@ -56,17 +56,17 @@ html, body{
  height:100%;
  background:var(--bg);
  color:var(--text);
- overflow:hidden;          /* body NO scrollea */
+ overflow:hidden;
  overflow-x:hidden;
 }
 
 /* =====================================================
-   CONTENEDOR APP
+   CONTENEDOR APP (ALTO REAL DEL DISPOSITIVO)
 ===================================================== */
 .app{
  display:flex;
  flex-direction:column;
- height:100vh;
+ min-height:100dvh; /* CLAVE: corrige Android */
 }
 
 /* =====================================================
@@ -115,6 +115,7 @@ header h1{
  align-items:center;
  font-size:12px;
  color:var(--muted);
+ flex-wrap:wrap;
 }
 
 header .right{
@@ -155,33 +156,31 @@ button{
 }
 
 /* =====================================================
-   MAIN (SCROLL + CARRIL RESERVADO)
+   MAIN (SCROLL REAL SIN LÍMITE)
 ===================================================== */
 .main{
  flex:1;
  overflow-y:auto;
  -webkit-overflow-scrolling:touch;
 
- padding-right:18px;       /* CARRIL DEL SCROLL */
- box-sizing:content-box;  /* CLAVE (igual a tu otro proyecto) */
+ padding-right:18px;        /* carril del scroll */
+ box-sizing:content-box;   /* como tu otro proyecto */
 }
 
 /* Scroll visible y estable */
 .main::-webkit-scrollbar{
  width:8px;
 }
-
 .main::-webkit-scrollbar-track{
  background:#e5e7eb;
 }
-
 .main::-webkit-scrollbar-thumb{
  background:#9ca3af;
  border-radius:8px;
 }
 
 /* =====================================================
-   MAPA + CONTENIDO
+   MAPA + CONTENIDO (SIN vh)
 ===================================================== */
 #mapaBox{
  width:100%;
@@ -192,10 +191,13 @@ button{
 
 #mapa{
  width:100%;
- height:55vh;
+ min-height:320px;   /* tamaño mínimo */
+ height:auto;        /* NO limita el scroll */
 }
 
-/* TARJETA INFO */
+/* =====================================================
+   TARJETA INFO
+===================================================== */
 #dashboardMapa{
  margin:12px;
  background:#fff;
@@ -213,7 +215,7 @@ button{
  top:0;
  left:-300px;
  width:300px;
- height:100vh;
+ height:100dvh;
  background:#fff;
  box-shadow:6px 0 28px rgba(0,0,0,.18);
  transition:.35s ease;
@@ -221,7 +223,6 @@ button{
  display:flex;
  flex-direction:column;
 }
-
 .menu-lateral.open{ left:0; }
 
 .menu-header{
@@ -306,19 +307,21 @@ button{
 ===================================================== */
 @media (max-width:768px){
  header{
-   flex-direction:column;
-   align-items:flex-start;
+   padding:8px 12px;
  }
- .header-left,
- .header-info,
- .right{
-   width:100%;
+ header h1{
+   font-size:14px;
  }
  .right{
    flex-direction:column;
  }
  .right button{
    width:100%;
+   padding:8px 12px;
+   font-size:13px;
+ }
+ #dashboardMapa{
+   font-size:11px;
  }
 }
 </style>
