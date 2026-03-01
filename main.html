@@ -397,6 +397,55 @@ button{
   }
 
 }
+
+/* =====================================================
+   ESCRITORIO – MAPA + TARJETA VISIBLES
+===================================================== */
+@media (min-width: 769px){
+
+  html, body{
+    height:100%;
+    overflow:hidden;
+  }
+
+  .app{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  header{
+    flex-shrink:0;
+    height:64px; /* altura real del header */
+  }
+
+  /* MAIN ocupa el resto */
+  .main{
+    flex:1;
+    overflow-y:auto;
+  }
+
+  /* Contenedor mapa + tarjeta */
+  #mapaBox{
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+
+  /* MAPA visible y estable */
+  #mapa{
+    width:100%;
+    height:55vh;        /* CLAVE */
+    min-height:420px;  /* evita colapso */
+  }
+
+  /* TARJETA debajo */
+  #dashboardMapa{
+    max-width:900px;
+    margin:16px auto 24px;
+  }
+
+}
 </style>
 </head>
 
