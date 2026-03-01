@@ -1,184 +1,113 @@
 /* =====================================================
-   NAVEGACIÓN + MODO CONDUCCIÓN AUTOMÁTICO
-   TODO EN UNO – PRODUCCIÓN
-   NO MODIFICA HTML EXISTENTE
+   BUSCADOR + RUTA DENTRO DE dashboardMapa
+   SIN MODIFICAR HTML
 ===================================================== */
 
 (function(){
 
-/* =====================================================
-   CONFIG
-===================================================== */
-const SPEED_THRESHOLD = 2;      // m/s ≈ 7 km/h
-const DRIVE_ZOOM = 17;
-const OFFSET_DISTANCE = 0.0012;
-
-/* =====================================================
-   STATE
-===================================================== */
-let vehicleMarker = null;
-let lastHeading = null;
-let drivingActive = false;
 let routingControl = null;
 let currentPos = null;
 
-/* =====================================================
-   ESPERAR MAPA
-===================================================== */
-function waitForMap(){
-  if(window.mapa && window.L){
-    init();
+/* ===============================
+   ESPERAR ELEMENTOS
+=============================== */
+function waitForCard(){
+  const card = document.getElementById('mapCardContent');
+  if(card && window.L && window.mapa){
+    injectSearch(card);
+    initGPS();
+    loadRouting();
   }else{
-    setTimeout(waitForMap, 200);
+    setTimeout(waitForCard, 200);
   }
 }
-waitForMap();
+waitForCard();
 
-/* =====================================================
-   INIT
-===================================================== */
-function init(){
-  initDriving();
-  initSearchUI();
-  loadRouting();
-}
+/* ===============================
+   INYECTAR BUSCADOR
+=============================== */
+function injectSearch(container){
 
-/* =====================================================
-   MODO CONDUCCIÓN
-===================================================== */
-function initDriving(){
+  /* Evitar duplicado */
+  if(document.getElementById('navInput')) return;
 
-  if(!navigator.geolocation) return;
-
-  navigator.geolocation.watchPosition(
-    pos => handleMovement(pos),
-    err => console.error('GPS:', err),
-    {
-      enableHighAccuracy:true,
-      maximumAge:1000,
-      timeout:10000
-    }
-  );
-}
-
-function handleMovement(position){
-
-  const { latitude, longitude, speed, heading } = position.coords;
-  currentPos = L.latLng(latitude, longitude);
-
-  /* VEHÍCULO */
-  if(!vehicleMarker){
-    vehicleMarker = L.marker(currentPos).addTo(mapa);
-  }else{
-    vehicleMarker.setLatLng(currentPos);
-  }
-
-  /* VELOCIDAD UI */
-  const kmh = speed ? Math.round(speed * 3.6) : 0;
-  const speedEl = document.getElementById('speedTexto');
-  if(speedEl) speedEl.textContent = kmh + ' km/h';
-
-  const driving = speed && speed > SPEED_THRESHOLD;
-
-  if(driving){
-
-    drivingActive = true;
-    mapa.setZoom(DRIVE_ZOOM, { animate:true });
-
-    const dir = heading !== null ? heading : lastHeading;
-
-    if(dir !== null){
-      lastHeading = dir;
-      const rad = dir * Math.PI / 180;
-
-      const target = [
-        latitude  + OFFSET_DISTANCE * Math.cos(rad),
-        longitude + OFFSET_DISTANCE * Math.sin(rad)
-      ];
-
-      mapa.panTo(target, { animate:true, duration:0.6 });
-    }else{
-      mapa.panTo(currentPos, { animate:true });
-    }
-
-  }else if(drivingActive){
-    mapa.panTo(currentPos, { animate:true });
-    drivingActive = false;
-  }
-
-  /* ACTUALIZAR RUTA */
-  if(routingControl){
-    routingControl.spliceWaypoints(0,1,currentPos);
-  }
-}
-
-/* =====================================================
-   UI BUSCADOR (INYECTADO)
-===================================================== */
-function initSearchUI(){
-
+  /* CSS mínimo (inline) */
   const style = document.createElement('style');
-  style.innerHTML = `
-  .nav-search{
-    position:absolute;
-    top:72px;
-    left:50%;
-    transform:translateX(-50%);
-    width:calc(100% - 32px);
-    max-width:420px;
-    background:#fff;
-    border-radius:14px;
-    box-shadow:0 14px 30px rgba(0,0,0,.22);
-    z-index:900;
-    padding:8px;
-    display:flex;
-    gap:8px;
-  }
-  .nav-search input{
-    flex:1;
-    border:none;
-    outline:none;
-    font-size:14px;
-    padding:10px 12px;
-  }
-  .nav-search button{
-    border:none;
-    background:#2563eb;
-    color:#fff;
-    border-radius:10px;
-    padding:10px 14px;
-    font-weight:700;
-    cursor:pointer;
-  }`;
+  style.textContent = `
+    .nav-search-card{
+      display:flex;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .nav-search-card input{
+      flex:1;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      padding:10px 12px;
+      font-size:13px;
+      outline:none;
+    }
+    .nav-search-card button{
+      border:none;
+      background:linear-gradient(135deg,#60a5fa,#2563eb);
+      color:#fff;
+      border-radius:10px;
+      padding:10px 14px;
+      font-weight:700;
+      cursor:pointer;
+    }
+  `;
   document.head.appendChild(style);
 
+  /* HTML */
   const box = document.createElement('div');
-  box.className = 'nav-search';
+  box.className = 'nav-search-card';
   box.innerHTML = `
-    <input id="navInput" placeholder="Buscar destino…" />
-    <button id="navClear">✕</button>
+    <input id="navInput" type="text" placeholder="Buscar destino…" />
+    <button id="navBuscar">Ir</button>
   `;
-  document.getElementById('mapaBox').appendChild(box);
 
-  box.querySelector('#navInput').addEventListener('keydown', e=>{
-    if(e.key === 'Enter') buscarDestino(e.target.value);
+  /* Insertar ARRIBA del contenido */
+  container.prepend(box);
+
+  /* Eventos */
+  box.querySelector('#navBuscar').onclick = buscarDestino;
+  box.querySelector('#navInput').addEventListener('keydown',e=>{
+    if(e.key === 'Enter') buscarDestino();
   });
-
-  box.querySelector('#navClear').onclick = limpiarRuta;
 }
 
-/* =====================================================
-   ROUTING
-===================================================== */
-function loadRouting(){
-  loadCSS('https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css');
-  loadJS('https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js');
+/* ===============================
+   GPS ACTUAL
+=============================== */
+function initGPS(){
+  if(!navigator.geolocation) return;
+
+  navigator.geolocation.watchPosition(pos=>{
+    currentPos = L.latLng(
+      pos.coords.latitude,
+      pos.coords.longitude
+    );
+
+    /* Recalcular ruta */
+    if(routingControl){
+      routingControl.spliceWaypoints(0,1,currentPos);
+    }
+
+  },{
+    enableHighAccuracy:true,
+    maximumAge:1000
+  });
 }
 
-function buscarDestino(query){
-  if(!query || !currentPos) return;
+/* ===============================
+   BUSCAR DESTINO
+=============================== */
+function buscarDestino(){
+  const input = document.getElementById('navInput');
+  if(!input || !input.value || !currentPos) return;
 
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input.value)}`)
     .then(r=>r.json())
     .then(data=>{
       if(!data[0]) return alert('Destino no encontrado');
@@ -186,15 +115,17 @@ function buscarDestino(query){
     });
 }
 
-function crearRuta(dest){
-  if(!currentPos) return;
+/* ===============================
+   CREAR RUTA
+=============================== */
+function crearRuta(destino){
 
   if(routingControl){
     mapa.removeControl(routingControl);
   }
 
   routingControl = L.Routing.control({
-    waypoints:[currentPos, dest],
+    waypoints:[currentPos, destino],
     addWaypoints:false,
     draggableWaypoints:false,
     routeWhileDragging:false,
@@ -208,24 +139,19 @@ function crearRuta(dest){
   }).addTo(mapa);
 }
 
-function limpiarRuta(){
-  if(routingControl){
-    mapa.removeControl(routingControl);
-    routingControl = null;
-  }
-  const i = document.getElementById('navInput');
-  if(i) i.value = '';
+/* ===============================
+   DEPENDENCIA ROUTING
+=============================== */
+function loadRouting(){
+  loadCSS('https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css');
+  loadJS('https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js');
 }
 
-/* =====================================================
-   HELPERS
-===================================================== */
 function loadJS(src){
   const s = document.createElement('script');
   s.src = src;
   document.head.appendChild(s);
 }
-
 function loadCSS(href){
   const l = document.createElement('link');
   l.rel = 'stylesheet';
