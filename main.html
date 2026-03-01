@@ -9,16 +9,14 @@
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
 
-<!-- VIEWPORT -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=1,
                maximum-scale=1,
                user-scalable=no">
 
-<!-- LEAFLET -->
+<!-- LEAFLET (solo CSS, JS lo manejas en main.js) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 /* =====================================================
@@ -30,20 +28,16 @@
  --hover:#f8fafc;
  --text:#0f172a;
  --muted:#64748b;
- --accent:#14b8a6;
  --primary:#3b82f6;
  --danger:#ef4444;
  --border:#e2e8f0;
  --radius:12px;
 }
 
-/* =====================================================
-   RESET
-===================================================== */
+/* RESET */
 *{
  box-sizing:border-box;
  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
- -webkit-tap-highlight-color:transparent;
 }
 
 html,body{
@@ -55,9 +49,7 @@ html,body{
  color:var(--text);
 }
 
-/* =====================================================
-   APP
-===================================================== */
+/* APP */
 .app{
  display:flex;
  flex-direction:column;
@@ -65,9 +57,7 @@ html,body{
  overflow:hidden;
 }
 
-/* =====================================================
-   HEADER
-===================================================== */
+/* HEADER */
 header{
  position:sticky;
  top:0;
@@ -79,11 +69,10 @@ header{
 
  display:grid;
  grid-template-columns:auto 1fr auto;
+ gap:16px;
  align-items:center;
- column-gap:16px;
 }
 
-/* IZQUIERDA */
 .header-left{
  display:flex;
  align-items:center;
@@ -102,11 +91,6 @@ header{
  cursor:pointer;
 }
 
-#logoEmpresa{
- height:36px;
- max-width:120px;
-}
-
 #tituloSistema{
  font-size:18px;
  font-weight:800;
@@ -115,26 +99,20 @@ header{
  text-overflow:ellipsis;
 }
 
-/* INFO */
 .header-info{
  display:flex;
  flex-direction:column;
- gap:2px;
  font-size:12px;
  color:var(--muted);
 }
 
-/* DERECHA */
 .right{
  display:flex;
  align-items:center;
  gap:8px;
- flex-shrink:0;
 }
 
-/* =====================================================
-   BOTONES
-===================================================== */
+/* BOTONES */
 button{
  border:none;
  border-radius:var(--radius);
@@ -144,7 +122,6 @@ button{
  display:inline-flex;
  align-items:center;
  gap:6px;
- font-size:13px;
 }
 
 .btn-primary{
@@ -157,34 +134,14 @@ button{
  color:#fff;
 }
 
-.btn-ghost{
- background:#fff;
- border:1px solid var(--border);
-}
-
-/* Botón + / - */
-#btnToggle{
- width:36px;
- height:36px;
- padding:0;
- font-size:20px;
- background:#0f172a;
- color:#fff;
- border-radius:10px;
-}
-
-/* =====================================================
-   MAIN
-===================================================== */
+/* MAIN */
 .main{
  flex:1;
  position:relative;
  overflow:hidden;
 }
 
-/* =====================================================
-   MAPA
-===================================================== */
+/* MAPA */
 #mapaBox{
  position:absolute;
  inset:0;
@@ -195,9 +152,7 @@ button{
  height:100%;
 }
 
-/* =====================================================
-   TARJETA INFO
-===================================================== */
+/* TARJETA */
 #dashboardMapa{
  background:#fff;
  border-radius:16px;
@@ -212,9 +167,7 @@ button{
  transform:translateY(-8px);
 }
 
-/* =====================================================
-   MENU LATERAL
-===================================================== */
+/* MENU LATERAL */
 .menu-lateral{
  position:fixed;
  top:0;
@@ -229,9 +182,7 @@ button{
  flex-direction:column;
 }
 
-.menu-lateral.open{
- left:0;
-}
+.menu-lateral.open{ left:0; }
 
 .menu-header{
  padding:14px;
@@ -249,17 +200,7 @@ button{
  overflow-y:auto;
 }
 
-.menu-item{
- padding:12px;
- border-radius:var(--radius);
- background:var(--hover);
- font-weight:600;
- cursor:pointer;
-}
-
-/* =====================================================
-   VISOR
-===================================================== */
+/* VISOR */
 .viewer{
  display:none;
  position:fixed;
@@ -278,15 +219,7 @@ button{
  justify-content:space-between;
 }
 
-.viewer iframe{
- flex:1;
- width:100%;
- border:none;
-}
-
-/* =====================================================
-   LOADER
-===================================================== */
+/* LOADER */
 #loadingOverlay{
  position:fixed;
  inset:0;
@@ -297,64 +230,27 @@ button{
  align-items:center;
  justify-content:center;
  font-weight:700;
- font-size:14px;
 }
 
-#progressBar{
- position:fixed;
- top:0;
- left:0;
- height:3px;
- width:0%;
- background:linear-gradient(90deg,#3b82f6,#14b8a6);
- z-index:10001;
- display:none;
-}
-
-/* =====================================================
-   ESCRITORIO
-===================================================== */
+/* ESCRITORIO */
 @media (min-width:769px){
  #dashboardMapa{
    position:absolute;
    top:16px;
    left:50%;
    transform:translateX(-50%);
-   z-index:9999;
    max-width:900px;
    width:calc(100% - 32px);
+   z-index:9999;
  }
 }
 
-/* =====================================================
-   MÓVIL
-===================================================== */
+/* MÓVIL */
 @media (max-width:768px){
- header{
-   grid-template-columns:auto 1fr;
- }
-
- .right{
-   flex-wrap:wrap;
- }
-
- #btnToggle{
-   display:none;
- }
-
- .main{
-   overflow:auto;
- }
-
- #mapaBox{
-   position:relative;
-   height:360px;
- }
-
- #dashboardMapa{
-   position:relative;
-   margin:12px;
- }
+ .main{ overflow:auto; }
+ #mapaBox{ position:relative; height:360px; }
+ #dashboardMapa{ position:relative; margin:12px; }
+ #btnToggle{ display:none; }
 }
 </style>
 </head>
@@ -364,13 +260,12 @@ button{
 <div class="app">
 
 <div id="loadingOverlay">Iniciando sistema…</div>
-<div id="progressBar"></div>
 
 <!-- MENU -->
 <div id="menuLateral" class="menu-lateral">
   <div class="menu-header">
     <span>📦 Panel de Gestión</span>
-    <button class="btn-ghost" onclick="toggleMenu()">✕</button>
+    <button onclick="toggleMenu()">✕</button>
   </div>
   <div id="menuModulos" class="menu-items"></div>
 </div>
@@ -379,7 +274,6 @@ button{
 <header>
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
-    <img id="logoEmpresa" style="height:36px;max-width:120px;display:none">
     <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
@@ -391,12 +285,13 @@ button{
   <div class="right">
     <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
     <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
-    <button id="btnToggle" title="Mostrar / Ocultar">➖</button>
+    <button id="btnToggle">➖</button>
   </div>
 </header>
 
 <!-- MAIN -->
 <div class="main">
+
   <div id="mapaBox">
     <div id="mapa"></div>
   </div>
@@ -411,45 +306,28 @@ button{
     <strong>🚀 Velocidad</strong><br>
     <span id="speedTexto">0 km/h</span>
   </div>
+
 </div>
 
 <!-- VISOR -->
 <div id="viewer" class="viewer">
   <div class="viewer-header">
     <span id="viewerTitle"></span>
-    <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
+    <button onclick="volver()">⬅ Volver</button>
   </div>
   <iframe id="frame"></iframe>
 </div>
 
 </div>
 
-<!-- SCRIPTS -->
-<script src="app-global.js"></script>
-<script src="empresa-header.js"></script>
-<script src="auth.js"></script>
-<script src="main.js"></script>
-<script src="segurity.js"></script>
+<!-- SCRIPTS (ORDEN CORRECTO, SIN ROMPER main.js) -->
+<script src="app-global.js" defer></script>
+<script src="empresa-header.js" defer></script>
+<script src="auth.js" defer></script>
+<script src="main.js" defer></script>
+<script src="segurity.js" defer></script>
 
 <script>
-/* MAPA BASE */
-const map = L.map('mapa').setView([-33.45, -70.66], 13);
-window.map = map;
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-
-/* TOGGLE TARJETA */
-const btnToggle = document.getElementById("btnToggle");
-const dashboard = document.getElementById("dashboardMapa");
-let visible = true;
-
-btnToggle.onclick = () => {
-  visible = !visible;
-  dashboard.classList.toggle("oculto", !visible);
-  btnToggle.textContent = visible ? "➖" : "➕";
-  setTimeout(()=>map.invalidateSize(true),150);
-};
-
-/* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
