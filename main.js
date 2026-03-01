@@ -262,14 +262,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const dashboard = document.getElementById("dashboardMapa");
   const toggleBtn = document.getElementById("toggleDashboard");
 
-  if (!dashboard || !toggleBtn) return;
+  if (!dashboard || !toggleBtn) {
+    console.warn("No se encontró dashboard o botón");
+    return;
+  }
 
   const isDesktop = () =>
     window.matchMedia("(min-width: 769px)").matches;
 
   let visible = true; // tarjeta visible por defecto
 
-  const syncUI = () => {
+  function syncUI() {
 
     if (!isDesktop()) {
       // 📱 MÓVIL
@@ -279,23 +282,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 💻 ESCRITORIO
-    toggleBtn.style.display = "flex";          // NUNCA se oculta
+    toggleBtn.style.display = "flex";        // botón SIEMPRE visible
     dashboard.classList.toggle("oculto", !visible);
     toggleBtn.textContent = visible ? "➖" : "➕";
 
-    // Recalcular Leaflet
-    if (window.map) {
+    // Ajustar Leaflet
+    if (window.map && typeof map.invalidateSize === "function") {
       setTimeout(() => map.invalidateSize(true), 150);
     }
-  };
+  }
 
-  // Click + / -
+  // CLICK DEL BOTÓN
   toggleBtn.addEventListener("click", () => {
     visible = !visible;
     syncUI();
   });
 
-  // Resize / rotación
+  // Cambios de tamaño
   window.addEventListener("resize", syncUI);
 
   // Estado inicial
