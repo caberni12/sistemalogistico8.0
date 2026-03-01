@@ -320,6 +320,24 @@ button{
    font-size:12px;
  }
 }
+
+/* =====================================================
+   CONTROL DE ZOOM POR DISPOSITIVO
+===================================================== */
+
+/* 📱 MÓVIL → mantiene el zoom actual */
+@media (max-width: 768px){
+  body{
+    zoom: 0.95;              /* puedes ajustar entre 0.9 y 0.97 */
+  }
+}
+
+/* 💻 ESCRITORIO → zoom real 100% */
+@media (min-width: 769px){
+  body{
+    zoom: 1;
+  }
+}
 </style>
 </head>
 
