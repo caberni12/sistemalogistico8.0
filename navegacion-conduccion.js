@@ -1,18 +1,17 @@
 /* =====================================================
-   NAVEGACIÓN + MODO CONDUCCIÓN (FINAL ESTABLE)
-   - Autocompletado (Nominatim)
-   - Botón IR infalible
-   - Ruta (OSRM)
-   - ETA + distancia
-   - Reintentos automáticos (GPS + Routing)
-   NO MODIFICA HTML NI CSS EXISTENTE
+   NAVEGACIÓN MÓVIL ROBUSTA (FINAL)
+   - Botón IR nunca queda “sin hacer nada”
+   - Espera GPS + Routing con estado visible
+   - Autocompletado + fallback
+   - Ruta + ETA + modo conducción
+   NO MODIFICA HTML/CSS EXISTENTE
 ===================================================== */
 (function(){
 
 /* ================= CONFIG ================= */
-const SPEED_THRESHOLD = 2;        // m/s ≈ 7 km/h
 const DRIVE_ZOOM = 17;
 const OFFSET_DISTANCE = 0.0012;
+const SPEED_THRESHOLD = 2; // m/s ~ 7 km/h
 
 /* ================= STATE ================= */
 let routingControl = null;
@@ -22,12 +21,14 @@ let drivingMode = false;
 let vehicleMarker = null;
 let lastHeading = null;
 let debounceTimer = null;
+let pendingDestination = null; // <-- clave: guarda destino hasta que GPS+Routing estén listos
 
 /* ================= WAIT READY ================= */
 (function waitReady(){
   if (window.mapa && window.L && document.getElementById('mapCardContent')){
     injectSearchUI();
     injectETABox();
+    injectStatusBar();
     initGPS();
     loadRouting();
   } else {
@@ -35,7 +36,7 @@ let debounceTimer = null;
   }
 })();
 
-/* ================= SEARCH UI ================= */
+/* ================= UI: BUSCADOR + IR ================= */
 function injectSearchUI(){
   if (document.getElementById('navSearchInput')) return;
 
@@ -89,7 +90,7 @@ function onType(e){
   const q = e.target.value.trim();
   if (q.length < 3){ hideSuggestions(); return; }
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => buscarSugerencias(q), 350);
+  debounceTimer = setTimeout(()=>buscarSugerencias(q), 350);
 }
 
 function buscarSugerencias(query){
@@ -97,7 +98,7 @@ function buscarSugerencias(query){
     `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`,
     { headers:{ 'User-Agent':'PanelLogistico/1.0' } }
   )
-  .then(r => r.json())
+  .then(r=>r.json())
   .then(mostrarSugerencias)
   .catch(hideSuggestions);
 }
@@ -110,10 +111,10 @@ function mostrarSugerencias(items){
     const div = document.createElement('div');
     div.className = 'nav-suggestion';
     div.textContent = item.display_name;
-    div.onclick = () => {
+    div.onclick = ()=>{
       hideSuggestions();
       document.getElementById('navSearchInput').value = item.display_name;
-      activarConduccionYRuta(L.latLng(item.lat, item.lon));
+      setPendingAndStart(L.latLng(item.lat, item.lon));
     };
     box.appendChild(div);
   });
@@ -125,39 +126,87 @@ function hideSuggestions(){
   if (box) box.style.display = 'none';
 }
 
-/* ================= BOTÓN IR (INFALIBLE) ================= */
+/* ================= ESTADO VISIBLE ================= */
+function injectStatusBar(){
+  if (document.getElementById('navStatus')) return;
+  const bar = document.createElement('div');
+  bar.id = 'navStatus';
+  bar.style.cssText = `
+    margin:6px 0 10px;padding:6px 8px;border-radius:8px;
+    background:#eef2ff;color:#1e3a8a;font-size:12px;display:none
+  `;
+  document.getElementById('mapCardContent').prepend(bar);
+}
+function setStatus(msg){
+  const bar = document.getElementById('navStatus');
+  if (!bar) return;
+  bar.textContent = msg;
+  bar.style.display = 'block';
+}
+function clearStatus(){
+  const bar = document.getElementById('navStatus');
+  if (bar) bar.style.display = 'none';
+}
+
+/* ================= BOTÓN IR (NUNCA MUERTO) ================= */
 function irADestino(){
   const input = document.getElementById('navSearchInput');
-  if (!input || !input.value.trim()) return;
-  const texto = input.value.trim();
+  if (!input || !input.value.trim()){
+    setStatus('Ingresa un destino');
+    return;
+  }
 
-  // Esperar GPS
-  if (!currentPos){ setTimeout(irADestino, 300); return; }
-  // Esperar Routing
-  if (!routingReady){ setTimeout(irADestino, 300); return; }
-
-  // Si hay sugerencia visible, usarla
+  // 1) Si hay sugerencia visible, úsala
   const first = document.querySelector('.nav-suggestion');
   if (first){ first.click(); return; }
 
-  // Fallback: resolver texto directo
+  // 2) Resolver texto a coords y guardar como pendiente
+  setStatus('Buscando destino…');
   fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(texto)}`,
+    `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(input.value.trim())}`,
     { headers:{ 'User-Agent':'PanelLogistico/1.0' } }
   )
-  .then(r => r.json())
-  .then(data => {
-    if (!data || !data.length){ alert('Destino no encontrado'); return; }
-    activarConduccionYRuta(L.latLng(data[0].lat, data[0].lon));
+  .then(r=>r.json())
+  .then(data=>{
+    if (!data || !data.length){
+      setStatus('Destino no encontrado');
+      return;
+    }
+    setPendingAndStart(L.latLng(data[0].lat, data[0].lon));
   })
-  .catch(() => alert('Error al iniciar navegación'));
+  .catch(()=> setStatus('Error al buscar destino'));
+}
+
+/* ================= PENDIENTE → ARRANQUE AUTOMÁTICO ================= */
+function setPendingAndStart(destino){
+  pendingDestination = destino;
+  drivingMode = true;
+  setStatus('Preparando navegación…');
+  tryStartNavigation();
+}
+
+function tryStartNavigation(){
+  // Espera GPS
+  if (!currentPos){
+    setStatus('Esperando GPS… activa ubicación');
+    return;
+  }
+  // Espera Routing
+  if (!routingReady){
+    setStatus('Cargando navegación…');
+    return;
+  }
+  // Arranca
+  clearStatus();
+  crearRuta(pendingDestination);
+  pendingDestination = null;
 }
 
 /* ================= GPS + CONDUCCIÓN ================= */
 function initGPS(){
   if (!navigator.geolocation) return;
 
-  navigator.geolocation.watchPosition(pos => {
+  navigator.geolocation.watchPosition(pos=>{
     const { latitude, longitude, speed, heading } = pos.coords;
     currentPos = L.latLng(latitude, longitude);
 
@@ -190,6 +239,10 @@ function initGPS(){
     if (speed && speed > SPEED_THRESHOLD){
       drivingMode = true;
     }
+
+    // Si hay destino pendiente, intenta arrancar
+    if (pendingDestination) tryStartNavigation();
+
   },{
     enableHighAccuracy:true,
     maximumAge:1000,
@@ -213,13 +266,7 @@ function injectETABox(){
   document.getElementById('mapCardContent').prepend(box);
 }
 
-/* ================= ACTIVATE NAV ================= */
-function activarConduccionYRuta(destino){
-  drivingMode = true;
-  crearRuta(destino);
-}
-
-/* ================= ROUTE + ETA ================= */
+/* ================= RUTA + ETA ================= */
 function crearRuta(destino){
   if (!currentPos || !routingReady) return;
 
@@ -237,7 +284,7 @@ function crearRuta(destino){
     ]},
     router: L.Routing.osrmv1({ serviceUrl:'https://router.project-osrm.org/route/v1' })
   })
-  .on('routesfound', e => {
+  .on('routesfound', e=>{
     const r = e.routes[0];
     const mins = Math.max(1, Math.round(r.summary.totalTime / 60));
     const km   = (r.summary.totalDistance / 1000).toFixed(1);
@@ -251,11 +298,11 @@ function crearRuta(destino){
   .addTo(mapa);
 }
 
-/* ================= LOAD ROUTING ================= */
+/* ================= ROUTING LIB ================= */
 function loadRouting(){
   loadCSS('https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css');
   loadJS('https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js',
-    () => routingReady = true
+    ()=>{ routingReady = true; if (pendingDestination) tryStartNavigation(); }
   );
 }
 function loadJS(src, cb){
