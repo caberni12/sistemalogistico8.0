@@ -9,14 +9,16 @@
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
 
+<!-- VIEWPORT -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=1,
                maximum-scale=1,
                user-scalable=no">
 
-<!-- LEAFLET (solo CSS, JS lo manejas en main.js) -->
+<!-- LEAFLET -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 /* =====================================================
@@ -28,16 +30,20 @@
  --hover:#f8fafc;
  --text:#0f172a;
  --muted:#64748b;
+ --accent:#14b8a6;
  --primary:#3b82f6;
  --danger:#ef4444;
  --border:#e2e8f0;
  --radius:12px;
 }
 
-/* RESET */
+/* =====================================================
+   RESET
+===================================================== */
 *{
  box-sizing:border-box;
  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+ -webkit-tap-highlight-color:transparent;
 }
 
 html,body{
@@ -49,7 +55,9 @@ html,body{
  color:var(--text);
 }
 
-/* APP */
+/* =====================================================
+   APP
+===================================================== */
 .app{
  display:flex;
  flex-direction:column;
@@ -57,7 +65,9 @@ html,body{
  overflow:hidden;
 }
 
-/* HEADER */
+/* =====================================================
+   HEADER
+===================================================== */
 header{
  position:sticky;
  top:0;
@@ -65,63 +75,63 @@ header{
  background:#fff;
  border-bottom:1px solid var(--border);
  box-shadow:0 3px 10px rgba(0,0,0,.05);
- padding:10px 12px;
+ padding:8px 10px;
+ display:flex;
+ flex-direction:column;
+ gap:8px;
+}
 
- display:grid;
- grid-template-columns:auto 1fr auto;
- gap:16px;
- align-items:center;
+@media (min-width:769px){
+ header{
+   flex-direction:row;
+   align-items:center;
+ }
 }
 
 .header-left{
  display:flex;
  align-items:center;
- gap:10px;
- min-width:0;
+ gap:6px;
 }
 
 #btnMenu{
- width:36px;
- height:36px;
- border-radius:10px;
- border:none;
+ width:34px;
+ height:34px;
+ border-radius:9px;
  background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
- font-size:18px;
- cursor:pointer;
-}
-
-#tituloSistema{
- font-size:18px;
- font-weight:800;
- white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis;
+ font-size:16px;
+ border:none;
 }
 
 .header-info{
  display:flex;
- flex-direction:column;
+ flex-wrap:wrap;
+ gap:6px;
  font-size:12px;
  color:var(--muted);
 }
 
 .right{
  display:flex;
- align-items:center;
- gap:8px;
+ gap:6px;
 }
 
-/* BOTONES */
+/* =====================================================
+   BOTONES
+===================================================== */
 button{
  border:none;
  border-radius:var(--radius);
- padding:6px 12px;
- font-weight:700;
+ padding:6px 10px;
+ font-weight:600;
  cursor:pointer;
  display:inline-flex;
  align-items:center;
- gap:6px;
+ justify-content:center;
+ gap:5px;
+ box-shadow:0 4px 14px rgba(0,0,0,.12);
+ font-size:12px;
 }
 
 .btn-primary{
@@ -134,14 +144,24 @@ button{
  color:#fff;
 }
 
-/* MAIN */
+.btn-ghost{
+ background:#fff;
+ border:1px solid var(--border);
+ box-shadow:none;
+}
+
+/* =====================================================
+   MAIN
+===================================================== */
 .main{
  flex:1;
  position:relative;
  overflow:hidden;
 }
 
-/* MAPA */
+/* =====================================================
+   MAPA
+===================================================== */
 #mapaBox{
  position:absolute;
  inset:0;
@@ -152,13 +172,15 @@ button{
  height:100%;
 }
 
-/* TARJETA */
+/* =====================================================
+   TARJETA INFO
+===================================================== */
 #dashboardMapa{
  background:#fff;
- border-radius:16px;
- padding:14px;
- box-shadow:0 18px 45px rgba(0,0,0,.28);
- font-size:12px;
+ border-radius:14px;
+ padding:12px;
+ box-shadow:0 14px 40px rgba(0,0,0,.25);
+ font-size:11px;
 }
 
 #dashboardMapa.oculto{
@@ -167,7 +189,9 @@ button{
  transform:translateY(-8px);
 }
 
-/* MENU LATERAL */
+/* =====================================================
+   MENU LATERAL
+===================================================== */
 .menu-lateral{
  position:fixed;
  top:0;
@@ -182,7 +206,9 @@ button{
  flex-direction:column;
 }
 
-.menu-lateral.open{ left:0; }
+.menu-lateral.open{
+ left:0;
+}
 
 .menu-header{
  padding:14px;
@@ -200,7 +226,9 @@ button{
  overflow-y:auto;
 }
 
-/* VISOR */
+/* =====================================================
+   VISOR
+===================================================== */
 .viewer{
  display:none;
  position:fixed;
@@ -219,7 +247,9 @@ button{
  justify-content:space-between;
 }
 
-/* LOADER */
+/* =====================================================
+   LOADER
+===================================================== */
 #loadingOverlay{
  position:fixed;
  inset:0;
@@ -229,28 +259,43 @@ button{
  display:none;
  align-items:center;
  justify-content:center;
- font-weight:700;
+ font-weight:600;
 }
 
-/* ESCRITORIO */
+#progressBar{
+ position:fixed;
+ top:0;
+ left:0;
+ height:3px;
+ width:0%;
+ background:linear-gradient(90deg,#3b82f6,#14b8a6);
+ z-index:10001;
+ display:none;
+}
+
+/* =====================================================
+   ESCRITORIO
+===================================================== */
 @media (min-width:769px){
  #dashboardMapa{
    position:absolute;
    top:16px;
    left:50%;
    transform:translateX(-50%);
+   z-index:9999;
    max-width:900px;
    width:calc(100% - 32px);
-   z-index:9999;
  }
 }
 
-/* MÓVIL */
+/* =====================================================
+   MÓVIL
+===================================================== */
 @media (max-width:768px){
- .main{ overflow:auto; }
- #mapaBox{ position:relative; height:360px; }
- #dashboardMapa{ position:relative; margin:12px; }
- #btnToggle{ display:none; }
+ .main{overflow:auto}
+ #mapaBox{position:relative;height:360px}
+ #dashboardMapa{position:relative;margin:12px}
+ #btnToggle{display:none}
 }
 </style>
 </head>
@@ -260,12 +305,13 @@ button{
 <div class="app">
 
 <div id="loadingOverlay">Iniciando sistema…</div>
+<div id="progressBar"></div>
 
 <!-- MENU -->
 <div id="menuLateral" class="menu-lateral">
   <div class="menu-header">
     <span>📦 Panel de Gestión</span>
-    <button onclick="toggleMenu()">✕</button>
+    <button class="btn-ghost" onclick="toggleMenu()">✕</button>
   </div>
   <div id="menuModulos" class="menu-items"></div>
 </div>
@@ -274,6 +320,7 @@ button{
 <header>
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
+    <img id="logoEmpresa" style="height:36px;max-width:120px;display:none">
     <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
@@ -285,13 +332,12 @@ button{
   <div class="right">
     <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
     <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
-    <button id="btnToggle">➖</button>
+    <button id="btnToggle" title="Mostrar / Ocultar">➖</button>
   </div>
 </header>
 
 <!-- MAIN -->
 <div class="main">
-
   <div id="mapaBox">
     <div id="mapa"></div>
   </div>
@@ -306,28 +352,45 @@ button{
     <strong>🚀 Velocidad</strong><br>
     <span id="speedTexto">0 km/h</span>
   </div>
-
 </div>
 
 <!-- VISOR -->
 <div id="viewer" class="viewer">
   <div class="viewer-header">
     <span id="viewerTitle"></span>
-    <button onclick="volver()">⬅ Volver</button>
+    <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
   </div>
   <iframe id="frame"></iframe>
 </div>
 
 </div>
 
-<!-- SCRIPTS (ORDEN CORRECTO, SIN ROMPER main.js) -->
-<script src="app-global.js" defer></script>
-<script src="empresa-header.js" defer></script>
-<script src="auth.js" defer></script>
-<script src="main.js" defer></script>
-<script src="segurity.js" defer></script>
+<!-- SCRIPTS -->
+<script src="app-global.js"></script>
+<script src="empresa-header.js"></script>
+<script src="auth.js"></script>
+<script src="main.js"></script>
+<script src="segurity.js"></script>
 
 <script>
+/* MAPA BASE */
+const map = L.map('mapa').setView([-33.45, -70.66], 13);
+window.map = map;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+/* TOGGLE TARJETA */
+const btnToggle = document.getElementById("btnToggle");
+const dashboard = document.getElementById("dashboardMapa");
+let visible = true;
+
+btnToggle.onclick = () => {
+  visible = !visible;
+  dashboard.classList.toggle("oculto", !visible);
+  btnToggle.textContent = visible ? "➖" : "➕";
+  setTimeout(()=>map.invalidateSize(true),150);
+};
+
+/* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
