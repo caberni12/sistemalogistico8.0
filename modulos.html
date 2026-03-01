@@ -118,6 +118,58 @@ th,td{padding:12px;border-bottom:1px solid #e5e7eb;font-size:14px}
   table{display:none}
   .cards{display:grid}
 }
+
+/* =====================================================
+   ESCRITORIO – TARJETA ARRIBA + MAPA ABAJO FULL
+===================================================== */
+@media (min-width: 769px){
+
+  html, body{
+    height:100%;
+    overflow:hidden;
+  }
+
+  .app{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  header{
+    height:64px;
+    flex-shrink:0;
+  }
+
+  /* MAIN ocupa todo el resto */
+  .main{
+    flex:1;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* Contenedor tarjeta + mapa */
+  #mapaBox{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* TARJETA ARRIBA */
+  #dashboardMapa{
+    flex-shrink:0;
+    margin:16px auto;
+    max-width:900px;
+  }
+
+  /* MAPA ABAJO – OCUPA TODO */
+  #mapa{
+    flex:1;
+    width:100%;
+    min-height:0; /* CLAVE anti-recorte */
+  }
+
+}
 </style>
 </head>
 
