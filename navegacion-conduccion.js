@@ -1,8 +1,16 @@
 /* =====================================================
    NAVEGACIÓN + BUSCADOR + RUTA + ETA
-   COMPATIBLE CON TU main.js Y TU HTML
+   + MODO CONDUCCIÓN REAL (UNIFICADO)
+   Compatible con tu main.js y tu HTML
 ===================================================== */
 (function(){
+
+/* =========================
+   CONFIG
+========================= */
+const DRIVE_ZOOM = 17;
+const SPEED_THRESHOLD = 2;      // m/s ≈ 7 km/h
+const PAN_OFFSET = 0.0012;
 
 /* =========================
    ESTADO GLOBAL
@@ -10,6 +18,9 @@
 let posicionActual = null;
 let routingControl = null;
 let debounceTimer = null;
+let drivingMode = false;
+let lastHeading = 0;
+let gpsActivo = false;
 
 /* =========================
    ESPERAR MAPA + LIBRERÍAS
@@ -23,7 +34,7 @@ let debounceTimer = null;
     document.getElementById("mapCardContent")
   ){
     inyectarUI();
-    engancharGPS();
+    iniciarGPS();
   } else {
     setTimeout(esperarSistema, 300);
   }
@@ -79,19 +90,45 @@ function inyectarUI(){
 }
 
 /* =========================
-   GPS (USA EL TUYO)
+   GPS + MODO CONDUCCIÓN (ÚNICO)
 ========================= */
-function engancharGPS(){
-  const original = navigator.geolocation.watchPosition;
-  navigator.geolocation.watchPosition = function(cb, err, opt){
-    return original.call(navigator.geolocation, pos=>{
-      posicionActual = L.latLng(
-        pos.coords.latitude,
-        pos.coords.longitude
-      );
-      cb(pos);
-    }, err, opt);
-  };
+function iniciarGPS(){
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.watchPosition(
+    pos => {
+      const { latitude, longitude, speed = 0, heading = null } = pos.coords;
+
+      posicionActual = L.latLng(latitude, longitude);
+      gpsActivo = true;
+
+      /* ===== ACTIVAR CONDUCCIÓN ===== */
+      if (speed > SPEED_THRESHOLD) {
+        drivingMode = true;
+      }
+
+      if (drivingMode && MAPA) {
+        MAPA.setZoom(DRIVE_ZOOM, { animate:true });
+
+        if (heading !== null) lastHeading = heading;
+
+        const rad = lastHeading * Math.PI / 180;
+        const aheadLat = latitude + PAN_OFFSET * Math.cos(rad);
+        const aheadLng = longitude + PAN_OFFSET * Math.sin(rad);
+
+        MAPA.panTo([aheadLat, aheadLng], {
+          animate:true,
+          duration:0.6
+        });
+      }
+    },
+    () => {},
+    {
+      enableHighAccuracy:true,
+      maximumAge:1000,
+      timeout:15000
+    }
+  );
 }
 
 /* =========================
@@ -149,7 +186,11 @@ function ocultarSugerencias(){
 function iniciarRuta(){
   const q = document.getElementById("navInput").value.trim();
   if (!q) return alert("Ingresa un destino");
-  if (!posicionActual) return alert("Esperando GPS…");
+
+  if (!gpsActivo || !posicionActual) {
+    alert("GPS activo, obteniendo posición…");
+    return;
+  }
 
   fetch(
     `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
@@ -191,7 +232,7 @@ function crearRuta(destino){
   })
   .addTo(MAPA);
 
-  MAPA.setZoom(17);
+  MAPA.setZoom(DRIVE_ZOOM);
 }
 
 /* =========================
@@ -213,64 +254,9 @@ function mostrarETA(seg, dist){
     `📏 ${(dist/1000).toFixed(1)} km`;
 }
 
-})();
-
-
-/* =====================================================
-   MODO CONDUCCIÓN REAL (WAZE-LIKE)
-   Compatible con tu main.js
-===================================================== */
-(function(){
-
-/* ================= CONFIG ================= */
-const DRIVE_ZOOM = 17;
-const SPEED_THRESHOLD = 2;     // m/s ≈ 7 km/h
-const PAN_OFFSET = 0.0012;
-
-/* ================= STATE ================= */
-let drivingMode = false;
-let lastHeading = 0;
-
-/* ================= ENGANCHE GPS ================= */
-(function hookGPS(){
-  const original = navigator.geolocation.watchPosition;
-
-  navigator.geolocation.watchPosition = function(cb, err, opt){
-    return original.call(navigator.geolocation, pos => {
-
-      const { latitude, longitude, speed = 0, heading = null } = pos.coords;
-
-      /* ================= ACTIVAR CONDUCCIÓN ================= */
-      if (speed > SPEED_THRESHOLD) {
-        drivingMode = true;
-      }
-
-      if (drivingMode && MAPA) {
-
-        MAPA.setZoom(DRIVE_ZOOM, { animate:true });
-
-        /* Usar heading real o último válido */
-        if (heading !== null) lastHeading = heading;
-
-        const rad = lastHeading * Math.PI / 180;
-
-        /* Adelantar mapa hacia donde va el auto */
-        const aheadLat = latitude + PAN_OFFSET * Math.cos(rad);
-        const aheadLng = longitude + PAN_OFFSET * Math.sin(rad);
-
-        MAPA.panTo([aheadLat, aheadLng], {
-          animate:true,
-          duration:0.6
-        });
-      }
-
-      cb(pos);
-
-    }, err, opt);
-  };
-})();
-
-/* ================= API PÚBLICA ================= */
+/* =========================
+   API PÚBLICA
+========================= */
 window.detenerModoConduccion = function(){
   drivingMode = false;
 };
