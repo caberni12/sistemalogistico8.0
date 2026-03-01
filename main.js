@@ -254,54 +254,63 @@ function cerrarSesion(){
 }
 
 
- /* =====================================================
-   CONTROL TARJETA – BOTÓN SIEMPRE VISIBLE
+/* =====================================================
+   CONTROL TARJETA – USANDO btnOcultar / btnMostrar
 ===================================================== */
 document.addEventListener("DOMContentLoaded", () => {
 
   const dashboard = document.getElementById("dashboardMapa");
-  const toggleBtn = document.getElementById("toggleDashboard");
+  const btnOcultar = document.getElementById("btnOcultar");
+  const btnMostrar = document.getElementById("btnMostrar");
 
-  if (!dashboard || !toggleBtn) {
-    console.warn("No se encontró dashboard o botón");
+  if (!dashboard || !btnOcultar || !btnMostrar) {
+    console.warn("Faltan elementos del dashboard");
     return;
   }
 
   const isDesktop = () =>
     window.matchMedia("(min-width: 769px)").matches;
 
-  let visible = true; // tarjeta visible por defecto
+  function mostrarTarjeta() {
+    dashboard.classList.remove("oculto");
+    btnMostrar.style.display = "none";
+    btnOcultar.style.display = "inline-flex";
 
-  function syncUI() {
-
-    if (!isDesktop()) {
-      // 📱 MÓVIL
-      dashboard.classList.remove("oculto");
-      toggleBtn.style.display = "none";
-      return;
-    }
-
-    // 💻 ESCRITORIO
-    toggleBtn.style.display = "flex";        // botón SIEMPRE visible
-    dashboard.classList.toggle("oculto", !visible);
-    toggleBtn.textContent = visible ? "➖" : "➕";
-
-    // Ajustar Leaflet
-    if (window.map && typeof map.invalidateSize === "function") {
+    if (window.map) {
       setTimeout(() => map.invalidateSize(true), 150);
     }
   }
 
-  // CLICK DEL BOTÓN
-  toggleBtn.addEventListener("click", () => {
-    visible = !visible;
-    syncUI();
-  });
+  function ocultarTarjeta() {
+    dashboard.classList.add("oculto");
+    btnOcultar.style.display = "none";
+    btnMostrar.style.display = "inline-flex";
 
-  // Cambios de tamaño
-  window.addEventListener("resize", syncUI);
+    if (window.map) {
+      setTimeout(() => map.invalidateSize(true), 150);
+    }
+  }
+
+  // Clicks
+  btnOcultar.addEventListener("click", ocultarTarjeta);
+  btnMostrar.addEventListener("click", mostrarTarjeta);
+
+  // Comportamiento por dispositivo
+  function syncByDevice() {
+    if (!isDesktop()) {
+      // 📱 MÓVIL: siempre visible, sin botones
+      dashboard.classList.remove("oculto");
+      btnOcultar.style.display = "none";
+      btnMostrar.style.display = "none";
+    } else {
+      // 💻 ESCRITORIO: inicia visible
+      mostrarTarjeta();
+    }
+  }
+
+  window.addEventListener("resize", syncByDevice);
 
   // Estado inicial
-  syncUI();
+  syncByDevice();
 
 });
