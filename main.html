@@ -362,6 +362,41 @@ button{
     font-size:12px;
   }
 }
+
+/* =====================================================
+   FIX MAPA LEAFLET – SOLO ESCRITORIO
+===================================================== */
+@media (min-width: 769px){
+
+  html, body{
+    height:100%;
+  }
+
+  .app{
+    height:100vh;
+  }
+
+  header{
+    height:64px; /* altura real del header */
+    flex-shrink:0;
+  }
+
+  .main{
+    height:calc(100vh - 64px);
+    overflow:hidden;
+  }
+
+  #mapaBox{
+    height:100%;
+  }
+
+  #mapa{
+    height:100%;
+    width:100%;
+    min-height:100%;
+  }
+
+}
 </style>
 </head>
 
