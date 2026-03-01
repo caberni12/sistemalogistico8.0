@@ -1,15 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
-<!-- ================= PWA ================= -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f172a">
-
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
 
-<!-- VIEWPORT -->
+<!-- VIEWPORT APP -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=1,
@@ -21,9 +16,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-/* =====================================================
-   VARIABLES
-===================================================== */
 :root{
  --bg:#f1f5f9;
  --card:#ffffff;
@@ -37,9 +29,7 @@
  --radius:12px;
 }
 
-/* =====================================================
-   RESET
-===================================================== */
+/* RESET */
 *{
  box-sizing:border-box;
  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -48,90 +38,87 @@
 
 html,body{
  margin:0;
- padding:0;
- width:100%;
  height:100%;
  background:var(--bg);
  color:var(--text);
 }
 
-/* =====================================================
-   APP
-===================================================== */
+/* Leaflet fix */
+.leaflet-div-icon{
+ background:none!important;
+ border:none!important;
+}
+
+/* APP */
 .app{
  display:flex;
  flex-direction:column;
  height:100vh;
- overflow:hidden;
 }
 
-/* =====================================================
-   HEADER
-===================================================== */
+/* HEADER */
 header{
  position:sticky;
  top:0;
- z-index:100;
+ z-index:20;
  background:#fff;
  border-bottom:1px solid var(--border);
- box-shadow:0 3px 10px rgba(0,0,0,.05);
- padding:8px 10px;
+ box-shadow:0 4px 14px rgba(0,0,0,.06);
+ padding:12px 16px;
  display:flex;
- flex-direction:column;
+ flex-wrap:wrap;
  gap:8px;
-}
-
-@media (min-width:769px){
- header{
-   flex-direction:row;
-   align-items:center;
- }
 }
 
 .header-left{
  display:flex;
  align-items:center;
- gap:6px;
+ gap:10px;
 }
 
 #btnMenu{
- width:34px;
- height:34px;
- border-radius:9px;
+ width:40px;
+ height:40px;
+ font-size:20px;
  background:linear-gradient(135deg,#2dd4bf,#0d9488);
  color:#fff;
- font-size:16px;
  border:none;
+ border-radius:12px;
+ cursor:pointer;
+}
+
+header h1{
+ margin:0;
+ font-size:17px;
+ font-weight:700;
+ white-space:nowrap;
 }
 
 .header-info{
  display:flex;
- flex-wrap:wrap;
- gap:6px;
+ gap:12px;
+ align-items:center;
  font-size:12px;
  color:var(--muted);
 }
 
-.right{
+header .right{
  display:flex;
- gap:6px;
+ gap:12px;
 }
 
-/* =====================================================
-   BOTONES
-===================================================== */
+/* BUTTONS */
 button{
  border:none;
  border-radius:var(--radius);
- padding:6px 10px;
+ padding:10px 16px;
  font-weight:600;
  cursor:pointer;
  display:inline-flex;
  align-items:center;
  justify-content:center;
- gap:5px;
- box-shadow:0 4px 14px rgba(0,0,0,.12);
- font-size:12px;
+ gap:8px;
+ box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
 
 .btn-primary{
@@ -150,21 +137,18 @@ button{
  box-shadow:none;
 }
 
-/* =====================================================
-   MAIN
-===================================================== */
+/* MAIN */
 .main{
  flex:1;
- position:relative;
- overflow:hidden;
+ overflow-y:auto;
 }
 
-/* =====================================================
-   MAPA
-===================================================== */
+/* MAP */
 #mapaBox{
- position:absolute;
- inset:0;
+ position:relative;
+ width:100%;
+ height:100%;
+ min-height:420px;
 }
 
 #mapa{
@@ -172,26 +156,21 @@ button{
  height:100%;
 }
 
-/* =====================================================
-   TARJETA INFO
-===================================================== */
+/* DASHBOARD MAP */
 #dashboardMapa{
+ position:absolute;
+ bottom:16px;
+ left:16px;
+ right:16px;
  background:#fff;
- border-radius:14px;
- padding:12px;
- box-shadow:0 14px 40px rgba(0,0,0,.25);
- font-size:11px;
+ border-radius:16px;
+ padding:14px 16px;
+ box-shadow:0 14px 30px rgba(0,0,0,.22);
+ font-size:12px;
+ z-index:500;
 }
 
-#dashboardMapa.oculto{
- opacity:0;
- pointer-events:none;
- transform:translateY(-8px);
-}
-
-/* =====================================================
-   MENU LATERAL
-===================================================== */
+/* MENU */
 .menu-lateral{
  position:fixed;
  top:0;
@@ -206,12 +185,10 @@ button{
  flex-direction:column;
 }
 
-.menu-lateral.open{
- left:0;
-}
+.menu-lateral.open{ left:0; }
 
 .menu-header{
- padding:14px;
+ padding:16px;
  border-bottom:1px solid var(--border);
  display:flex;
  justify-content:space-between;
@@ -219,16 +196,22 @@ button{
 }
 
 .menu-items{
- padding:12px;
+ padding:14px;
  display:flex;
  flex-direction:column;
- gap:8px;
+ gap:10px;
  overflow-y:auto;
 }
 
-/* =====================================================
-   VISOR
-===================================================== */
+.menu-item{
+ padding:14px;
+ border-radius:var(--radius);
+ background:var(--hover);
+ font-weight:600;
+ cursor:pointer;
+}
+
+/* VISOR */
 .viewer{
  display:none;
  position:fixed;
@@ -239,17 +222,21 @@ button{
 }
 
 .viewer-header{
- height:48px;
- padding:0 12px;
+ height:52px;
+ padding:0 14px;
  border-bottom:1px solid var(--border);
  display:flex;
  align-items:center;
  justify-content:space-between;
 }
 
-/* =====================================================
-   LOADER
-===================================================== */
+.viewer iframe{
+ flex:1;
+ width:100%;
+ border:none;
+}
+
+/* LOADER */
 #loadingOverlay{
  position:fixed;
  inset:0;
@@ -273,29 +260,27 @@ button{
  display:none;
 }
 
-/* =====================================================
-   ESCRITORIO
-===================================================== */
-@media (min-width:769px){
- #dashboardMapa{
-   position:absolute;
-   top:16px;
-   left:50%;
-   transform:translateX(-50%);
-   z-index:9999;
-   max-width:900px;
-   width:calc(100% - 32px);
- }
-}
-
-/* =====================================================
-   MÓVIL
-===================================================== */
+/* MOBILE */
 @media (max-width:768px){
- .main{overflow:auto}
- #mapaBox{position:relative;height:360px}
- #dashboardMapa{position:relative;margin:12px}
- #btnToggle{display:none}
+ header{
+   flex-direction:column;
+   align-items:flex-start;
+ }
+ .header-left,
+ .header-info,
+ .right{
+   width:100%;
+ }
+ .right{
+   flex-direction:column;
+ }
+ .right button{
+   width:100%;
+ }
+ #btnMenu{
+   width:36px;
+   height:36px;
+ }
 }
 </style>
 </head>
@@ -304,6 +289,7 @@ button{
 
 <div class="app">
 
+<!-- LOADER -->
 <div id="loadingOverlay">Iniciando sistema…</div>
 <div id="progressBar"></div>
 
@@ -320,7 +306,11 @@ button{
 <header>
   <div class="header-left">
     <button id="btnMenu" onclick="toggleMenu()">☰</button>
-    <img id="logoEmpresa" style="height:36px;max-width:120px;display:none">
+
+    <img id="logoEmpresa"
+         alt="Logo Empresa"
+         style="height:36px;max-width:120px;object-fit:contain;display:none;">
+
     <h1 id="tituloSistema">Panel Logístico</h1>
   </div>
 
@@ -332,7 +322,6 @@ button{
   <div class="right">
     <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
     <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
-    <button id="btnToggle" title="Mostrar / Ocultar">➖</button>
   </div>
 </header>
 
@@ -340,17 +329,15 @@ button{
 <div class="main">
   <div id="mapaBox">
     <div id="mapa"></div>
-  </div>
 
-  <div id="dashboardMapa">
-    <strong>📍 Dirección</strong><br>
-    <span id="dirTexto">Detectando…</span><br><br>
-
-    <strong>🌐 Red</strong><br>
-    <span id="netTexto">Detectando…</span><br><br>
-
-    <strong>🚀 Velocidad</strong><br>
-    <span id="speedTexto">0 km/h</span>
+    <div id="dashboardMapa">
+      <strong>📍 Dirección</strong><br>
+      <span id="dirTexto">Detectando…</span><br><br>
+      <strong>🌐 Red</strong><br>
+      <span id="netTexto">Detectando…</span><br><br>
+      <strong>🚀 Velocidad</strong><br>
+      <span id="speedTexto">0 km/h</span>
+    </div>
   </div>
 </div>
 
@@ -365,36 +352,13 @@ button{
 
 </div>
 
-<!-- SCRIPTS -->
-<script src="app-global.js"></script>
+<!-- SCRIPTS (ORDEN CORRECTO) -->
+
+<!-- SCRIPTS (ORDEN CORRECTO) -->
 <script src="empresa-header.js"></script>
 <script src="auth.js"></script>
 <script src="main.js"></script>
 <script src="segurity.js"></script>
-
-<script>
-/* MAPA BASE */
-const map = L.map('mapa').setView([-33.45, -70.66], 13);
-window.map = map;
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-
-/* TOGGLE TARJETA */
-const btnToggle = document.getElementById("btnToggle");
-const dashboard = document.getElementById("dashboardMapa");
-let visible = true;
-
-btnToggle.onclick = () => {
-  visible = !visible;
-  dashboard.classList.toggle("oculto", !visible);
-  btnToggle.textContent = visible ? "➖" : "➕";
-  setTimeout(()=>map.invalidateSize(true),150);
-};
-
-/* SERVICE WORKER */
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
-</script>
 
 </body>
 </html>
