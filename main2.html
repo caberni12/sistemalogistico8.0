@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Logístico Integrado</title>
+
+<!-- VIEWPORT APP -->
+<meta name="viewport"
+      content="width=device-width,
+               initial-scale=1,
+               maximum-scale=1,
+               user-scalable=no">
+
+<!-- LEAFLET -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+:root{
+ --bg:#f1f5f9;
+ --card:#ffffff;
+ --hover:#f8fafc;
+ --text:#0f172a;
+ --muted:#64748b;
+ --accent:#14b8a6;
+ --primary:#3b82f6;
+ --danger:#ef4444;
+ --border:#e2e8f0;
+ --radius:12px;
+}
+
+/* RESET */
+*{
+ box-sizing:border-box;
+ font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+ -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+ margin:0;
+ height:100%;
+ background:var(--bg);
+ color:var(--text);
+}
+
+/* Leaflet fix */
+.leaflet-div-icon{
+ background:none!important;
+ border:none!important;
+}
+
+/* APP */
+.app{
+ display:flex;
+ flex-direction:column;
+ height:100vh;
+}
+
+/* HEADER */
+header{
+ position:sticky;
+ top:0;
+ z-index:20;
+ background:#fff;
+ border-bottom:1px solid var(--border);
+ box-shadow:0 4px 14px rgba(0,0,0,.06);
+ padding:12px 16px;
+ display:flex;
+ flex-wrap:wrap;
+ gap:8px;
+}
+
+.header-left{
+ display:flex;
+ align-items:center;
+ gap:10px;
+}
+
+#btnMenu{
+ width:40px;
+ height:40px;
+ font-size:20px;
+ background:linear-gradient(135deg,#2dd4bf,#0d9488);
+ color:#fff;
+ border:none;
+ border-radius:12px;
+ cursor:pointer;
+}
+
+header h1{
+ margin:0;
+ font-size:17px;
+ font-weight:700;
+ white-space:nowrap;
+}
+
+.header-info{
+ display:flex;
+ gap:12px;
+ align-items:center;
+ font-size:12px;
+ color:var(--muted);
+}
+
+header .right{
+ display:flex;
+ gap:12px;
+}
+
+/* BUTTONS */
+button{
+ border:none;
+ border-radius:var(--radius);
+ padding:10px 16px;
+ font-weight:600;
+ cursor:pointer;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ box-shadow:0 6px 18px rgba(0,0,0,.12);
+}
+
+.btn-primary{
+ background:linear-gradient(135deg,#60a5fa,#2563eb);
+ color:#fff;
+}
+
+.btn-danger{
+ background:linear-gradient(135deg,#f87171,#dc2626);
+ color:#fff;
+}
+
+.btn-ghost{
+ background:#fff;
+ border:1px solid var(--border);
+ box-shadow:none;
+}
+
+/* MAIN */
+.main{
+ flex:1;
+ overflow-y:auto;
+}
+
+/* MAP */
+#mapaBox{
+ position:relative;
+ width:100%;
+ height:100%;
+ min-height:420px;
+}
+
+#mapa{
+ width:100%;
+ height:100%;
+}
+
+/* DASHBOARD MAP */
+#dashboardMapa{
+ position:absolute;
+ bottom:16px;
+ left:16px;
+ right:16px;
+ background:#fff;
+ border-radius:16px;
+ padding:14px 16px;
+ box-shadow:0 14px 30px rgba(0,0,0,.22);
+ font-size:12px;
+ z-index:500;
+}
+
+/* MENU */
+.menu-lateral{
+ position:fixed;
+ top:0;
+ left:-300px;
+ width:300px;
+ height:100vh;
+ background:#fff;
+ box-shadow:6px 0 28px rgba(0,0,0,.18);
+ transition:.35s ease;
+ z-index:9997;
+ display:flex;
+ flex-direction:column;
+}
+
+.menu-lateral.open{ left:0; }
+
+.menu-header{
+ padding:16px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ justify-content:space-between;
+ font-weight:700;
+}
+
+.menu-items{
+ padding:14px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+ overflow-y:auto;
+}
+
+.menu-item{
+ padding:14px;
+ border-radius:var(--radius);
+ background:var(--hover);
+ font-weight:600;
+ cursor:pointer;
+}
+
+/* VISOR */
+.viewer{
+ display:none;
+ position:fixed;
+ inset:0;
+ background:#fff;
+ z-index:9996;
+ flex-direction:column;
+}
+
+.viewer-header{
+ height:52px;
+ padding:0 14px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+}
+
+.viewer iframe{
+ flex:1;
+ width:100%;
+ border:none;
+}
+
+/* LOADER */
+#loadingOverlay{
+ position:fixed;
+ inset:0;
+ background:rgba(241,245,249,.92);
+ backdrop-filter:blur(4px);
+ z-index:10000;
+ display:none;
+ align-items:center;
+ justify-content:center;
+ font-weight:600;
+}
+
+#progressBar{
+ position:fixed;
+ top:0;
+ left:0;
+ height:3px;
+ width:0%;
+ background:linear-gradient(90deg,#3b82f6,#14b8a6);
+ z-index:10001;
+ display:none;
+}
+
+/* MOBILE */
+@media (max-width:768px){
+ header{
+   flex-direction:column;
+   align-items:flex-start;
+ }
+ .header-left,
+ .header-info,
+ .right{
+   width:100%;
+ }
+ .right{
+   flex-direction:column;
+ }
+ .right button{
+   width:100%;
+ }
+ #btnMenu{
+   width:36px;
+   height:36px;
+ }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- LOADER -->
+<div id="loadingOverlay">Iniciando sistema…</div>
+<div id="progressBar"></div>
+
+<!-- MENU -->
+<div id="menuLateral" class="menu-lateral">
+  <div class="menu-header">
+    <span>📦 Panel de Gestión</span>
+    <button class="btn-ghost" onclick="toggleMenu()">✕</button>
+  </div>
+  <div id="menuModulos" class="menu-items"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <button id="btnMenu" onclick="toggleMenu()">☰</button>
+
+    <img id="logoEmpresa"
+         alt="Logo Empresa"
+         style="height:36px;max-width:120px;object-fit:contain;display:none;">
+
+    <h1 id="tituloSistema">Panel Logístico</h1>
+  </div>
+
+  <div class="header-info">
+    <div id="usuario"></div>
+    <div id="conexionInfo"></div>
+  </div>
+
+  <div class="right">
+    <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
+    <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+  <div id="mapaBox">
+    <div id="mapa"></div>
+
+    <div id="dashboardMapa">
+      <strong>📍 Dirección</strong><br>
+      <span id="dirTexto">Detectando…</span><br><br>
+      <strong>🌐 Red</strong><br>
+      <span id="netTexto">Detectando…</span><br><br>
+      <strong>🚀 Velocidad</strong><br>
+      <span id="speedTexto">0 km/h</span>
+    </div>
+  </div>
+</div>
+
+<!-- VISOR -->
+<div id="viewer" class="viewer">
+  <div class="viewer-header">
+    <span id="viewerTitle"></span>
+    <button class="btn-ghost" onclick="volver()">⬅ Volver</button>
+  </div>
+  <iframe id="frame"></iframe>
+</div>
+
+</div>
+
+<!-- SCRIPTS (ORDEN CORRECTO) -->
+
+<!-- SCRIPTS (ORDEN CORRECTO) -->
+<script src="empresa-header.js"></script>
+<script src="auth.js"></script>
+<script src="main.js"></script>
+<script src="segurity.js"></script>
+
+</body>
+</html>
