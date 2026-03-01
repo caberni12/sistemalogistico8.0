@@ -253,7 +253,6 @@ function cerrarSesion(){
   location.href = "index.html";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
 
  /* =====================================================
    CONTROL TARJETA – BOTÓN SIEMPRE VISIBLE
