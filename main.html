@@ -285,7 +285,7 @@ button{
 
 
 /* ==============================
-   CONTROLES TARJETA MAPA
+   TARJETA MAPA TOGGLE
 ============================== */
 
 #dashboardMapa{
@@ -301,18 +301,13 @@ button{
  font-weight:700;
 }
 
-.map-card-controls{
- display:flex;
- gap:6px;
-}
-
-.map-card-controls button{
+.map-card-header button{
  width:32px;
  height:32px;
  border-radius:8px;
  border:none;
  font-size:18px;
- font-weight:700;
+ font-weight:800;
  cursor:pointer;
  background:linear-gradient(135deg,#60a5fa,#2563eb);
  color:#fff;
@@ -322,19 +317,14 @@ button{
 /* CONTENIDO */
 #mapCardContent{
  transition:opacity .25s ease, max-height .3s ease;
+ max-height:300px;
 }
 
-/* OCULTA */
+/* OCULTO */
 #dashboardMapa.collapsed #mapCardContent{
  max-height:0;
  opacity:0;
  pointer-events:none;
-}
-
-/* VISIBLE */
-#dashboardMapa.card-visible #mapCardContent{
- max-height:300px;
- opacity:1;
 }
 </style>
 </head>
@@ -384,14 +374,12 @@ button{
   <div id="mapaBox">
     <div id="mapa"></div>
 
-    <div id="dashboardMapa" class="card-visible">
+    
+<div id="dashboardMapa" class="card-visible">
 
   <div class="map-card-header">
     <span>📊 Información</span>
-    <div class="map-card-controls">
-      <button onclick="expandCard()">＋</button>
-      <button onclick="collapseCard()">－</button>
-    </div>
+    <button id="toggleCardBtn" onclick="toggleMapCard()">－</button>
   </div>
 
   <div id="mapCardContent">
@@ -404,7 +392,6 @@ button{
   </div>
 
 </div>
-
 <!-- VISOR -->
 <div id="viewer" class="viewer">
   <div class="viewer-header">
@@ -416,22 +403,17 @@ button{
 
 </div>
 
-<!-- SCRIPTS (ORDEN CORRECTO) -->
 
 <script>
-function collapseCard(){
+function toggleMapCard(){
   const card = document.getElementById('dashboardMapa');
-  card.classList.add('collapsed');
-  card.classList.remove('card-visible');
-}
+  const btn  = document.getElementById('toggleCardBtn');
 
-function expandCard(){
-  const card = document.getElementById('dashboardMapa');
-  card.classList.remove('collapsed');
-  card.classList.add('card-visible');
+  const isCollapsed = card.classList.toggle('collapsed');
+
+  btn.textContent = isCollapsed ? '＋' : '－';
 }
 </script>
-
 
 <!-- SCRIPTS (ORDEN CORRECTO) -->
 <script src="empresa-header.js"></script>
