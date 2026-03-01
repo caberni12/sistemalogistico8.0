@@ -255,31 +255,51 @@ function cerrarSesion(){
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  const tarjeta = document.getElementById("dashboardMapa");
-  const btnOcultar = document.getElementById("btnOcultar");
-  const btnMostrar = document.getElementById("btnMostrar");
+ /* =====================================================
+   CONTROL TARJETA – BOTÓN SIEMPRE VISIBLE
+===================================================== */
+document.addEventListener("DOMContentLoaded", () => {
 
-  if (!tarjeta || !btnOcultar || !btnMostrar) return;
+  const dashboard = document.getElementById("dashboardMapa");
+  const toggleBtn = document.getElementById("toggleDashboard");
 
-  btnOcultar.onclick = () => {
-    tarjeta.classList.add("oculto");
-    btnOcultar.style.display = "none";
-    btnMostrar.style.display = "inline-flex";
+  if (!dashboard || !toggleBtn) return;
 
-    // refresca mapa para ocupar todo
+  const isDesktop = () =>
+    window.matchMedia("(min-width: 769px)").matches;
+
+  let visible = true; // tarjeta visible por defecto
+
+  const syncUI = () => {
+
+    if (!isDesktop()) {
+      // 📱 MÓVIL
+      dashboard.classList.remove("oculto");
+      toggleBtn.style.display = "none";
+      return;
+    }
+
+    // 💻 ESCRITORIO
+    toggleBtn.style.display = "flex";          // NUNCA se oculta
+    dashboard.classList.toggle("oculto", !visible);
+    toggleBtn.textContent = visible ? "➖" : "➕";
+
+    // Recalcular Leaflet
     if (window.map) {
-      setTimeout(() => map.invalidateSize(true), 200);
+      setTimeout(() => map.invalidateSize(true), 150);
     }
   };
 
-  btnMostrar.onclick = () => {
-    tarjeta.classList.remove("oculto");
-    btnMostrar.style.display = "none";
-    btnOcultar.style.display = "inline-flex";
+  // Click + / -
+  toggleBtn.addEventListener("click", () => {
+    visible = !visible;
+    syncUI();
+  });
 
-    if (window.map) {
-      setTimeout(() => map.invalidateSize(true), 200);
-    }
-  };
+  // Resize / rotación
+  window.addEventListener("resize", syncUI);
+
+  // Estado inicial
+  syncUI();
 
 });
