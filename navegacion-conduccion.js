@@ -1,41 +1,43 @@
 /* =====================================================
-   NAVEGACIÓN COMPATIBLE CON TU main.js
-   - Usa MAPA existente
-   - Usa GPS activo
-   - Botón IR funcional en móvil
-   - Ruta + ETA
+   NAVEGACIÓN + BUSCADOR + RUTA + ETA
+   COMPATIBLE CON TU main.js Y TU HTML
 ===================================================== */
 (function(){
 
-/* ===============================
-   ESTADO
-=============================== */
+/* =========================
+   ESTADO GLOBAL
+========================= */
+let posicionActual = null;
 let routingControl = null;
-let destinoPendiente = null;
-let currentLatLng = null;
+let debounceTimer = null;
 
-/* ===============================
-   ESPERAR MAPA
-=============================== */
-(function esperarMapa(){
-  if (typeof MAPA !== "undefined" && MAPA && document.getElementById("mapCardContent")) {
+/* =========================
+   ESPERAR MAPA + LIBRERÍAS
+========================= */
+(function esperarSistema(){
+  if (
+    typeof MAPA !== "undefined" &&
+    MAPA &&
+    window.L &&
+    L.Routing &&
+    document.getElementById("mapCardContent")
+  ){
     inyectarUI();
-    inyectarETA();
     engancharGPS();
   } else {
-    setTimeout(esperarMapa, 300);
+    setTimeout(esperarSistema, 300);
   }
 })();
 
-/* ===============================
-   UI
-=============================== */
+/* =========================
+   UI BUSCADOR
+========================= */
 function inyectarUI(){
   if (document.getElementById("navInput")) return;
 
   const style = document.createElement("style");
   style.textContent = `
-    .nav-box{margin-bottom:10px}
+    .nav-box{margin-bottom:10px;position:relative}
     .nav-row{display:flex;gap:6px}
     .nav-row input{
       flex:1;padding:10px;border-radius:10px;
@@ -44,8 +46,19 @@ function inyectarUI(){
     .nav-row button{
       padding:10px 14px;border:none;border-radius:10px;
       background:linear-gradient(135deg,#60a5fa,#2563eb);
-      color:#fff;font-weight:700
+      color:#fff;font-weight:700;cursor:pointer
     }
+    .nav-suggest{
+      position:absolute;top:46px;left:0;right:0;
+      background:#fff;border-radius:10px;
+      box-shadow:0 12px 28px rgba(0,0,0,.18);
+      z-index:9999;overflow:hidden;display:none
+    }
+    .nav-suggest div{
+      padding:10px;font-size:13px;cursor:pointer;
+      border-bottom:1px solid #eee
+    }
+    .nav-suggest div:hover{background:#f1f5f9}
   `;
   document.head.appendChild(style);
 
@@ -56,67 +69,87 @@ function inyectarUI(){
       <input id="navInput" placeholder="Buscar destino…">
       <button id="navGo">Ir</button>
     </div>
+    <div id="navSuggest" class="nav-suggest"></div>
   `;
 
   document.getElementById("mapCardContent").prepend(box);
-  document.getElementById("navGo").onclick = iniciarNavegacion;
+
+  document.getElementById("navInput").addEventListener("input", onType);
+  document.getElementById("navGo").onclick = iniciarRuta;
 }
 
-/* ===============================
-   GPS (ENGANCHA AL TUYO)
-=============================== */
+/* =========================
+   GPS (USA EL TUYO)
+========================= */
 function engancharGPS(){
-  const oldWatch = navigator.geolocation.watchPosition;
+  const original = navigator.geolocation.watchPosition;
   navigator.geolocation.watchPosition = function(cb, err, opt){
-    return oldWatch.call(navigator.geolocation, pos=>{
-      currentLatLng = L.latLng(
+    return original.call(navigator.geolocation, pos=>{
+      posicionActual = L.latLng(
         pos.coords.latitude,
         pos.coords.longitude
       );
-
-      if (destinoPendiente) {
-        crearRuta(destinoPendiente);
-        destinoPendiente = null;
-      }
-
       cb(pos);
     }, err, opt);
   };
 }
 
-/* ===============================
-   ETA
-=============================== */
-function inyectarETA(){
-  if (document.getElementById("etaBox")) return;
-
-  const box = document.createElement("div");
-  box.id = "etaBox";
-  box.style.cssText = `
-    display:none;margin:8px 0;padding:8px;
-    border-radius:10px;background:#f8fafc;font-size:12px
-  `;
-  box.innerHTML = `
-    <div id="etaTime"></div>
-    <div id="etaDist"></div>
-  `;
-
-  document.getElementById("mapCardContent").prepend(box);
+/* =========================
+   AUTOCOMPLETE
+========================= */
+function onType(e){
+  const q = e.target.value.trim();
+  if (q.length < 3){
+    ocultarSugerencias();
+    return;
+  }
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(()=>buscarSugerencias(q), 350);
 }
 
-/* ===============================
+function buscarSugerencias(q){
+  fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`,
+    { headers:{ "User-Agent":"PanelLogistico/1.0" } }
+  )
+  .then(r=>r.json())
+  .then(mostrarSugerencias);
+}
+
+function mostrarSugerencias(lista){
+  const box = document.getElementById("navSuggest");
+  box.innerHTML = "";
+  if (!lista.length){
+    ocultarSugerencias();
+    return;
+  }
+
+  lista.forEach(item=>{
+    const d = document.createElement("div");
+    d.textContent = item.display_name;
+    d.onclick = ()=>{
+      document.getElementById("navInput").value = item.display_name;
+      ocultarSugerencias();
+      crearRuta(L.latLng(item.lat, item.lon));
+    };
+    box.appendChild(d);
+  });
+
+  box.style.display = "block";
+}
+
+function ocultarSugerencias(){
+  const box = document.getElementById("navSuggest");
+  if (box) box.style.display = "none";
+}
+
+/* =========================
    BOTÓN IR
-=============================== */
-function iniciarNavegacion(){
+========================= */
+function iniciarRuta(){
   const q = document.getElementById("navInput").value.trim();
-  if (!q) {
-    alert("Ingresa un destino");
-    return;
-  }
-  if (!currentLatLng) {
-    alert("Esperando GPS…");
-    return;
-  }
+  if (!q) return alert("Ingresa un destino");
+  if (!posicionActual) return alert("Esperando GPS…");
 
   fetch(
     `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
@@ -124,52 +157,60 @@ function iniciarNavegacion(){
   )
   .then(r=>r.json())
   .then(d=>{
-    if (!d.length) {
-      alert("Destino no encontrado");
-      return;
-    }
-    destinoPendiente = L.latLng(d[0].lat, d[0].lon);
-    crearRuta(destinoPendiente);
+    if (!d.length) return alert("Destino no encontrado");
+    crearRuta(L.latLng(d[0].lat, d[0].lon));
   });
 }
 
-/* ===============================
-   CREAR RUTA
-=============================== */
+/* =========================
+   RUTA + ETA
+========================= */
 function crearRuta(destino){
 
-  if (!MAPA || !currentLatLng) return;
+  if (!MAPA || !posicionActual) return;
 
-  if (routingControl) {
+  if (routingControl){
     MAPA.removeControl(routingControl);
   }
 
   routingControl = L.Routing.control({
-    waypoints:[ currentLatLng, destino ],
+    waypoints:[posicionActual, destino],
     addWaypoints:false,
     draggableWaypoints:false,
     show:false,
     lineOptions:{
       styles:[
-        { color:"#2563eb", weight:6 },
-        { color:"#60a5fa", weight:4 }
+        {color:"#2563eb", weight:6},
+        {color:"#60a5fa", weight:4}
       ]
     }
   })
   .on("routesfound", e=>{
     const r = e.routes[0];
-    document.getElementById("etaBox").style.display = "block";
-    document.getElementById("etaTime").textContent =
-      `🕒 ${Math.round(r.summary.totalTime/60)} min`;
-    document.getElementById("etaDist").textContent =
-      `📏 ${(r.summary.totalDistance/1000).toFixed(1)} km`;
+    mostrarETA(r.summary.totalTime, r.summary.totalDistance);
   })
   .addTo(MAPA);
 
   MAPA.setZoom(17);
 }
 
-/* ===============================
-   FIN
-=============================== */
+/* =========================
+   ETA UI
+========================= */
+function mostrarETA(seg, dist){
+  let box = document.getElementById("etaBox");
+  if (!box){
+    box = document.createElement("div");
+    box.id = "etaBox";
+    box.style.cssText =
+      "margin:8px 0;padding:8px;border-radius:10px;" +
+      "background:#f8fafc;font-size:12px";
+    document.getElementById("mapCardContent").prepend(box);
+  }
+
+  box.innerHTML =
+    `🕒 ${Math.round(seg/60)} min<br>` +
+    `📏 ${(dist/1000).toFixed(1)} km`;
+}
+
 })();
