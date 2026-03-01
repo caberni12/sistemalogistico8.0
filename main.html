@@ -429,6 +429,47 @@ button{
   }
 
 }
+
+/* =====================================================
+   TARJETA OVERLAY – CONTROLES + / -
+===================================================== */
+@media (min-width: 769px){
+
+  #dashboardMapa{
+    position:absolute;
+    top:16px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:9999;
+    transition:opacity .25s ease, transform .25s ease;
+  }
+
+  /* Estado oculto */
+  #dashboardMapa.oculto{
+    opacity:0;
+    pointer-events:none;
+    transform:translate(-50%,-10px);
+  }
+
+  /* Controles */
+  .dash-controls{
+    display:flex;
+    justify-content:flex-end;
+    gap:6px;
+    margin-bottom:6px;
+  }
+
+  .dash-controls button{
+    width:30px;
+    height:30px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    font-weight:700;
+    background:#0f172a;
+    color:#fff;
+  }
+}
 </style>
 </head>
 
@@ -473,7 +514,15 @@ button{
     <div id="mapa"></div>
 
     <div id="dashboardMapa">
-      <strong>📍 Dirección</strong><br>
+     <div class="dash-controls">
+  <button id="btnOcultar" title="Ocultar">➖</button>
+  <button id="btnMostrar" title="Mostrar" style="display:none">➕</button>
+</div>
+
+
+
+
+ <strong>📍 Dirección</strong><br>
       <span id="dirTexto">Detectando…</span><br><br>
 
       <strong>🌐 Red</strong><br>
