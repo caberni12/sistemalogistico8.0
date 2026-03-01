@@ -214,3 +214,65 @@ function mostrarETA(seg, dist){
 }
 
 })();
+
+
+/* =====================================================
+   MODO CONDUCCIÓN REAL (WAZE-LIKE)
+   Compatible con tu main.js
+===================================================== */
+(function(){
+
+/* ================= CONFIG ================= */
+const DRIVE_ZOOM = 17;
+const SPEED_THRESHOLD = 2;     // m/s ≈ 7 km/h
+const PAN_OFFSET = 0.0012;
+
+/* ================= STATE ================= */
+let drivingMode = false;
+let lastHeading = 0;
+
+/* ================= ENGANCHE GPS ================= */
+(function hookGPS(){
+  const original = navigator.geolocation.watchPosition;
+
+  navigator.geolocation.watchPosition = function(cb, err, opt){
+    return original.call(navigator.geolocation, pos => {
+
+      const { latitude, longitude, speed = 0, heading = null } = pos.coords;
+
+      /* ================= ACTIVAR CONDUCCIÓN ================= */
+      if (speed > SPEED_THRESHOLD) {
+        drivingMode = true;
+      }
+
+      if (drivingMode && MAPA) {
+
+        MAPA.setZoom(DRIVE_ZOOM, { animate:true });
+
+        /* Usar heading real o último válido */
+        if (heading !== null) lastHeading = heading;
+
+        const rad = lastHeading * Math.PI / 180;
+
+        /* Adelantar mapa hacia donde va el auto */
+        const aheadLat = latitude + PAN_OFFSET * Math.cos(rad);
+        const aheadLng = longitude + PAN_OFFSET * Math.sin(rad);
+
+        MAPA.panTo([aheadLat, aheadLng], {
+          animate:true,
+          duration:0.6
+        });
+      }
+
+      cb(pos);
+
+    }, err, opt);
+  };
+})();
+
+/* ================= API PÚBLICA ================= */
+window.detenerModoConduccion = function(){
+  drivingMode = false;
+};
+
+})();
