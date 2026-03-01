@@ -120,12 +120,13 @@ th,td{padding:12px;border-bottom:1px solid #e5e7eb;font-size:14px}
 }
 
 /* =====================================================
-   ESCRITORIO – TARJETA ARRIBA + MAPA ABAJO FULL
+   ESCRITORIO – TARJETA SIEMPRE ENCIMA DEL MAPA
 ===================================================== */
 @media (min-width: 769px){
 
   html, body{
     height:100%;
+    margin:0;
     overflow:hidden;
   }
 
@@ -138,38 +139,48 @@ th,td{padding:12px;border-bottom:1px solid #e5e7eb;font-size:14px}
   header{
     height:64px;
     flex-shrink:0;
+    z-index:100;
   }
 
-  /* MAIN ocupa todo el resto */
   .main{
+    position:relative;
     flex:1;
     overflow:hidden;
-    display:flex;
-    flex-direction:column;
   }
 
-  /* Contenedor tarjeta + mapa */
+  /* MAPA */
   #mapaBox{
-    flex:1;
-    display:flex;
-    flex-direction:column;
+    position:absolute;
+    inset:0;
+    z-index:1;
   }
 
-  /* TARJETA ARRIBA */
-  #dashboardMapa{
-    flex-shrink:0;
-    margin:16px auto;
-    max-width:900px;
-  }
-
-  /* MAPA ABAJO – OCUPA TODO */
   #mapa{
-    flex:1;
     width:100%;
-    min-height:0; /* CLAVE anti-recorte */
+    height:100%;
+  }
+
+  /* TARJETA – CAPA SUPERIOR FIJA */
+  #dashboardMapa{
+    position:absolute;
+    top:16px;
+    left:50%;
+    transform:translateX(-50%);
+
+    z-index:9999;              /* CLAVE */
+    isolation:isolate;         /* CLAVE */
+    pointer-events:auto;
+
+    max-width:900px;
+    width:calc(100% - 32px);
+
+    background:#fff;
+    box-shadow:0 14px 40px rgba(0,0,0,.35);
   }
 
 }
+
+
 </style>
 </head>
 
