@@ -66,7 +66,7 @@ html,body{
 }
 
 /* =====================================================
-   HEADER (mobile first)
+   HEADER
 ===================================================== */
 header{
  position:sticky;
@@ -76,88 +76,16 @@ header{
  border-bottom:1px solid var(--border);
  box-shadow:0 3px 10px rgba(0,0,0,.05);
  padding:8px 10px;
-
  display:flex;
  flex-direction:column;
  gap:8px;
 }
 
-.header-left{
- display:flex;
- align-items:center;
- gap:6px;
- min-width:0;
-}
-
-#btnMenu{
- width:34px;
- height:34px;
- border-radius:9px;
- background:linear-gradient(135deg,#2dd4bf,#0d9488);
- color:#fff;
- font-size:16px;
- border:none;
- flex-shrink:0;
-}
-
-header h1{
- margin:0;
- font-size:14px;
- font-weight:700;
- white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis;
-}
-
-.header-info{
- display:flex;
- flex-wrap:wrap;
- gap:6px;
- font-size:10px;
- color:var(--muted);
-}
-
-header .right{
- display:flex;
- gap:6px;
-}
-
-header .right button{
- flex:1;
-}
-
-/* =====================================================
-   BOTONES
-===================================================== */
-button{
- border:none;
- border-radius:var(--radius);
- padding:6px 10px;
- font-weight:600;
- cursor:pointer;
- display:inline-flex;
- align-items:center;
- justify-content:center;
- gap:5px;
- box-shadow:0 4px 14px rgba(0,0,0,.12);
- font-size:12px;
- white-space:nowrap;
-}
-
-.btn-primary{
- background:linear-gradient(135deg,#60a5fa,#2563eb);
- color:#fff;
-}
-
-.btn-danger{
- background:linear-gradient(135deg,#f87171,#dc2626);
- color:#fff;
-}
-
-.btn-ghost{
- background:#fff;
- border:1px solid var(--border);
- box-shadow:none;
+@media (min-width:769px){
+ header{
+   flex-direction:row;
+   align-items:center;
+ }
 }
 
 /* =====================================================
@@ -193,7 +121,7 @@ button{
  font-size:11px;
 }
 
-/* Estado oculto SOLO por JS */
+/* Estado oculto SOLO para la tarjeta */
 #dashboardMapa.oculto{
  opacity:0;
  pointer-events:none;
@@ -201,26 +129,27 @@ button{
 }
 
 /* =====================================================
-   CONTROLES + / -
+   CONTROLES + / -  (SIEMPRE VISIBLES)
 ===================================================== */
 .dash-controls{
- position:fixed;
- top:96px;
+ position:fixed;              /* ← fuera de la tarjeta */
+ top:96px;                    /* debajo del header */
  right:16px;
  z-index:10000;
- display:none;
+ display:flex;               /* ← NUNCA ocultos en escritorio */
  gap:6px;
 }
 
 .dash-controls button{
- width:32px;
- height:32px;
+ width:34px;
+ height:34px;
  border-radius:8px;
  border:none;
  cursor:pointer;
  font-weight:700;
  background:#0f172a;
  color:#fff;
+ pointer-events:auto;
 }
 
 /* =====================================================
@@ -244,32 +173,6 @@ button{
  left:0;
 }
 
-.menu-header{
- padding:14px;
- border-bottom:1px solid var(--border);
- display:flex;
- justify-content:space-between;
- font-weight:700;
- font-size:14px;
-}
-
-.menu-items{
- padding:12px;
- display:flex;
- flex-direction:column;
- gap:8px;
- overflow-y:auto;
-}
-
-.menu-item{
- padding:12px;
- border-radius:var(--radius);
- background:var(--hover);
- font-weight:600;
- cursor:pointer;
- font-size:13px;
-}
-
 /* =====================================================
    VISOR
 ===================================================== */
@@ -280,21 +183,6 @@ button{
  background:#fff;
  z-index:9996;
  flex-direction:column;
-}
-
-.viewer-header{
- height:48px;
- padding:0 12px;
- border-bottom:1px solid var(--border);
- display:flex;
- align-items:center;
- justify-content:space-between;
-}
-
-.viewer iframe{
- flex:1;
- width:100%;
- border:none;
 }
 
 /* =====================================================
@@ -310,18 +198,6 @@ button{
  align-items:center;
  justify-content:center;
  font-weight:600;
- font-size:13px;
-}
-
-#progressBar{
- position:fixed;
- top:0;
- left:0;
- height:3px;
- width:0%;
- background:linear-gradient(90deg,#3b82f6,#14b8a6);
- z-index:10001;
- display:none;
 }
 
 /* =====================================================
@@ -329,25 +205,7 @@ button{
 ===================================================== */
 @media (min-width:769px){
 
- header{
-   flex-direction:row;
-   align-items:center;
- }
-
- header h1{
-   font-size:15px;
- }
-
- .header-info{
-   font-size:12px;
- }
-
- /* botones visibles */
- .dash-controls{
-   display:flex;
- }
-
- /* tarjeta flotante */
+ /* Tarjeta flotante */
  #dashboardMapa{
    position:absolute;
    top:16px;
@@ -380,8 +238,9 @@ button{
    transform:none;
  }
 
+ /* ❌ botones NO visibles en móvil */
  .dash-controls{
-   display:none !important;
+   display:none;
  }
 }
 </style>
