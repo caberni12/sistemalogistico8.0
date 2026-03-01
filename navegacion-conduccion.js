@@ -1,12 +1,13 @@
 /* =====================================================
    NAVEGACIÓN + BUSCADOR + RUTA + ETA
-   + MODO CONDUCCIÓN REAL (UNIFICADO)
+   + MODO CONDUCCIÓN REAL (ADELANTADO)
+   + INDICACIONES EN ESPAÑOL
    Compatible con tu main.js y tu HTML
 ===================================================== */
 (function(){
 
 /* =========================
-   CONFIG
+   CONFIGURACIÓN
 ========================= */
 const DRIVE_ZOOM = 17;
 const SPEED_THRESHOLD = 2;      // m/s ≈ 7 km/h
@@ -90,7 +91,7 @@ function inyectarUI(){
 }
 
 /* =========================
-   GPS + MODO CONDUCCIÓN (ÚNICO)
+   GPS + MODO CONDUCCIÓN
 ========================= */
 function iniciarGPS(){
   if (!navigator.geolocation) return;
@@ -108,17 +109,23 @@ function iniciarGPS(){
       }
 
       if (drivingMode && MAPA) {
-        MAPA.setZoom(DRIVE_ZOOM, { animate:true });
 
-        if (heading !== null) lastHeading = heading;
+        MAPA.setZoom(DRIVE_ZOOM, { animate: true });
+
+        // Mantener último heading válido
+        if (heading !== null && !isNaN(heading)) {
+          lastHeading = heading;
+        }
 
         const rad = lastHeading * Math.PI / 180;
+
+        // 🔥 ADELANTAR MAPA HACIA ADELANTE
         const aheadLat = latitude + PAN_OFFSET * Math.cos(rad);
         const aheadLng = longitude + PAN_OFFSET * Math.sin(rad);
 
         MAPA.panTo([aheadLat, aheadLng], {
-          animate:true,
-          duration:0.6
+          animate: true,
+          duration: 0.5
         });
       }
     },
@@ -204,7 +211,7 @@ function iniciarRuta(){
 }
 
 /* =========================
-   RUTA + ETA
+   RUTA + ETA + ESPAÑOL
 ========================= */
 function crearRuta(destino){
 
@@ -219,6 +226,17 @@ function crearRuta(destino){
     addWaypoints:false,
     draggableWaypoints:false,
     show:false,
+
+    router: L.Routing.osrmv1({
+      serviceUrl: "https://router.project-osrm.org/route/v1",
+      language: "es"
+    }),
+
+    formatter: new L.Routing.Formatter({
+      language: "es",
+      units: "metric"
+    }),
+
     lineOptions:{
       styles:[
         {color:"#2563eb", weight:6},
