@@ -9,7 +9,7 @@
 <meta charset="UTF-8">
 <title>Panel Logístico Integrado</title>
 
-<!-- VIEWPORT (más zoom real) -->
+<!-- VIEWPORT -->
 <meta name="viewport"
       content="width=device-width,
                initial-scale=1,
@@ -88,6 +88,68 @@ header{
  }
 }
 
+.header-left{
+ display:flex;
+ align-items:center;
+ gap:6px;
+}
+
+#btnMenu{
+ width:34px;
+ height:34px;
+ border-radius:9px;
+ background:linear-gradient(135deg,#2dd4bf,#0d9488);
+ color:#fff;
+ font-size:16px;
+ border:none;
+}
+
+.header-info{
+ display:flex;
+ flex-wrap:wrap;
+ gap:6px;
+ font-size:12px;
+ color:var(--muted);
+}
+
+.right{
+ display:flex;
+ gap:6px;
+}
+
+/* =====================================================
+   BOTONES
+===================================================== */
+button{
+ border:none;
+ border-radius:var(--radius);
+ padding:6px 10px;
+ font-weight:600;
+ cursor:pointer;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ gap:5px;
+ box-shadow:0 4px 14px rgba(0,0,0,.12);
+ font-size:12px;
+}
+
+.btn-primary{
+ background:linear-gradient(135deg,#60a5fa,#2563eb);
+ color:#fff;
+}
+
+.btn-danger{
+ background:linear-gradient(135deg,#f87171,#dc2626);
+ color:#fff;
+}
+
+.btn-ghost{
+ background:#fff;
+ border:1px solid var(--border);
+ box-shadow:none;
+}
+
 /* =====================================================
    MAIN
 ===================================================== */
@@ -121,35 +183,10 @@ header{
  font-size:11px;
 }
 
-/* Estado oculto SOLO para la tarjeta */
 #dashboardMapa.oculto{
  opacity:0;
  pointer-events:none;
  transform:translateY(-8px);
-}
-
-/* =====================================================
-   CONTROLES + / -  (SIEMPRE VISIBLES)
-===================================================== */
-.dash-controls{
- position:fixed;              /* ← fuera de la tarjeta */
- top:96px;                    /* debajo del header */
- right:16px;
- z-index:10000;
- display:flex;               /* ← NUNCA ocultos en escritorio */
- gap:6px;
-}
-
-.dash-controls button{
- width:34px;
- height:34px;
- border-radius:8px;
- border:none;
- cursor:pointer;
- font-weight:700;
- background:#0f172a;
- color:#fff;
- pointer-events:auto;
 }
 
 /* =====================================================
@@ -173,6 +210,22 @@ header{
  left:0;
 }
 
+.menu-header{
+ padding:14px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ justify-content:space-between;
+ font-weight:700;
+}
+
+.menu-items{
+ padding:12px;
+ display:flex;
+ flex-direction:column;
+ gap:8px;
+ overflow-y:auto;
+}
+
 /* =====================================================
    VISOR
 ===================================================== */
@@ -183,6 +236,15 @@ header{
  background:#fff;
  z-index:9996;
  flex-direction:column;
+}
+
+.viewer-header{
+ height:48px;
+ padding:0 12px;
+ border-bottom:1px solid var(--border);
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
 }
 
 /* =====================================================
@@ -200,12 +262,21 @@ header{
  font-weight:600;
 }
 
+#progressBar{
+ position:fixed;
+ top:0;
+ left:0;
+ height:3px;
+ width:0%;
+ background:linear-gradient(90deg,#3b82f6,#14b8a6);
+ z-index:10001;
+ display:none;
+}
+
 /* =====================================================
    ESCRITORIO
 ===================================================== */
 @media (min-width:769px){
-
- /* Tarjeta flotante */
  #dashboardMapa{
    position:absolute;
    top:16px;
@@ -214,7 +285,6 @@ header{
    z-index:9999;
    max-width:900px;
    width:calc(100% - 32px);
-   transition:opacity .25s ease, transform .25s ease;
  }
 }
 
@@ -222,26 +292,10 @@ header{
    MÓVIL
 ===================================================== */
 @media (max-width:768px){
-
- .main{
-   overflow:auto;
- }
-
- #mapaBox{
-   position:relative;
-   height:360px;
- }
-
- #dashboardMapa{
-   position:relative;
-   margin:12px;
-   transform:none;
- }
-
- /* ❌ botones NO visibles en móvil */
- .dash-controls{
-   display:none;
- }
+ .main{overflow:auto}
+ #mapaBox{position:relative;height:360px}
+ #dashboardMapa{position:relative;margin:12px}
+ #btnToggle{display:none}
 }
 </style>
 </head>
@@ -278,7 +332,7 @@ header{
   <div class="right">
     <button class="btn-primary" onclick="recargarPanel()">⟳ Recargar</button>
     <button class="btn-danger" onclick="cerrarSesion()">⏻ Cerrar Sesión</button>
-    <button id="btnMostrar" title="Mostrar" style="display:none">➕</button>    
+    <button id="btnToggle" title="Mostrar / Ocultar">➖</button>
   </div>
 </header>
 
@@ -286,25 +340,17 @@ header{
 <div class="main">
   <div id="mapaBox">
     <div id="mapa"></div>
+  </div>
 
-    <div id="dashboardMapa">
-     <div class="dash-controls">
-  <button id="btnOcultar" title="Ocultar">➖</button>
- 
-</div>
+  <div id="dashboardMapa">
+    <strong>📍 Dirección</strong><br>
+    <span id="dirTexto">Detectando…</span><br><br>
 
+    <strong>🌐 Red</strong><br>
+    <span id="netTexto">Detectando…</span><br><br>
 
-
-
- <strong>📍 Dirección</strong><br>
-      <span id="dirTexto">Detectando…</span><br><br>
-
-      <strong>🌐 Red</strong><br>
-      <span id="netTexto">Detectando…</span><br><br>
-
-      <strong>🚀 Velocidad</strong><br>
-      <span id="speedTexto">0 km/h</span>
-    </div>
+    <strong>🚀 Velocidad</strong><br>
+    <span id="speedTexto">0 km/h</span>
   </div>
 </div>
 
@@ -327,6 +373,24 @@ header{
 <script src="segurity.js"></script>
 
 <script>
+/* MAPA BASE */
+const map = L.map('mapa').setView([-33.45, -70.66], 13);
+window.map = map;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+/* TOGGLE TARJETA */
+const btnToggle = document.getElementById("btnToggle");
+const dashboard = document.getElementById("dashboardMapa");
+let visible = true;
+
+btnToggle.onclick = () => {
+  visible = !visible;
+  dashboard.classList.toggle("oculto", !visible);
+  btnToggle.textContent = visible ? "➖" : "➕";
+  setTimeout(()=>map.invalidateSize(true),150);
+};
+
+/* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
 }
