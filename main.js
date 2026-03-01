@@ -252,3 +252,34 @@ function cerrarSesion(){
   localStorage.clear();
   location.href = "index.html";
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const tarjeta = document.getElementById("dashboardMapa");
+  const btnOcultar = document.getElementById("btnOcultar");
+  const btnMostrar = document.getElementById("btnMostrar");
+
+  if (!tarjeta || !btnOcultar || !btnMostrar) return;
+
+  btnOcultar.onclick = () => {
+    tarjeta.classList.add("oculto");
+    btnOcultar.style.display = "none";
+    btnMostrar.style.display = "inline-flex";
+
+    // refresca mapa para ocupar todo
+    if (window.map) {
+      setTimeout(() => map.invalidateSize(true), 200);
+    }
+  };
+
+  btnMostrar.onclick = () => {
+    tarjeta.classList.remove("oculto");
+    btnMostrar.style.display = "none";
+    btnOcultar.style.display = "inline-flex";
+
+    if (window.map) {
+      setTimeout(() => map.invalidateSize(true), 200);
+    }
+  };
+
+});
