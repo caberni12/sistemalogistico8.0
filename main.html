@@ -338,6 +338,30 @@ button{
     zoom: 1;
   }
 }
+
+/* =====================================================
+   ESCRITORIO – ALTURA REAL + ZOOM 100%
+===================================================== */
+@media (min-width: 769px){
+
+  body{
+    zoom:1;
+  }
+
+  .main{
+    height:calc(100vh - 64px); /* header real */
+  }
+
+  #mapa{
+    min-height:100%;
+  }
+
+  #dashboardMapa{
+    max-width:900px;
+    margin:16px auto;
+    font-size:12px;
+  }
+}
 </style>
 </head>
 
