@@ -1,7 +1,7 @@
   /* ======================================================
      CONFIGURACIÓN
   ====================================================== */
-  const API = "https://script.google.com/macros/s/AKfycbxZZ_E5MObjPJL-EhnLENeIYVeN0DGnCSvIyI5ylNfYBxSoswo2pOJ4mCT1hiGrBhzfJg/exec";
+  const API = "https://script.google.com/macros/s/AKfycbzTkKaUFv6IIvV1BBTI6YnY2WzNkjDK3P72ILBTbsv5_4Q0AkYaNv4j4Klgrz3Mg7vflg/exec";
 
   let RAW = [];
   let FILT = [];
