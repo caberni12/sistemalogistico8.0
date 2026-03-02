@@ -406,7 +406,7 @@ table{
 }
 
 
- 
+
 
 
 </style>
@@ -459,10 +459,10 @@ table{
   🔄 Recargar
 </button>
 
- 
+
  </div>
- 
- 
+
+
 
 <!-- ================== TABLA DESKTOP ================== -->
 <div class="table-scroll" tabindex="0">
@@ -566,7 +566,7 @@ table{
      CONFIGURACIÓN
   ====================================================== */
   const API = "https://script.google.com/macros/s/AKfycbxZZ_E5MObjPJL-EhnLENeIYVeN0DGnCSvIyI5ylNfYBxSoswo2pOJ4mCT1hiGrBhzfJg/exec";
-  
+
   let RAW = [];
   let FILT = [];
   let EDIT = null;
@@ -578,13 +578,13 @@ table{
      HELPERS
   ====================================================== */
   const isMobile = () => window.matchMedia("(max-width:768px)").matches;
-  
+
   function setLoading(btn, state){
     if(!btn) return;
     btn.disabled = state;
     btn.classList.toggle("loading", state);
   }
-  
+
   /* ======================================================
      FECHA (dd-MM-yyyy HH:mm)
   ====================================================== */
@@ -595,7 +595,7 @@ table{
     const [hh=0,mm=0] = (h||"0:0").split(":").map(Number);
     return new Date(y, m-1, d, hh, mm);
   }
-  
+
   /* ======================================================
      LOAD
   ====================================================== */
@@ -604,7 +604,7 @@ table{
     RAW = await r.json();
     applyFilters();
   }
-  
+
   /* ======================================================
      FILTROS
   ====================================================== */
@@ -650,7 +650,7 @@ FILT = RAW.filter(r => {
 cursorIndex = -1;   // reset cursor
 render();
 }
-  
+
   /* ======================================================
      RENDER
   ====================================================== */
@@ -717,7 +717,7 @@ render();
   }
 }
 
-  
+
  function moveCursor(dir){
   const rows = [...tbody.querySelectorAll("tr")];
   if(!rows.length) return;
@@ -740,7 +740,7 @@ render();
   });
 }
 
- 
+
  document.addEventListener("keydown", e=>{
   if(isMobile()) return;            // solo escritorio
   if(modalForm.style.display==="flex") return; // no interferir modal
@@ -756,9 +756,9 @@ render();
   }
 });
 
- 
- 
- 
+
+
+
  /* ======================================================
      FOTOS
   ====================================================== */
@@ -794,7 +794,7 @@ function renderFotos(f){
 
 
 
-  
+
   function openFoto(url){
   currentFoto = url;
 
@@ -833,12 +833,12 @@ btnDescargarFoto.onclick = ()=>{
       `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}&output=embed`;
     mapModal.style.display="flex";
   }
-  
+
   btnCerrarMapa.onclick = ()=>{
     mapModal.style.display="none";
     mapFrame.src="";
   };
-  
+
   /* ======================================================
      KPIS
   ====================================================== */
@@ -850,7 +850,7 @@ btnDescargarFoto.onclick = ()=>{
       options:{cutout:"70%",plugins:{legend:{display:false}}}
     });
   }
-  
+
 function kpiFilter(status){
   // marcar activo
   document.querySelectorAll('.kpi').forEach(k=>k.classList.remove('active'));
@@ -886,7 +886,7 @@ if(localStorage.getItem('kpiHidden') === '1'){
   function renderKPIs(){
     const t = FILT.length || 1;
     const c = s => FILT.filter(r=>r.status===s).length;
-  
+
     kpis.innerHTML = `
   <div class="kpi" onclick="kpiFilter('')" data-status="">
     <canvas id="k1"></canvas><b>${t}</b>Total
@@ -920,17 +920,17 @@ if(localStorage.getItem('kpiHidden') === '1'){
     drawKPI("k5",c("RECIBIDO"),t,"#a78bfa");
     drawKPI("k6",c("CANCELADO"),t,"#ef4444");
   }
-  
+
   /* ======================================================
      CRUD
   ====================================================== */
   btnNuevo.onclick = ()=> openModal();
   btnCancelar.onclick = ()=> modalForm.style.display="none";
-  
+
   function openModal(r=null){
     modalForm.style.display="flex";
     EDIT = r;
-  
+
     if(r){
       mtitle.textContent="Editar Pedido";
       mPedido.value=r.pedido;
@@ -951,7 +951,7 @@ if(localStorage.getItem('kpiHidden') === '1'){
       mResponsable.value=mHoraEntrega.value="";
     }
   }
-  
+
   /* ======================================================
      GUARDAR
   ====================================================== */
@@ -994,7 +994,7 @@ if(localStorage.getItem('kpiHidden') === '1'){
   load();
 };
 
-  
+
  function toBase64(file){
   return new Promise(r=>{
     const fr = new FileReader();
@@ -1003,7 +1003,7 @@ if(localStorage.getItem('kpiHidden') === '1'){
   });
 }
 
-  
+
   /* ======================================================
      ELIMINAR
   ====================================================== */
@@ -1012,7 +1012,7 @@ if(localStorage.getItem('kpiHidden') === '1'){
     await fetch(API,{method:"POST",body:JSON.stringify({action:"delete",row})});
     load();
   }
-  
+
   /* ======================================================
      EXPORTES
   ====================================================== */
@@ -1090,7 +1090,7 @@ function exportPDF(btn){
   },300);
 }
 
-  
+
   /* ================== EXPORT EXCEL ================== */
 function exportExcel(btn){
   setLoading(btn,true);
@@ -1159,7 +1159,7 @@ btnReload.onclick = async ()=>{
   setLoading(btnReload, false);
 };
 
-  
+
   /* ======================================================
      INIT
   ====================================================== */
@@ -1167,14 +1167,14 @@ btnReload.onclick = async ()=>{
   fStatus.onchange=applyFilters;
   fDesde.onchange=applyFilters;
   fHasta.onchange=applyFilters;
-  
+
   load();
   </script>
-  
+
   <script src="segurity.js"></script>
   <script src="auth.js"></script>
- 
-  
+
+
 
   </body>
   </html>
