@@ -33,6 +33,7 @@ body.tv-mode{
  padding:30px;
 }
 
+/* HEADER */
 .header{
  display:flex;
  justify-content:space-between;
@@ -45,7 +46,7 @@ body.tv-mode{
 button{
  border:0;
  border-radius:12px;
- padding:10px 14px;
+ padding:8px 12px;
  font-size:13px;
  font-weight:600;
  cursor:pointer;
@@ -58,25 +59,20 @@ button{
 
 button:hover{background:var(--turq-dark)}
 
-.filters{
- display:flex;
- gap:10px;
- flex-wrap:wrap;
- margin-bottom:25px;
-}
-
 select{
  padding:8px 12px;
  border-radius:10px;
  border:1px solid var(--border);
 }
 
+/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
  gap:22px;
 }
 
+/* TARJETA */
 .card{
  background:var(--card);
  border-radius:18px;
@@ -128,12 +124,13 @@ select{
  height:70px;
  object-fit:cover;
  border-radius:10px;
+ cursor:pointer;
 }
 
 .pdf-wrap{
  margin-top:10px;
  display:flex;
- gap:8px;
+ gap:6px;
  flex-wrap:wrap;
 }
 
@@ -146,14 +143,37 @@ select{
  text-decoration:none;
 }
 
-body.tv-mode .card{
- transform:scale(1.05);
- box-shadow:0 20px 40px rgba(0,0,0,.4);
+/* MODAL GENERAL */
+.modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.6);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:9999;
 }
 
-body.tv-mode .photo-wrap img{
- width:100px;
- height:100px;
+.modal-content{
+ background:#fff;
+ padding:20px;
+ border-radius:16px;
+ width:400px;
+ max-width:95%;
+}
+
+.modal-content input,
+.modal-content select{
+ width:100%;
+ margin-bottom:10px;
+ padding:8px;
+}
+
+/* MODAL FOTO */
+.foto-modal img{
+ max-width:90vw;
+ max-height:80vh;
+ border-radius:12px;
 }
 
 </style>
@@ -168,7 +188,7 @@ body.tv-mode .photo-wrap img{
   </div>
 </div>
 
-<div class="filters">
+<div style="margin-bottom:20px">
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -181,6 +201,31 @@ body.tv-mode .photo-wrap img{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
+<!-- MODAL FOTO -->
+<div class="modal foto-modal" id="fotoModal" onclick="this.style.display='none'">
+  <img id="fotoGrande">
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <h3>Editar Pedido</h3>
+    <input id="mPedido">
+    <input id="mCliente">
+    <input id="mDireccion">
+    <input id="mComuna">
+    <select id="mStatus">
+      <option>PENDIENTE</option>
+      <option>EN RUTA</option>
+      <option>RECIBIDO</option>
+      <option>ENTREGADO</option>
+      <option>CANCELADO</option>
+    </select>
+    <button onclick="saveEdit()">Guardar</button>
+    <button onclick="closeEdit()">Cerrar</button>
+  </div>
+</div>
+
 <audio id="notifSound">
  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
 </audio>
@@ -192,9 +237,10 @@ const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTqu
 let RAW=[];
 let FILT=[];
 let PREVIOUS_IDS=[];
+let EDIT_ROW=null;
 let tvScrollInterval=null;
 
-/* AUTO RECARGA 15s */
+/* AUTO RECARGA */
 setInterval(load,15000);
 
 async function load(){
@@ -238,21 +284,67 @@ function render(){
      👤 ${r.cliente||""}<br>
      📍 ${r.direccion||""} (${r.comuna||""})
    </div>
-   <div class="cajas">
-     📦 ${r.etiquetas || 0} CAJAS
-   </div>
+   <div class="cajas">📦 ${r.etiquetas || 0} CAJAS</div>
+
    <div class="photo-wrap">
-     ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s300')}">`).join("")}
+     ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s300')}" onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')">`).join("")}
    </div>
+
    <div class="pdf-wrap">
      ${pdfs.map(p=>`
-       <a href="${p}" target="_blank">📄 Ver PDF</a>
+       <a href="${p}" target="_blank">📄 Ver</a>
        <a href="${p}" download>⬇ Descargar</a>
      `).join("")}
+   </div>
+
+   <div style="margin-top:12px">
+     <button onclick="openEdit(${r._row})">✏️ Editar</button>
    </div>
   `;
   cardsGrid.appendChild(card);
  });
+}
+
+/* FOTO */
+function showFoto(url){
+ fotoGrande.src=url;
+ fotoModal.style.display="flex";
+}
+
+/* EDITAR */
+function openEdit(row){
+ const r=RAW.find(x=>x._row==row);
+ EDIT_ROW=row;
+
+ mPedido.value=r.pedido||"";
+ mCliente.value=r.cliente||"";
+ mDireccion.value=r.direccion||"";
+ mComuna.value=r.comuna||"";
+ mStatus.value=r.status||"";
+
+ editModal.style.display="flex";
+}
+
+function closeEdit(){
+ editModal.style.display="none";
+}
+
+async function saveEdit(){
+ await fetch(API,{
+  method:"POST",
+  body:JSON.stringify({
+   action:"update",
+   row:EDIT_ROW,
+   "PEDIDO":mPedido.value,
+   "CLIENTE":mCliente.value,
+   "DIRECCION":mDireccion.value,
+   "COMUNA":mComuna.value,
+   "STATUS":mStatus.value
+  })
+ });
+
+ closeEdit();
+ load();
 }
 
 /* MODO TV */
@@ -261,28 +353,19 @@ function toggleTV(){
 
  if(document.body.classList.contains("tv-mode")){
   document.documentElement.requestFullscreen().catch(()=>{});
-  startTVScroll();
+  tvScrollInterval=setInterval(()=>{
+   window.scrollBy({top:600,behavior:'smooth'});
+   if(window.innerHeight + window.scrollY >= document.body.offsetHeight){
+    window.scrollTo({top:0,behavior:'smooth'});
+   }
+  },8000);
  }else{
   document.exitFullscreen().catch(()=>{});
-  stopTVScroll();
+  clearInterval(tvScrollInterval);
   window.scrollTo({top:0});
  }
 }
 
-function startTVScroll(){
- tvScrollInterval=setInterval(()=>{
-  window.scrollBy({top:600,behavior:'smooth'});
-  if(window.innerHeight + window.scrollY >= document.body.offsetHeight){
-   window.scrollTo({top:0,behavior:'smooth'});
-  }
- },8000);
-}
-
-function stopTVScroll(){
- clearInterval(tvScrollInterval);
-}
-
-/* INIT */
 load();
 
 </script>
