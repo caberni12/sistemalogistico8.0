@@ -117,7 +117,7 @@ input,select{
 }
 
 .card.PENDIENTE{border-left-color:#3b82f6}
-.card.EN\ RUTA{border-left-color:#facc15}
+.card.EN\ RUTA{border-left-color:#f97316}
 .card.RECIBIDO{border-left-color:#ef4444}
 .card.ENTREGADO{border-left-color:#22c55e}
 .card.CANCELADO{border-left-color:#9ca3af}
@@ -133,7 +133,7 @@ input,select{
 }
 
 .status.PENDIENTE{color:#3b82f6}
-.status.EN\ RUTA{color:#facc15}
+.status.EN\ RUTA{color:#f97316}
 .status.RECIBIDO{color:#ef4444}
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
@@ -225,7 +225,7 @@ input,select{
 </div>
 
 <div class="filters">
-  <input type="text" id="search" placeholder="🔎 Buscar pedido o cliente">
+  <input type="text" id="search" placeholder="🔎 Buscar pedido, cliente, dirección o comuna">
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -295,7 +295,6 @@ const btnGuardar=document.getElementById("btnGuardar");
 const editModal=document.getElementById("editModal");
 const fotoModal=document.getElementById("fotoModal");
 const fotoGrande=document.getElementById("fotoGrande");
-const notifSound=document.getElementById("notifSound");
 
 setInterval(load,15000);
 
@@ -312,29 +311,29 @@ async function load(){
 
   const newIDs=data.map(x=>x._row);
   const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
-  if(hasNew && PREVIOUS_IDS.length){ notifSound.play(); }
+  if(hasNew && PREVIOUS_IDS.length){
+    document.getElementById("notifSound").play();
+  }
 
   PREVIOUS_IDS=newIDs;
   RAW=data;
   applyFilter();
 
- }catch(e){ console.error(e); }
+ }catch(e){console.error(e);}
  setLoading(btnReload,false);
 }
 
 function parseFecha(str){
  if(!str) return null;
- try{
-  const [f]=str.split(" ");
-  const [d,m,y]=f.split("-").map(Number);
-  return new Date(y,m-1,d);
- }catch{return null;}
+ const [f]=str.split(" ");
+ const [d,m,y]=f.split("-").map(Number);
+ return new Date(y,m-1,d);
 }
 
 function applyFilter(){
- const status=fStatus.value.trim();
- const desde=fDesde.value?new Date(fDesde.value+"T00:00:00"):null;
- const hasta=fHasta.value?new Date(fHasta.value+"T23:59:59"):null;
+ const status=fStatus.value;
+ const desde=fDesde.value ? new Date(fDesde.value) : null;
+ const hasta=fHasta.value ? new Date(fHasta.value) : null;
  const q=search.value.toLowerCase().trim();
 
  FILT=RAW.filter(r=>{
@@ -342,10 +341,17 @@ function applyFilter(){
    const cliente=(r.cliente||"").toLowerCase();
    const direccion=(r.direccion||"").toLowerCase();
    const comuna=(r.comuna||"").toLowerCase();
-   const estado=(r.status||"").trim();
 
-   if(q && !pedido.includes(q) && !cliente.includes(q) && !direccion.includes(q) && !comuna.includes(q)) return false;
-   if(status && estado!==status) return false;
+   if(q){
+     if(!pedido.includes(q) &&
+        !cliente.includes(q) &&
+        !direccion.includes(q) &&
+        !comuna.includes(q)){
+       return false;
+     }
+   }
+
+   if(status && r.status!==status) return false;
 
    const fecha=parseFecha(r.fechaIngreso);
    if(desde && fecha && fecha<desde) return false;
@@ -359,18 +365,23 @@ function applyFilter(){
  render();
 }
 
+search.oninput=applyFilter;
+fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
+
 function render(){
  cardsGrid.innerHTML="";
  FILT.forEach(r=>{
   const card=document.createElement("div");
-  card.className="card "+(r.status||"");
+  card.className="card "+r.status;
 
   const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
   const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
 
   card.innerHTML=`
    <h3>${r.pedido||""}</h3>
-   <div class="status ${(r.status||"")}">${r.status||""}</div>
+   <div class="status ${r.status}">${r.status||""}</div>
    <div style="margin-top:8px">
      👤 ${r.cliente||""}<br>
      📍 ${r.direccion||""} (${r.comuna||""})
@@ -397,7 +408,6 @@ function showFoto(url){
 
 function openEdit(row){
  const r=RAW.find(x=>x._row==row);
- if(!r) return;
  EDIT_ROW=row;
  mPedido.value=r.pedido||"";
  mCliente.value=r.cliente||"";
@@ -430,15 +440,11 @@ btnGuardar.onclick=async()=>{
  load();
 };
 
-function toggleTV(){ document.body.classList.toggle("tv-mode"); }
+function toggleTV(){
+ document.body.classList.toggle("tv-mode");
+}
 
 btnReload.onclick=load;
-
-fStatus.onchange=applyFilter;
-fDesde.onchange=applyFilter;
-fHasta.onchange=applyFilter;
-search.oninput=applyFilter;
-
 load();
 </script>
 
