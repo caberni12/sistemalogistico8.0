@@ -27,12 +27,6 @@ body{
  transition:.3s;
 }
 
-body.tv-mode{
- background:var(--bg-tv);
- color:#fff;
- padding:30px;
-}
-
 .header{
  display:flex;
  justify-content:space-between;
@@ -88,7 +82,6 @@ input,select{
  border:1px solid var(--border);
 }
 
-/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -104,7 +97,6 @@ input,select{
  border-radius:12px;
 }
 
-/* TARJETAS */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
@@ -136,7 +128,7 @@ input,select{
 }
 
 .status.PENDIENTE{color:#3b82f6}
-.status.EN\ RUTA{color:#facc15;} /* 👈 CORREGIDO */
+.status.EN\ RUTA{color:#facc15}
 .status.RECIBIDO{color:#ef4444}
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
@@ -191,21 +183,6 @@ input,select{
  z-index:9999;
 }
 
-.modal-content{
- background:#fff;
- padding:20px;
- border-radius:16px;
- width:400px;
- max-width:95%;
-}
-
-.modal-content input,
-.modal-content select{
- width:100%;
- margin-bottom:10px;
- padding:8px;
-}
-
 .foto-modal img{
  max-width:90vw;
  max-height:80vh;
@@ -217,13 +194,10 @@ input,select{
 
 <div class="header">
   <h2>📋 PEDIDOS EN CURSO</h2>
-  <div style="display:flex;gap:10px">
-    <button onclick="toggleTV()">📺 Modo TV</button>
-    <button id="btnReload">
-      <span class="btn-text">🔄 Recargar</span>
-      <span class="btn-loader"></span>
-    </button>
-  </div>
+  <button id="btnReload">
+    <span class="btn-text">🔄 Recargar</span>
+    <span class="btn-loader"></span>
+  </button>
 </div>
 
 <div class="filters">
@@ -250,29 +224,6 @@ input,select{
   <img id="fotoGrande">
 </div>
 
-<div class="modal" id="editModal">
-  <div class="modal-content">
-    <h3>Editar Pedido</h3>
-    <input id="mPedido">
-    <input id="mCliente">
-    <input id="mDireccion">
-    <input id="mComuna">
-    <input type="number" id="mCajas" min="1">
-    <select id="mStatus">
-      <option>PENDIENTE</option>
-      <option>EN RUTA</option>
-      <option>RECIBIDO</option>
-      <option>ENTREGADO</option>
-      <option>CANCELADO</option>
-    </select>
-    <button id="btnGuardar">
-      <span class="btn-text">💾 Guardar</span>
-      <span class="btn-loader"></span>
-    </button>
-    <button onclick="closeEdit()">Cerrar</button>
-  </div>
-</div>
-
 <audio id="notifSound">
  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
 </audio>
@@ -283,7 +234,6 @@ const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTqu
 let RAW=[];
 let FILT=[];
 let PREVIOUS_IDS=[];
-let EDIT_ROW=null;
 
 setInterval(load,15000);
 
@@ -296,17 +246,7 @@ async function load(){
  setLoading(btnReload,true);
 
  const r=await fetch(API);
- const data=await r.json();
-
- const newIDs=data.map(x=>x._row);
- const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
-
- if(hasNew && PREVIOUS_IDS.length){
-  document.getElementById("notifSound").play();
- }
-
- PREVIOUS_IDS=newIDs;
- RAW=data;
+ RAW=await r.json();
 
  applyFilter();
  setLoading(btnReload,false);
@@ -314,8 +254,8 @@ async function load(){
 
 function parseFecha(str){
  if(!str) return null;
- const [f] = str.split(" ");
- const [d,m,y] = f.split("-").map(Number);
+ const [f]=str.split(" ");
+ const [d,m,y]=f.split("-").map(Number);
  return new Date(y,m-1,d);
 }
 
@@ -337,14 +277,45 @@ function applyFilter(){
 }
 
 function updateStats(){
- totalPedidos.textContent = FILT.length;
- totalCajas.textContent = FILT.reduce((sum,r)=>sum + Number(r.etiquetas||0),0);
+ totalPedidos.textContent=FILT.length;
+ totalCajas.textContent=FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
 }
 
 fStatus.onchange=applyFilter;
 fDesde.onchange=applyFilter;
 fHasta.onchange=applyFilter;
 btnReload.onclick=load;
+
+function render(){
+ cardsGrid.innerHTML="";
+ FILT.forEach(r=>{
+  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
+  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
+
+  cardsGrid.insertAdjacentHTML("beforeend",`
+    <div class="card ${r.status}">
+      <h3>${r.pedido||""}</h3>
+      <div class="status ${r.status}">${r.status||""}</div>
+      <div>👤 ${r.cliente||""}</div>
+      <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
+      <div class="cajas">📦 ${r.etiquetas||0} CAJAS</div>
+
+      <div class="photo-wrap">
+        ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s300')}" onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')">`).join("")}
+      </div>
+
+      <div class="pdf-wrap">
+        ${pdfs.map(p=>`<a href="${p}" target="_blank">📄 Ver</a>`).join("")}
+      </div>
+    </div>
+  `);
+ });
+}
+
+function showFoto(url){
+ fotoGrande.src=url;
+ fotoModal.style.display="flex";
+}
 
 load();
 </script>
