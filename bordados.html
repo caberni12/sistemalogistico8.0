@@ -8,9 +8,10 @@
 <style>
 
 :root{
- --bg:#0f172a;
+ --bg:#f8fafc;
  --card:#ffffff;
  --border:#e2e8f0;
+ --text:#0f172a;
  --turq:#14b8a6;
  --turq-dark:#0d9488;
 }
@@ -22,7 +23,7 @@ body{
  font-family:Inter,Arial;
  background:var(--bg);
  padding:20px;
- color:#fff;
+ color:var(--text);
 }
 
 /* HEADER */
@@ -35,14 +36,8 @@ body{
  gap:10px;
 }
 
-.header h2{
- margin:0;
- font-size:22px;
-}
-
 .counter{
  font-weight:600;
- font-size:14px;
 }
 
 /* BOTONES */
@@ -55,12 +50,29 @@ button{
  cursor:pointer;
  background:var(--turq);
  color:#fff;
- transition:.2s;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:6px;
+ position:relative;
 }
 
-button:hover{
- background:var(--turq-dark);
+button:hover{background:var(--turq-dark)}
+
+button.loading .btn-text{display:none}
+button.loading .btn-loader{display:inline-block}
+
+.btn-loader{
+ display:none;
+ width:16px;
+ height:16px;
+ border:3px solid rgba(255,255,255,.4);
+ border-top:3px solid #fff;
+ border-radius:50%;
+ animation:spin .8s linear infinite;
 }
+
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* FILTROS */
 .filters{
@@ -73,30 +85,25 @@ button:hover{
 input,select{
  padding:10px 12px;
  border-radius:12px;
- border:1px solid #1e293b;
+ border:1px solid var(--border);
  font-size:14px;
- background:#1e293b;
- color:#fff;
 }
 
-/* GRID TARJETAS */
+/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
  gap:22px;
 }
 
-/* TARJETA */
 .card{
  background:var(--card);
- border-radius:20px;
+ border-radius:18px;
  padding:20px;
- box-shadow:0 12px 28px rgba(0,0,0,.3);
+ box-shadow:0 8px 20px rgba(0,0,0,.08);
+ border-left:6px solid #ccc;
  display:flex;
  flex-direction:column;
- color:#0f172a;
- border-left:6px solid #ccc;
- transition:.3s;
 }
 
 .card.PENDIENTE{border-left-color:#3b82f6}
@@ -105,10 +112,9 @@ input,select{
 .card.ENTREGADO{border-left-color:#22c55e}
 .card.CANCELADO{border-left-color:#9ca3af}
 
-/* STATUS */
 .status{
- padding:6px 12px;
- border-radius:10px;
+ padding:5px 10px;
+ border-radius:8px;
  font-size:12px;
  font-weight:700;
  background:#000;
@@ -120,49 +126,37 @@ input,select{
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
 
-/* FOTO */
-.photo-wrap{
- display:flex;
- gap:8px;
- flex-wrap:wrap;
- margin-bottom:10px;
-}
-
-.photo-wrap img{
- width:70px;
- height:70px;
- object-fit:cover;
- border-radius:12px;
- cursor:pointer;
-}
-
-/* PDF */
-.pdf-wrap{
- margin-bottom:10px;
-}
-
-.pdf-wrap a{
- font-size:13px;
- font-weight:600;
- color:var(--turq-dark);
- text-decoration:none;
-}
-
-/* ACCIONES */
 .card-actions{
  display:flex;
- gap:10px;
- margin-top:auto;
+ gap:8px;
+ margin-top:12px;
 }
 
-.card-actions button{
- flex:1;
+.card-actions button{flex:1}
+
+/* MODAL */
+.modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.5);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:9999;
 }
 
-@media(max-width:768px){
- .cards-grid{
-  grid-template-columns:1fr;
- }
+.modal-content{
+ background:#fff;
+ padding:20px;
+ border-radius:16px;
+ width:400px;
+ max-width:95%;
+}
+
+.modal-content input,
+.modal-content select{
+ width:100%;
+ margin-bottom:10px;
 }
 
 </style>
@@ -172,16 +166,14 @@ input,select{
 <div class="header">
   <h2>📋 PEDIDOS EN CURSO</h2>
   <div class="counter" id="counter">Total: 0</div>
-  <div style="display:flex;gap:10px">
-    <button onclick="load()">🔄 Recargar</button>
-    <button onclick="toggleFullScreen()">🖥 Pantalla</button>
-  </div>
+  <button onclick="load()" id="btnReload">
+    <span class="btn-text">🔄 Recargar</span>
+    <span class="btn-loader"></span>
+  </button>
 </div>
 
 <div class="filters">
   <input id="search" placeholder="Buscar pedido o cliente">
-  <input type="date" id="fDesde">
-  <input type="date" id="fHasta">
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -194,154 +186,131 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<audio id="notifSound">
-  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
-</audio>
+<!-- MODAL EDITAR -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <h3>Editar Pedido</h3>
+    <input id="mPedido">
+    <input id="mCliente">
+    <input id="mDireccion">
+    <input id="mComuna">
+    <select id="mStatus">
+      <option>PENDIENTE</option>
+      <option>EN RUTA</option>
+      <option>RECIBIDO</option>
+      <option>ENTREGADO</option>
+      <option>CANCELADO</option>
+    </select>
+    <button id="btnGuardar">
+      <span class="btn-text">💾 Guardar</span>
+      <span class="btn-loader"></span>
+    </button>
+    <button onclick="closeModal()">Cerrar</button>
+  </div>
+</div>
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
+const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-let RAW = [];
-let FILT = [];
-let lastCount = 0;
+let RAW=[];
+let EDIT_ROW=null;
+let autoRefresh;
 
 /* AUTO REFRESH */
-setInterval(load,15000);
+function startAuto(){
+ autoRefresh=setInterval(load,15000);
+}
+function stopAuto(){
+ clearInterval(autoRefresh);
+}
 
 /* LOAD */
 async function load(){
-  const r = await fetch(API);
-  RAW = await r.json();
-
-  if(RAW.length > lastCount){
-    document.getElementById("notifSound").play();
-  }
-
-  lastCount = RAW.length;
-  applyFilters();
-}
-
-/* FILTROS */
-function applyFilters(){
-
-  const q = search.value.toLowerCase().trim();
-  const s = fStatus.value;
-  const d1 = fDesde.value ? new Date(fDesde.value+"T00:00:00") : null;
-  const d2 = fHasta.value ? new Date(fHasta.value+"T23:59:59") : null;
-
-  FILT = RAW.filter(r=>{
-    const pedido = String(r.pedido||"").toLowerCase();
-    const cliente = String(r.cliente||"").toLowerCase();
-    const status = String(r.status||"");
-    const fecha = parseFecha(r.fechaIngreso);
-
-    const textOK = !q || pedido.includes(q) || cliente.includes(q);
-    const statusOK = !s || status === s;
-
-    let fechaOK = true;
-    if(d1 && fecha < d1) fechaOK = false;
-    if(d2 && fecha > d2) fechaOK = false;
-
-    return textOK && statusOK && fechaOK;
-  });
-
-  render();
-}
-
-/* PARSE FECHA */
-function parseFecha(str){
-  if(!str) return new Date();
-  const [f,h] = str.split(" ");
-  const [d,m,y] = f.split("-").map(Number);
-  const [hh=0,mm=0] = (h||"0:0").split(":").map(Number);
-  return new Date(y,m-1,d,hh,mm);
+ setLoading(btnReload,true);
+ const r=await fetch(API);
+ RAW=await r.json();
+ render();
+ setLoading(btnReload,false);
 }
 
 /* RENDER */
 function render(){
+ cardsGrid.innerHTML="";
+ counter.textContent="Total: "+RAW.length;
 
-  cardsGrid.innerHTML="";
-  counter.textContent="Total: "+FILT.length;
+ RAW.forEach(r=>{
+  const card=document.createElement("div");
+  card.className="card "+r.status;
 
-  FILT.forEach(r=>{
+  card.innerHTML=`
+   <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+     <strong>${r.pedido||""}</strong>
+     <span class="status ${r.status}">${r.status||""}</span>
+   </div>
 
-    const card=document.createElement("div");
-    card.className="card "+r.status;
+   👤 ${r.cliente||""}<br>
+   📍 ${r.direccion||""} (${r.comuna||""})<br>
 
-    const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
-    const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
-
-    card.innerHTML=`
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-        <strong>${r.pedido||""}</strong>
-        <span class="status ${r.status}">${r.status||""}</span>
-      </div>
-
-      👤 ${r.cliente||""}<br>
-      📍 ${r.direccion||""} (${r.comuna||""})<br>
-      🚚 ${r.transporte||""}<br>
-      📦 ${r.etiquetas||0} cajas<br>
-      ⏱ ${r.horaEntrega||""}<br><br>
-
-      <div class="photo-wrap">
-        ${fotos.map(f=>`<img src="${f.replace(/=s\d+$/,'=s200')}" onclick="window.open('${f}','_blank')">`).join("")}
-      </div>
-
-      <div class="pdf-wrap">
-        ${pdfs.map(p=>`<a href="${p}" target="_blank">📄 Ver PDF</a>`).join("")}
-      </div>
-
-      <div class="card-actions">
-        <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
-        <button onclick="editPedido(${r._row})">✏️</button>
-        <button onclick="deletePedido(${r._row})">🗑</button>
-      </div>
-    `;
-
-    cardsGrid.appendChild(card);
-  });
-}
-
-/* MAPA */
-function openMap(d,c){
-  window.open(
-    `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}`,
-    "_blank"
-  );
+   <div class="card-actions">
+     <button onclick="openEdit(${r._row})">
+       <span class="btn-text">✏️</span>
+       <span class="btn-loader"></span>
+     </button>
+   </div>
+  `;
+  cardsGrid.appendChild(card);
+ });
 }
 
 /* EDITAR */
-function editPedido(row){
-  window.location.href="index.html#edit="+row;
+function openEdit(row){
+ stopAuto();
+ const r=RAW.find(x=>x._row==row);
+ EDIT_ROW=row;
+
+ mPedido.value=r.pedido||"";
+ mCliente.value=r.cliente||"";
+ mDireccion.value=r.direccion||"";
+ mComuna.value=r.comuna||"";
+ mStatus.value=r.status||"";
+
+ editModal.style.display="flex";
 }
 
-/* DELETE */
-async function deletePedido(row){
-  if(!confirm("¿Eliminar pedido?")) return;
-  await fetch(API,{
-    method:"POST",
-    body:JSON.stringify({action:"delete",row})
-  });
-  load();
+function closeModal(){
+ editModal.style.display="none";
+ startAuto();
 }
 
-/* FULL SCREEN */
-function toggleFullScreen(){
-  if(!document.fullscreenElement){
-    document.documentElement.requestFullscreen();
-  } else {
-    document.exitFullscreen();
-  }
+btnGuardar.onclick=async()=>{
+ setLoading(btnGuardar,true);
+
+ await fetch(API,{
+  method:"POST",
+  body:JSON.stringify({
+   action:"update",
+   row:EDIT_ROW,
+   "PEDIDO":mPedido.value,
+   "CLIENTE":mCliente.value,
+   "DIRECCION":mDireccion.value,
+   "COMUNA":mComuna.value,
+   "STATUS":mStatus.value
+  })
+ });
+
+ setLoading(btnGuardar,false);
+ closeModal();
+ load();
+};
+
+/* LOADER */
+function setLoading(btn,state){
+ btn.disabled=state;
+ btn.classList.toggle("loading",state);
 }
 
-/* EVENTOS */
-search.oninput=applyFilters;
-fStatus.onchange=applyFilters;
-fDesde.onchange=applyFilters;
-fHasta.onchange=applyFilters;
-
-/* INIT */
+startAuto();
 load();
 
 </script>
