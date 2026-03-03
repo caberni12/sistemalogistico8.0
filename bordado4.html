@@ -19,6 +19,7 @@ body{
  padding:20px;
 }
 
+/* HEADER */
 .header{
  display:flex;
  justify-content:space-between;
@@ -28,6 +29,7 @@ body{
  margin-bottom:15px;
 }
 
+/* BOTONES */
 button{
  border:0;
  border-radius:12px;
@@ -58,6 +60,7 @@ button.loading .btn-loader{display:inline-block}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* FILTROS */
 .filters{
  display:flex;
  flex-wrap:wrap;
@@ -71,6 +74,7 @@ input,select,textarea{
  border:1px solid #e2e8f0;
 }
 
+/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -78,38 +82,46 @@ input,select,textarea{
  font-weight:bold;
 }
 
+/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
- gap:20px;
+ gap:22px;
 }
 
+/* TARJETA */
 .card{
  background:#fff;
  border-radius:18px;
- padding:18px;
- box-shadow:0 8px 20px rgba(0,0,0,.08);
+ padding:20px;
+ box-shadow:0 8px 22px rgba(0,0,0,.08);
  border-left:6px solid #ccc;
 }
 
-.cliente-destacado{
- font-size:24px;
+/* 🔥 PEDIDO GRANDE */
+.pedido-numero{
+ font-size:32px;
  font-weight:900;
- margin-top:8px;
- background:#0f172a;
- color:#fff;
- padding:10px 14px;
- border-radius:14px;
- display:inline-block;
+ color:#0f172a;
+ margin-bottom:4px;
 }
 
+/* 🔥 CLIENTE GRANDE */
+.cliente-destacado{
+ font-size:22px;
+ font-weight:800;
+ margin-bottom:8px;
+ color:#111827;
+}
+
+/* STATUS */
 .status{
  display:inline-block;
  padding:6px 12px;
  border-radius:20px;
  font-weight:700;
  color:#fff;
- margin-top:8px;
+ margin-bottom:10px;
 }
 
 .status-EN_RUTA{background:#dc2626}
@@ -118,21 +130,23 @@ input,select,textarea{
 .status-ENTREGADO{background:#16a34a}
 .status-CANCELADO{background:#6b7280}
 
+/* CAJAS */
 .cajas-box{
  background:#111827;
  color:#fff;
  text-align:center;
- padding:10px;
- border-radius:12px;
+ padding:12px;
+ border-radius:14px;
  margin-top:10px;
 }
 
 .cajas-box span{
- font-size:30px;
+ font-size:36px;
  font-weight:900;
  display:block;
 }
 
+/* FOTOS */
 .photo-wrap{
  display:flex;
  gap:8px;
@@ -148,6 +162,7 @@ input,select,textarea{
  cursor:pointer;
 }
 
+/* PDF */
 .pdf-wrap{
  margin-top:10px;
  display:flex;
@@ -164,6 +179,7 @@ input,select,textarea{
  text-decoration:none;
 }
 
+/* MAPA */
 .map-container{
  display:none;
  margin-top:10px;
@@ -193,6 +209,7 @@ input,select,textarea{
  font-size:13px;
 }
 
+/* MODAL */
 .modal{
  position:fixed;
  inset:0;
@@ -246,20 +263,22 @@ input,select,textarea{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
+<!-- MODAL IMAGEN -->
 <div class="modal" id="imgModal" onclick="this.style.display='none'">
  <img id="imgGrande" style="max-width:90vw;max-height:85vh;border-radius:12px;">
 </div>
 
+<!-- MODAL EDITAR -->
 <div class="modal" id="editModal">
  <div class="modal-box">
   <h3>Editar Pedido</h3>
-  <input id="mPedido"><br><br>
-  <input id="mCliente"><br><br>
-  <input id="mDireccion"><br><br>
-  <input id="mComuna"><br><br>
-  <input id="mResponsable"><br><br>
-  <input id="mCajas" type="number"><br><br>
-  <textarea id="mObservaciones" rows="3"></textarea><br><br>
+  <input id="mPedido" placeholder="Pedido"><br><br>
+  <input id="mCliente" placeholder="Cliente"><br><br>
+  <input id="mDireccion" placeholder="Dirección"><br><br>
+  <input id="mComuna" placeholder="Comuna"><br><br>
+  <input id="mResponsable" placeholder="Responsable"><br><br>
+  <input id="mCajas" type="number" placeholder="Cajas"><br><br>
+  <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea><br><br>
   <select id="mStatus">
    <option>PENDIENTE</option>
    <option>EN RUTA</option>
@@ -348,17 +367,18 @@ function renderMore(){
   card.className="card";
 
   card.innerHTML=`
+   <div class="pedido-numero">#${r.pedido||""}</div>
    <div class="cliente-destacado">${r.cliente||""}</div>
    <div class="status status-${st}">${r.status||""}</div>
-   <div>📦 Pedido: ${r.pedido||""}</div>
    <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
    <div>👨‍💼 ${r.responsable||""}</div>
    <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
+   ${r.observaciones?`<div style="margin-top:10px;background:#f1f5f9;padding:8px;border-radius:8px">${r.observaciones}</div>`:""}
    <div class="photo-wrap">
-    ${fotos.map(f=>`<img src="${f}" onclick="verImagen('${f}')">`).join("")}
+     ${fotos.map(f=>`<img src="${f}" onclick="verImagen('${f}')">`).join("")}
    </div>
    <div class="pdf-wrap">
-    ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a><a href="${p}" download>Descargar</a>`).join("")}
+     ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a><a href="${p}" download>Descargar</a>`).join("")}
    </div>
    <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
    <div class="map-container" id="${mapId}">
