@@ -87,7 +87,6 @@ input,select{
  border:1px solid var(--border);
 }
 
-/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -103,7 +102,6 @@ input,select{
  border-radius:12px;
 }
 
-/* TARJETAS */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
@@ -143,21 +141,6 @@ input,select{
  display:inline-block;
 }
 
-.photo-wrap{
- display:flex;
- gap:8px;
- flex-wrap:wrap;
- margin-top:10px;
-}
-
-.photo-wrap img{
- width:70px;
- height:70px;
- object-fit:cover;
- border-radius:10px;
- cursor:pointer;
-}
-
 .modal{
  position:fixed;
  inset:0;
@@ -168,10 +151,19 @@ input,select{
  z-index:9999;
 }
 
-.foto-modal img{
- max-width:90vw;
- max-height:80vh;
- border-radius:12px;
+.modal-content{
+ background:#fff;
+ padding:20px;
+ border-radius:16px;
+ width:400px;
+ max-width:95%;
+}
+
+.modal-content input,
+.modal-content select{
+ width:100%;
+ margin-bottom:10px;
+ padding:8px;
 }
 </style>
 </head>
@@ -190,7 +182,6 @@ input,select{
 
 <div class="filters">
   <input type="text" id="fBuscar" placeholder="🔎 Buscar pedido, cliente, dirección o comuna">
-  
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -199,7 +190,6 @@ input,select{
     <option>ENTREGADO</option>
     <option>CANCELADO</option>
   </select>
-
   <input type="date" id="fDesde">
   <input type="date" id="fHasta">
 </div>
@@ -211,8 +201,27 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<div class="modal foto-modal" id="fotoModal" onclick="this.style.display='none'">
-  <img id="fotoGrande">
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <h3>Editar Pedido</h3>
+    <input id="mPedido">
+    <input id="mCliente">
+    <input id="mDireccion">
+    <input id="mComuna">
+    <input type="number" id="mCajas" min="1">
+    <select id="mStatus">
+      <option>PENDIENTE</option>
+      <option>EN RUTA</option>
+      <option>RECIBIDO</option>
+      <option>ENTREGADO</option>
+      <option>CANCELADO</option>
+    </select>
+    <button id="btnGuardar">
+      <span class="btn-text">💾 Guardar</span>
+      <span class="btn-loader"></span>
+    </button>
+    <button onclick="closeEdit()">Cerrar</button>
+  </div>
 </div>
 
 <audio id="notifSound">
@@ -223,42 +232,31 @@ input,select{
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
 let RAW=[];
-let FILT=[];
 let PREVIOUS_IDS=[];
+let EDIT_ROW=null;
 
 const btnReload=document.getElementById("btnReload");
-const cardsGrid=document.getElementById("cardsGrid");
-const fStatus=document.getElementById("fStatus");
-const fDesde=document.getElementById("fDesde");
-const fHasta=document.getElementById("fHasta");
-const fBuscar=document.getElementById("fBuscar");
-const totalPedidos=document.getElementById("totalPedidos");
-const totalCajas=document.getElementById("totalCajas");
-const fotoModal=document.getElementById("fotoModal");
-const fotoGrande=document.getElementById("fotoGrande");
-
-setInterval(load,15000);
-
-function setLoading(btn,state){
- btn.disabled=state;
- btn.classList.toggle("loading",state);
-}
+const btnGuardar=document.getElementById("btnGuardar");
 
 async function load(){
  setLoading(btnReload,true);
  const r=await fetch(API);
- const data=await r.json();
+ RAW=await r.json();
 
- const newIDs=data.map(x=>x._row);
- const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
- if(hasNew && PREVIOUS_IDS.length){
-  document.getElementById("notifSound").play();
+ const ids=RAW.map(x=>x._row);
+ const nuevo=ids.some(id=>!PREVIOUS_IDS.includes(id));
+ if(nuevo && PREVIOUS_IDS.length){
+   document.getElementById("notifSound").play();
  }
+ PREVIOUS_IDS=ids;
 
- PREVIOUS_IDS=newIDs;
- RAW=data;
  applyFilter();
  setLoading(btnReload,false);
+}
+
+function setLoading(btn,state){
+ btn.disabled=state;
+ btn.classList.toggle("loading",state);
 }
 
 function parseFecha(str){
@@ -269,51 +267,34 @@ function parseFecha(str){
 }
 
 function applyFilter(){
+ const texto=fBuscar.value.toLowerCase();
  const status=fStatus.value;
  const desde=fDesde.value ? new Date(fDesde.value) : null;
  const hasta=fHasta.value ? new Date(fHasta.value) : null;
- const texto=fBuscar.value.toLowerCase();
 
- FILT=RAW.filter(r=>{
+ const FILT=RAW.filter(r=>{
+   const combinado=(r.pedido+" "+r.cliente+" "+r.direccion+" "+r.comuna).toLowerCase();
+   if(texto && !combinado.includes(texto)) return false;
    if(status && r.status!==status) return false;
 
    const fecha=parseFecha(r.fechaIngreso);
    if(desde && fecha<desde) return false;
    if(hasta && fecha>hasta) return false;
 
-   const combinado = `
-     ${r.pedido||""}
-     ${r.cliente||""}
-     ${r.direccion||""}
-     ${r.comuna||""}
-   `.toLowerCase();
-
-   if(texto && !combinado.includes(texto)) return false;
-
    return true;
  });
 
- updateStats();
- render();
-}
-
-function updateStats(){
  totalPedidos.textContent=FILT.length;
  totalCajas.textContent=FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
+
+ render(FILT);
 }
 
-fStatus.onchange=applyFilter;
-fDesde.onchange=applyFilter;
-fHasta.onchange=applyFilter;
-fBuscar.oninput=applyFilter;
-
-function render(){
+function render(data){
  cardsGrid.innerHTML="";
- FILT.forEach(r=>{
+ data.forEach(r=>{
   const card=document.createElement("div");
   card.className="card "+r.status;
-
-  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
 
   card.innerHTML=`
    <h3>${r.pedido||""}</h3>
@@ -323,25 +304,65 @@ function render(){
      📍 ${r.direccion||""} (${r.comuna||""})
    </div>
    <div class="cajas">📦 ${r.etiquetas||0} CAJAS</div>
-
-   <div class="photo-wrap">
-     ${fotos.map(f=>`<img src="${f}" onclick="showFoto('${f}')">`).join("")}
+   <div style="margin-top:12px">
+     <button onclick="openEdit(${r._row})">✏️ Editar</button>
    </div>
   `;
   cardsGrid.appendChild(card);
  });
 }
 
-function showFoto(url){
- fotoGrande.src=url;
- fotoModal.style.display="flex";
+function openEdit(row){
+ const r=RAW.find(x=>x._row==row);
+ EDIT_ROW=row;
+
+ mPedido.value=r.pedido||"";
+ mCliente.value=r.cliente||"";
+ mDireccion.value=r.direccion||"";
+ mComuna.value=r.comuna||"";
+ mCajas.value=r.etiquetas||1;
+ mStatus.value=r.status||"";
+
+ editModal.style.display="flex";
 }
+
+function closeEdit(){
+ editModal.style.display="none";
+}
+
+btnGuardar.onclick=async()=>{
+ setLoading(btnGuardar,true);
+
+ await fetch(API,{
+  method:"POST",
+  body:JSON.stringify({
+   action:"update",
+   row:EDIT_ROW,
+   PEDIDO:mPedido.value,
+   CLIENTE:mCliente.value,
+   DIRECCION:mDireccion.value,
+   COMUNA:mComuna.value,
+   ETIQUETAS:mCajas.value,
+   STATUS:mStatus.value
+  })
+ });
+
+ closeEdit();
+ load();
+ setLoading(btnGuardar,false);
+};
+
+fBuscar.oninput=applyFilter;
+fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
+btnReload.onclick=load;
 
 function toggleTV(){
  document.body.classList.toggle("tv-mode");
 }
 
-btnReload.onclick=load;
+setInterval(load,15000);
 load();
 </script>
 
