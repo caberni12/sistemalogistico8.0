@@ -284,7 +284,8 @@ input,select{
 <audio id="notifSound">  
  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">  
 </audio>  
- <script>
+ 
+<script>
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
 let RAW=[];
@@ -347,33 +348,43 @@ async function load(){
 /* ================== PARSE FECHA ================== */
 function parseFecha(str){
  if(!str) return null;
- const [f] = str.split(" ");
- const [d,m,y] = f.split("-").map(Number);
- return new Date(y,m-1,d);
+ try{
+  const [f] = str.split(" ");
+  const [d,m,y] = f.split("-").map(Number);
+  return new Date(y,m-1,d);
+ }catch{
+  return null;
+ }
 }
 
 /* ================== FILTROS ================== */
 function applyFilter(){
 
- const status = fStatus.value;
+ const status = fStatus.value.trim();
  const desde  = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
  const hasta  = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
  const q      = search.value.toLowerCase().trim();
 
  FILT = RAW.filter(r=>{
 
-   /* TEXTO */
-   const textoOK = !q || (
-     (r.pedido || "").toLowerCase().includes(q) ||
-     (r.cliente || "").toLowerCase().includes(q) ||
-     (r.direccion || "").toLowerCase().includes(q) ||
-     (r.comuna || "").toLowerCase().includes(q)
-   );
+   const pedido   = (r.pedido||"").toLowerCase();
+   const cliente  = (r.cliente||"").toLowerCase();
+   const direccion= (r.direccion||"").toLowerCase();
+   const comuna   = (r.comuna||"").toLowerCase();
+   const estado   = (r.status||"").trim();
 
-   if(!textoOK) return false;
+   /* BUSCADOR */
+   if(q){
+     if(!pedido.includes(q) &&
+        !cliente.includes(q) &&
+        !direccion.includes(q) &&
+        !comuna.includes(q)){
+       return false;
+     }
+   }
 
    /* ESTADO */
-   if(status && r.status !== status) return false;
+   if(status && estado !== status) return false;
 
    /* FECHA */
    const fecha = parseFecha(r.fechaIngreso);
@@ -393,20 +404,20 @@ function updateStats(){
  totalCajas.textContent = FILT.reduce((sum,r)=>sum + Number(r.etiquetas||0),0);
 }
 
-/* ================== EVENTOS FILTRO ================== */
+/* ================== EVENTOS ================== */
 fStatus.addEventListener("change", applyFilter);
 fDesde.addEventListener("change", applyFilter);
 fHasta.addEventListener("change", applyFilter);
 search.addEventListener("input", applyFilter);
 
-/* ================== RENDER TARJETAS ================== */
+/* ================== RENDER ================== */
 function render(){
  cardsGrid.innerHTML="";
 
  FILT.forEach(r=>{
 
   const card=document.createElement("div");
-  card.className="card "+r.status;
+  card.className="card "+(r.status||"");
 
   const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
   const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
@@ -414,7 +425,7 @@ function render(){
   card.innerHTML=`
    <h3>${r.pedido||""}</h3>
 
-   <div class="status ${r.status}">
+   <div class="status ${(r.status||"")}">
      ${r.status||""}
    </div>
 
@@ -454,7 +465,7 @@ function render(){
  });
 }
 
-/* ================== FOTO GRANDE ================== */
+/* ================== FOTO ================== */
 function showFoto(url){
  fotoGrande.src=url;
  fotoModal.style.display="flex";
@@ -516,6 +527,5 @@ btnReload.onclick=load;
 /* ================== INIT ================== */
 load();
 </script>
-
 </body>  
 </html>
