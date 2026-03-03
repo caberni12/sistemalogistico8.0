@@ -25,6 +25,7 @@ body{
  align-items:center;
  flex-wrap:wrap;
  margin-bottom:15px;
+ gap:10px;
 }
 
 button{
@@ -59,8 +60,8 @@ button.loading .btn-loader{display:inline-block}
 
 .filters{
  display:flex;
- gap:10px;
  flex-wrap:wrap;
+ gap:10px;
  margin-bottom:15px;
 }
 
@@ -128,6 +129,13 @@ input,select,textarea{
  display:block;
 }
 
+.observaciones{
+ margin-top:10px;
+ background:#f1f5f9;
+ padding:10px;
+ border-radius:10px;
+}
+
 .map-container{
  display:none;
  margin-top:10px;
@@ -157,16 +165,17 @@ input,select,textarea{
  font-size:13px;
 }
 
-.edit-modal{
+.modal{
  position:fixed;
  inset:0;
  background:rgba(0,0,0,.6);
  display:none;
  align-items:center;
  justify-content:center;
+ z-index:9999;
 }
 
-.edit-box{
+.modal-box{
  background:#fff;
  padding:20px;
  border-radius:16px;
@@ -178,91 +187,109 @@ input,select,textarea{
 <body>
 
 <div class="header">
-  <h2>📋 PEDIDOS EN CURSO</h2>
-  <button id="btnReload">
-    <span class="btn-text">Recargar</span>
-    <span class="btn-loader"></span>
-  </button>
+ <h2>📋 PEDIDOS EN CURSO</h2>
+ <div style="display:flex;gap:10px">
+   <button onclick="toggleFullscreen()">Modo TV</button>
+   <button id="btnReload">
+     <span class="btn-text">Recargar</span>
+     <span class="btn-loader"></span>
+   </button>
+ </div>
 </div>
 
 <div class="filters">
-  <input type="text" id="fBuscar" placeholder="Buscar">
-  <select id="fStatus">
-    <option value="">Todos</option>
-    <option>PENDIENTE</option>
-    <option>EN RUTA</option>
-    <option>RECIBIDO</option>
-    <option>ENTREGADO</option>
-    <option>CANCELADO</option>
-  </select>
-  <input type="date" id="fDesde">
-  <input type="date" id="fHasta">
+ <input type="text" id="fBuscar" placeholder="Buscar pedido, cliente, comuna, responsable">
+ <select id="fStatus">
+   <option value="">Todos</option>
+   <option>PENDIENTE</option>
+   <option>EN RUTA</option>
+   <option>RECIBIDO</option>
+   <option>ENTREGADO</option>
+   <option>CANCELADO</option>
+ </select>
+ <input type="date" id="fDesde">
+ <input type="date" id="fHasta">
 </div>
 
 <div class="stats">
-  <div>Pedidos: <span id="totalPedidos">0</span></div>
-  <div>Cajas: <span id="totalCajas">0</span></div>
+ <div>Pedidos: <span id="totalPedidos">0</span></div>
+ <div>Cajas: <span id="totalCajas">0</span></div>
 </div>
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<div class="edit-modal" id="editModal">
- <div class="edit-box">
+<div class="modal" id="editModal">
+ <div class="modal-box">
   <h3>Editar Pedido</h3>
-  <input id="mPedido" placeholder="Pedido">
-  <input id="mCliente" placeholder="Cliente">
-  <input id="mDireccion" placeholder="Dirección">
-  <input id="mComuna" placeholder="Comuna">
-  <input id="mResponsable" placeholder="Responsable">
-  <input type="number" id="mCajas" placeholder="Cajas">
-  <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea>
+  <input id="mPedido" placeholder="Pedido"><br><br>
+  <input id="mCliente" placeholder="Cliente"><br><br>
+  <input id="mDireccion" placeholder="Dirección"><br><br>
+  <input id="mComuna" placeholder="Comuna"><br><br>
+  <input id="mResponsable" placeholder="Responsable"><br><br>
+  <input id="mCajas" type="number" placeholder="Cajas"><br><br>
+  <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea><br><br>
   <select id="mStatus">
-    <option>PENDIENTE</option>
-    <option>EN RUTA</option>
-    <option>RECIBIDO</option>
-    <option>ENTREGADO</option>
-    <option>CANCELADO</option>
-  </select>
+   <option>PENDIENTE</option>
+   <option>EN RUTA</option>
+   <option>RECIBIDO</option>
+   <option>ENTREGADO</option>
+   <option>CANCELADO</option>
+  </select><br><br>
   <button id="btnGuardar">Guardar</button>
   <button onclick="closeEdit()">Cerrar</button>
  </div>
 </div>
 
+<audio id="notifSound">
+ <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
+</audio>
+
 <script>
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-let RAW=[], FILT=[], visibleCount=0, EDIT_ROW=null;
+let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0, EDIT_ROW=null;
 const CHUNK=20;
 
 function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
 
 function mapEmbed(r){
- if(r.lat && r.lng){
-   return `https://maps.google.com/maps?q=${r.lat},${r.lng}&z=15&output=embed`;
- }
+ if(r.lat && r.lng) return `https://maps.google.com/maps?q=${r.lat},${r.lng}&z=15&output=embed`;
  return `https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed`;
 }
 
 function googleMaps(r){
- if(r.lat && r.lng){
-   return `https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`;
- }
+ if(r.lat && r.lng) return `https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`;
  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.direccion+" "+r.comuna)}`;
 }
 
 function waze(r){
- if(r.lat && r.lng){
-   return `https://waze.com/ul?ll=${r.lat},${r.lng}&navigate=yes`;
- }
+ if(r.lat && r.lng) return `https://waze.com/ul?ll=${r.lat},${r.lng}&navigate=yes`;
  return `https://waze.com/ul?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&navigate=yes`;
 }
 
+function setLoading(btn,state){
+ btn.disabled=state;
+ btn.classList.toggle("loading",state);
+}
+
 async function load(){
- document.getElementById("btnReload").classList.add("loading");
+ setLoading(btnReload,true);
+
  const r=await fetch(API);
- RAW=await r.json();
+ const data=await r.json();
+
+ const ids=data.map(x=>x._row);
+ const hasNew=ids.some(id=>!PREVIOUS_IDS.includes(id));
+
+ if(hasNew && PREVIOUS_IDS.length){
+   document.getElementById("notifSound").play();
+ }
+
+ PREVIOUS_IDS=ids;
+ RAW=data.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+
  applyFilter();
- document.getElementById("btnReload").classList.remove("loading");
+ setLoading(btnReload,false);
 }
 
 function applyFilter(){
@@ -293,7 +320,7 @@ function applyFilter(){
 
 function renderMore(){
  const fragment=document.createDocumentFragment();
- const slice=FILT.slice(visibleCount, visibleCount+CHUNK);
+ const slice=FILT.slice(visibleCount,visibleCount+CHUNK);
 
  slice.forEach(r=>{
   const st=cleanStatus(r.status);
@@ -308,21 +335,16 @@ function renderMore(){
    <div>👤 ${r.cliente||""}</div>
    <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
    <div>👨‍💼 ${r.responsable||""}</div>
-
    <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
-
    ${r.observaciones?`<div class="observaciones">${r.observaciones}</div>`:""}
-
    <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
-
    <div class="map-container" id="${mapId}">
-     <iframe src="${mapEmbed(r)}"></iframe>
-     <div class="map-buttons">
-       <a href="${googleMaps(r)}" target="_blank">Google Maps</a>
-       <a href="${waze(r)}" target="_blank">Waze</a>
-     </div>
+    <iframe src="${mapEmbed(r)}"></iframe>
+    <div class="map-buttons">
+      <a href="${googleMaps(r)}" target="_blank">Google Maps</a>
+      <a href="${waze(r)}" target="_blank">Waze</a>
+    </div>
    </div>
-
    <button onclick="openEdit(${r._row})" style="margin-top:10px">Editar</button>
   `;
   fragment.appendChild(card);
@@ -334,7 +356,7 @@ function renderMore(){
 
 function toggleMap(id,btn){
  const el=document.getElementById(id);
- if(el.style.display==="none"||el.style.display===""){
+ if(!el.style.display || el.style.display==="none"){
   el.style.display="block";
   btn.textContent="➖ Ocultar mapa";
  }else{
@@ -359,23 +381,28 @@ function openEdit(row){
 
 function closeEdit(){ editModal.style.display="none"; }
 
+function toggleFullscreen(){
+ if(!document.fullscreenElement){
+  document.documentElement.requestFullscreen();
+ }else{
+  document.exitFullscreen();
+ }
+}
+
+btnReload.onclick=load;
+
+fBuscar.oninput=()=>setTimeout(applyFilter,300);
+fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
+
 window.addEventListener("scroll",()=>{
  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200){
   if(visibleCount<FILT.length) renderMore();
  }
 });
 
-let debounce;
-fBuscar.oninput=()=>{
- clearTimeout(debounce);
- debounce=setTimeout(applyFilter,300);
-};
-
-fStatus.onchange=applyFilter;
-fDesde.onchange=applyFilter;
-fHasta.onchange=applyFilter;
-
-btnReload.onclick=load;
+setInterval(load,15000);
 
 load();
 </script>
