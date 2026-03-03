@@ -65,7 +65,7 @@ button.loading .btn-loader{display:inline-block}
  margin-bottom:15px;
 }
 
-input,select{
+input,select,textarea{
  padding:8px 12px;
  border-radius:10px;
  border:1px solid #e2e8f0;
@@ -92,13 +92,6 @@ input,select{
  border-left:6px solid #ccc;
 }
 
-.card-EN_RUTA{border-left-color:var(--danger)}
-
-.pedido-numero{
- font-size:22px;
- font-weight:900;
-}
-
 .cliente-destacado{
  font-size:24px;
  font-weight:900;
@@ -119,7 +112,7 @@ input,select{
  margin-top:8px;
 }
 
-.status-EN_RUTA{background:var(--danger)}
+.status-EN_RUTA{background:#dc2626}
 .status-PENDIENTE{background:#2563eb}
 .status-RECIBIDO{background:#7c3aed}
 .status-ENTREGADO{background:#16a34a}
@@ -210,10 +203,12 @@ input,select{
  z-index:9999;
 }
 
-.modal img{
- max-width:90vw;
- max-height:85vh;
- border-radius:12px;
+.modal-box{
+ background:#fff;
+ padding:20px;
+ border-radius:16px;
+ width:420px;
+ max-width:95%;
 }
 </style>
 </head>
@@ -231,7 +226,7 @@ input,select{
 </div>
 
 <div class="filters">
- <input type="text" id="fBuscar" placeholder="Buscar">
+ <input type="text" id="fBuscar" placeholder="Buscar pedido, cliente, comuna, responsable">
  <select id="fStatus">
    <option value="">Todos</option>
    <option>PENDIENTE</option>
@@ -252,7 +247,32 @@ input,select{
 <div class="cards-grid" id="cardsGrid"></div>
 
 <div class="modal" id="imgModal" onclick="this.style.display='none'">
- <img id="imgGrande">
+ <img id="imgGrande" style="max-width:90vw;max-height:85vh;border-radius:12px;">
+</div>
+
+<div class="modal" id="editModal">
+ <div class="modal-box">
+  <h3>Editar Pedido</h3>
+  <input id="mPedido"><br><br>
+  <input id="mCliente"><br><br>
+  <input id="mDireccion"><br><br>
+  <input id="mComuna"><br><br>
+  <input id="mResponsable"><br><br>
+  <input id="mCajas" type="number"><br><br>
+  <textarea id="mObservaciones" rows="3"></textarea><br><br>
+  <select id="mStatus">
+   <option>PENDIENTE</option>
+   <option>EN RUTA</option>
+   <option>RECIBIDO</option>
+   <option>ENTREGADO</option>
+   <option>CANCELADO</option>
+  </select><br><br>
+  <button id="btnGuardar">
+   <span class="btn-text">Guardar</span>
+   <span class="btn-loader"></span>
+  </button>
+  <button onclick="closeEdit()">Cerrar</button>
+ </div>
 </div>
 
 <audio id="notifSound">
@@ -262,7 +282,7 @@ input,select{
 <script>
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0;
+let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0, EDIT_ROW=null;
 const CHUNK=20;
 
 function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
@@ -279,7 +299,7 @@ async function load(){
 
  const ids=data.map(x=>x._row);
  if(PREVIOUS_IDS.length && ids.some(id=>!PREVIOUS_IDS.includes(id))){
-   document.getElementById("notifSound").play();
+   notifSound.play();
  }
  PREVIOUS_IDS=ids;
 
@@ -295,8 +315,8 @@ function applyFilter(){
  const hasta=fHasta.value?new Date(fHasta.value):null;
 
  FILT=RAW.filter(r=>{
-  const combinado=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
-  if(texto && !combinado.includes(texto)) return false;
+  const combo=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
+  if(texto && !combo.includes(texto)) return false;
   if(status && r.status!==status) return false;
   if(r.fecha){
    const f=new Date(r.fecha);
@@ -320,25 +340,25 @@ function renderMore(){
 
  slice.forEach(r=>{
   const st=cleanStatus(r.status);
+  const mapId="map_"+r._row;
   const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
   const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
-  const mapId="map_"+r._row;
 
   const card=document.createElement("div");
-  card.className="card card-"+st;
+  card.className="card";
 
   card.innerHTML=`
-   <div class="pedido-numero">#${r.pedido||""}</div>
    <div class="cliente-destacado">${r.cliente||""}</div>
    <div class="status status-${st}">${r.status||""}</div>
+   <div>📦 Pedido: ${r.pedido||""}</div>
    <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
    <div>👨‍💼 ${r.responsable||""}</div>
    <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
    <div class="photo-wrap">
-     ${fotos.map(f=>`<img src="${f}" onclick="verImagen('${f}')">`).join("")}
+    ${fotos.map(f=>`<img src="${f}" onclick="verImagen('${f}')">`).join("")}
    </div>
    <div class="pdf-wrap">
-     ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a><a href="${p}" download>Descargar</a>`).join("")}
+    ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a><a href="${p}" download>Descargar</a>`).join("")}
    </div>
    <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
    <div class="map-container" id="${mapId}">
@@ -348,6 +368,7 @@ function renderMore(){
      <a href="https://waze.com/ul?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&navigate=yes" target="_blank">Waze</a>
     </div>
    </div>
+   <button onclick="openEdit(${r._row})" style="margin-top:10px">Editar</button>
   `;
   fragment.appendChild(card);
  });
@@ -356,28 +377,55 @@ function renderMore(){
  visibleCount+=CHUNK;
 }
 
-function verImagen(url){
- imgGrande.src=url;
- imgModal.style.display="flex";
+function openEdit(row){
+ const r=RAW.find(x=>x._row==row);
+ EDIT_ROW=row;
+ mPedido.value=r.pedido||"";
+ mCliente.value=r.cliente||"";
+ mDireccion.value=r.direccion||"";
+ mComuna.value=r.comuna||"";
+ mResponsable.value=r.responsable||"";
+ mCajas.value=r.etiquetas||1;
+ mObservaciones.value=r.observaciones||"";
+ mStatus.value=r.status||"";
+ editModal.style.display="flex";
 }
 
+async function guardar(){
+ setLoading(btnGuardar,true);
+ await fetch(API,{
+  method:"POST",
+  body:JSON.stringify({
+   action:"update",
+   row:EDIT_ROW,
+   PEDIDO:mPedido.value,
+   CLIENTE:mCliente.value,
+   DIRECCION:mDireccion.value,
+   COMUNA:mComuna.value,
+   RESPONSABLE:mResponsable.value,
+   ETIQUETAS:mCajas.value,
+   OBSERVACIONES:mObservaciones.value,
+   STATUS:mStatus.value
+  })
+ });
+ closeEdit();
+ load();
+ setLoading(btnGuardar,false);
+}
+
+function closeEdit(){ editModal.style.display="none"; }
+function verImagen(url){ imgGrande.src=url; imgModal.style.display="flex"; }
 function toggleMap(id,btn){
  const el=document.getElementById(id);
- if(!el.style.display || el.style.display==="none"){
-  el.style.display="block";
-  btn.textContent="➖ Ocultar mapa";
+ if(!el.style.display||el.style.display==="none"){
+  el.style.display="block"; btn.textContent="➖ Ocultar mapa";
  }else{
-  el.style.display="none";
-  btn.textContent="➕ Mostrar mapa";
+  el.style.display="none"; btn.textContent="➕ Mostrar mapa";
  }
 }
-
 function toggleFullscreen(){
- if(!document.fullscreenElement){
-  document.documentElement.requestFullscreen();
- }else{
-  document.exitFullscreen();
- }
+ if(!document.fullscreenElement){ document.documentElement.requestFullscreen();}
+ else{ document.exitFullscreen();}
 }
 
 window.addEventListener("scroll",()=>{
@@ -386,11 +434,8 @@ window.addEventListener("scroll",()=>{
  }
 });
 
-fBuscar.oninput=()=>setTimeout(applyFilter,300);
-fStatus.onchange=applyFilter;
-fDesde.onchange=applyFilter;
-fHasta.onchange=applyFilter;
 btnReload.onclick=load;
+btnGuardar.onclick=guardar;
 
 setInterval(load,15000);
 load();
