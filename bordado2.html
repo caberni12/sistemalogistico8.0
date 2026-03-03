@@ -26,6 +26,7 @@ body{
  color:var(--text);
 }
 
+/* HEADER */
 .header{
  display:flex;
  justify-content:space-between;
@@ -65,6 +66,7 @@ button.loading .btn-loader{display:inline-block}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* FILTROS */
 .filters{
  display:flex;
  gap:10px;
@@ -78,6 +80,7 @@ input,select{
  border:1px solid var(--border);
 }
 
+/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -85,29 +88,36 @@ input,select{
  font-weight:bold;
 }
 
+/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
- gap:20px;
+ gap:22px;
 }
 
 .card{
  background:var(--card);
- border-radius:16px;
- padding:18px;
- box-shadow:0 6px 18px rgba(0,0,0,.08);
+ border-radius:18px;
+ padding:20px;
+ box-shadow:0 8px 22px rgba(0,0,0,.08);
  border-left:6px solid #ccc;
 }
 
 .card-EN_RUTA{border-left-color:var(--danger)}
 
+.pedido-numero{
+ font-size:30px;
+ font-weight:900;
+ margin-bottom:6px;
+}
+
 .status{
- padding:6px 12px;
+ padding:6px 14px;
  border-radius:20px;
  font-weight:700;
  color:#fff;
  display:inline-block;
- margin-top:6px;
+ margin-bottom:10px;
 }
 
 .status-EN_RUTA{background:var(--danger)}
@@ -116,13 +126,28 @@ input,select{
 .status-ENTREGADO{background:#16a34a}
 .status-CANCELADO{background:#6b7280}
 
+.cajas-box{
+ margin-top:12px;
+ background:#111827;
+ color:#fff;
+ text-align:center;
+ padding:14px;
+ border-radius:14px;
+}
+
+.cajas-box span{
+ display:block;
+ font-size:36px;
+ font-weight:900;
+}
+
 .photo-wrap img{
- width:75px;
- height:75px;
+ width:80px;
+ height:80px;
  object-fit:cover;
  border-radius:10px;
  cursor:pointer;
- margin-top:8px;
+ margin-top:10px;
 }
 
 .pdf-wrap a{
@@ -135,6 +160,7 @@ input,select{
  margin-right:6px;
 }
 
+/* MODALS */
 .modal{
  position:fixed;
  inset:0;
@@ -151,7 +177,6 @@ input,select{
  border-radius:12px;
 }
 
-/* EDIT MODAL */
 .edit-modal{
  position:fixed;
  inset:0;
@@ -229,7 +254,6 @@ input,select{
       <option>ENTREGADO</option>
       <option>CANCELADO</option>
     </select>
-
     <button id="btnGuardar">
       <span class="btn-text">Guardar</span>
       <span class="btn-loader"></span>
@@ -245,6 +269,7 @@ let RAW=[], FILT=[];
 let visibleCount=0;
 const CHUNK=50;
 let EDIT_ROW=null;
+let PREV_IDS=[];
 
 const btnReload=document.getElementById("btnReload");
 const btnGuardar=document.getElementById("btnGuardar");
@@ -262,6 +287,13 @@ async function load(){
  setLoading(btnReload,true);
  const r=await fetch(API);
  RAW=await r.json();
+
+ const ids=RAW.map(x=>x._row);
+ if(PREV_IDS.length && ids.some(id=>!PREV_IDS.includes(id))){
+   new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg").play();
+ }
+ PREV_IDS=ids;
+
  applyFilter();
  setLoading(btnReload,false);
 }
@@ -298,21 +330,28 @@ function renderMore(){
    card.className="card card-"+st;
 
    card.innerHTML=`
-     <h3>${r.pedido||""}</h3>
+     <div class="pedido-numero">#${r.pedido||""}</div>
      <div class="status status-${st}">${r.status||""}</div>
      <div>👤 ${r.cliente||""}</div>
      <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
-     <div>📦 ${r.etiquetas||0} CAJAS</div>
+
+     <div class="cajas-box">
+       CAJAS
+       <span>${r.etiquetas||0}</span>
+     </div>
+
      <div class="photo-wrap">
        ${fotos.map(f=>`<img src="${f}" onclick="showFoto('${f}')">`).join("")}
      </div>
+
      <div class="pdf-wrap">
        ${pdfs.map(p=>`
          <a href="${p}" target="_blank">Ver</a>
          <a href="${p}" download>Descargar</a>
        `).join("")}
      </div>
-     <div style="margin-top:10px">
+
+     <div style="margin-top:12px">
        <button onclick="openEdit(${r._row})">Editar</button>
      </div>
    `;
@@ -326,14 +365,12 @@ function renderMore(){
 function openEdit(row){
  const r=RAW.find(x=>x._row==row);
  EDIT_ROW=row;
-
  mPedido.value=r.pedido||"";
  mCliente.value=r.cliente||"";
  mDireccion.value=r.direccion||"";
  mComuna.value=r.comuna||"";
  mCajas.value=r.etiquetas||1;
  mStatus.value=r.status||"";
-
  editModal.style.display="flex";
 }
 
