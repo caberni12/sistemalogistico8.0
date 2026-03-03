@@ -136,7 +136,7 @@ input,select{
 }
 
 .status.PENDIENTE{color:#3b82f6}
-.status.EN\ RUTA{color:#f97316}
+.status.EN\ RUTA{color:#facc15;} /* 👈 CORREGIDO */
 .status.RECIBIDO{color:#ef4444}
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
@@ -235,7 +235,6 @@ input,select{
     <option>ENTREGADO</option>
     <option>CANCELADO</option>
   </select>
-
   <input type="date" id="fDesde">
   <input type="date" id="fHasta">
 </div>
@@ -247,12 +246,10 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<!-- MODAL FOTO -->
 <div class="modal foto-modal" id="fotoModal" onclick="this.style.display='none'">
   <img id="fotoGrande">
 </div>
 
-<!-- MODAL EDITAR -->
 <div class="modal" id="editModal">
   <div class="modal-content">
     <h3>Editar Pedido</h3>
@@ -268,12 +265,10 @@ input,select{
       <option>ENTREGADO</option>
       <option>CANCELADO</option>
     </select>
-
     <button id="btnGuardar">
       <span class="btn-text">💾 Guardar</span>
       <span class="btn-loader"></span>
     </button>
-
     <button onclick="closeEdit()">Cerrar</button>
   </div>
 </div>
@@ -331,11 +326,9 @@ function applyFilter(){
 
  FILT=RAW.filter(r=>{
    if(status && r.status!==status) return false;
-
    const fecha=parseFecha(r.fechaIngreso);
    if(desde && fecha<desde) return false;
    if(hasta && fecha>hasta) return false;
-
    return true;
  });
 
@@ -351,94 +344,6 @@ function updateStats(){
 fStatus.onchange=applyFilter;
 fDesde.onchange=applyFilter;
 fHasta.onchange=applyFilter;
-
-function render(){
- cardsGrid.innerHTML="";
-
- FILT.forEach(r=>{
-  const card=document.createElement("div");
-  card.className="card "+r.status;
-
-  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
-  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
-
-  card.innerHTML=`
-   <h3>${r.pedido||""}</h3>
-   <div class="status ${r.status}">${r.status||""}</div>
-   <div style="margin-top:8px">
-     👤 ${r.cliente||""}<br>
-     📍 ${r.direccion||""} (${r.comuna||""})
-   </div>
-   <div class="cajas">📦 ${r.etiquetas || 0} CAJAS</div>
-
-   <div class="photo-wrap">
-     ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s300')}" onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')">`).join("")}
-   </div>
-
-   <div class="pdf-wrap">
-     ${pdfs.map(p=>`
-       <a href="${p}" target="_blank">📄 Ver</a>
-       <a href="${p}" download>⬇ Descargar</a>
-     `).join("")}
-   </div>
-
-   <div style="margin-top:12px">
-     <button onclick="openEdit(${r._row})">✏️ Editar</button>
-   </div>
-  `;
-  cardsGrid.appendChild(card);
- });
-}
-
-function showFoto(url){
- fotoGrande.src=url;
- fotoModal.style.display="flex";
-}
-
-function openEdit(row){
- const r=RAW.find(x=>x._row==row);
- EDIT_ROW=row;
-
- mPedido.value=r.pedido||"";
- mCliente.value=r.cliente||"";
- mDireccion.value=r.direccion||"";
- mComuna.value=r.comuna||"";
- mCajas.value=r.etiquetas||1;
- mStatus.value=r.status||"";
-
- editModal.style.display="flex";
-}
-
-function closeEdit(){
- editModal.style.display="none";
-}
-
-btnGuardar.onclick=async()=>{
- setLoading(btnGuardar,true);
-
- await fetch(API,{
-  method:"POST",
-  body:JSON.stringify({
-   action:"update",
-   row:EDIT_ROW,
-   "PEDIDO":mPedido.value,
-   "CLIENTE":mCliente.value,
-   "DIRECCION":mDireccion.value,
-   "COMUNA":mComuna.value,
-   "ETIQUETAS":mCajas.value,
-   "STATUS":mStatus.value
-  })
- });
-
- setLoading(btnGuardar,false);
- closeEdit();
- load();
-};
-
-function toggleTV(){
- document.body.classList.toggle("tv-mode");
-}
-
 btnReload.onclick=load;
 
 load();
