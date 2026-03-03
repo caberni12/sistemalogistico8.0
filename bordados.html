@@ -33,7 +33,6 @@ body.tv-mode{
  padding:30px;
 }
 
-/* HEADER */
 .header{
  display:flex;
  justify-content:space-between;
@@ -46,7 +45,7 @@ body.tv-mode{
 button{
  border:0;
  border-radius:12px;
- padding:8px 12px;
+ padding:8px 14px;
  font-size:13px;
  font-weight:600;
  cursor:pointer;
@@ -54,25 +53,47 @@ button{
  color:#fff;
  display:flex;
  align-items:center;
+ justify-content:center;
  gap:6px;
+ position:relative;
 }
 
 button:hover{background:var(--turq-dark)}
 
-select{
+button.loading .btn-text{display:none}
+button.loading .btn-loader{display:inline-block}
+
+.btn-loader{
+ display:none;
+ width:16px;
+ height:16px;
+ border:3px solid rgba(255,255,255,.4);
+ border-top:3px solid #fff;
+ border-radius:50%;
+ animation:spin .8s linear infinite;
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.filters{
+ display:flex;
+ gap:10px;
+ flex-wrap:wrap;
+ margin-bottom:20px;
+}
+
+input,select{
  padding:8px 12px;
  border-radius:10px;
  border:1px solid var(--border);
 }
 
-/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
  gap:22px;
 }
 
-/* TARJETA */
 .card{
  background:var(--card);
  border-radius:18px;
@@ -143,7 +164,6 @@ select{
  text-decoration:none;
 }
 
-/* MODAL GENERAL */
 .modal{
  position:fixed;
  inset:0;
@@ -169,13 +189,11 @@ select{
  padding:8px;
 }
 
-/* MODAL FOTO */
 .foto-modal img{
  max-width:90vw;
  max-height:80vh;
  border-radius:12px;
 }
-
 </style>
 </head>
 <body>
@@ -184,11 +202,14 @@ select{
   <h2>📋 PEDIDOS EN CURSO</h2>
   <div style="display:flex;gap:10px">
     <button onclick="toggleTV()">📺 Modo TV</button>
-    <button onclick="load()">🔄 Recargar</button>
+    <button id="btnReload">
+      <span class="btn-text">🔄 Recargar</span>
+      <span class="btn-loader"></span>
+    </button>
   </div>
 </div>
 
-<div style="margin-bottom:20px">
+<div class="filters">
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -197,6 +218,9 @@ select{
     <option>ENTREGADO</option>
     <option>CANCELADO</option>
   </select>
+
+  <input type="date" id="fDesde">
+  <input type="date" id="fHasta">
 </div>
 
 <div class="cards-grid" id="cardsGrid"></div>
@@ -214,6 +238,7 @@ select{
     <input id="mCliente">
     <input id="mDireccion">
     <input id="mComuna">
+    <input type="number" id="mCajas" min="1">
     <select id="mStatus">
       <option>PENDIENTE</option>
       <option>EN RUTA</option>
@@ -221,7 +246,12 @@ select{
       <option>ENTREGADO</option>
       <option>CANCELADO</option>
     </select>
-    <button onclick="saveEdit()">Guardar</button>
+
+    <button id="btnGuardar">
+      <span class="btn-text">💾 Guardar</span>
+      <span class="btn-loader"></span>
+    </button>
+
     <button onclick="closeEdit()">Cerrar</button>
   </div>
 </div>
@@ -231,7 +261,6 @@ select{
 </audio>
 
 <script>
-
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
 let RAW=[];
@@ -240,10 +269,17 @@ let PREVIOUS_IDS=[];
 let EDIT_ROW=null;
 let tvScrollInterval=null;
 
-/* AUTO RECARGA */
+/* AUTO RECARGA 15s */
 setInterval(load,15000);
 
+function setLoading(btn,state){
+ btn.disabled=state;
+ btn.classList.toggle("loading",state);
+}
+
 async function load(){
+ setLoading(btnReload,true);
+
  const r=await fetch(API);
  const data=await r.json();
 
@@ -256,16 +292,39 @@ async function load(){
 
  PREVIOUS_IDS=newIDs;
  RAW=data;
+
  applyFilter();
+ setLoading(btnReload,false);
+}
+
+function parseFecha(str){
+ if(!str) return null;
+ const [f] = str.split(" ");
+ const [d,m,y] = f.split("-").map(Number);
+ return new Date(y,m-1,d);
 }
 
 function applyFilter(){
  const status=fStatus.value;
- FILT = !status ? RAW : RAW.filter(r=>r.status===status);
+ const desde=fDesde.value ? new Date(fDesde.value) : null;
+ const hasta=fHasta.value ? new Date(fHasta.value) : null;
+
+ FILT=RAW.filter(r=>{
+   if(status && r.status!==status) return false;
+
+   const fecha=parseFecha(r.fechaIngreso);
+   if(desde && fecha<desde) return false;
+   if(hasta && fecha>hasta) return false;
+
+   return true;
+ });
+
  render();
 }
 
 fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
 
 function render(){
  cardsGrid.innerHTML="";
@@ -305,13 +364,11 @@ function render(){
  });
 }
 
-/* FOTO */
 function showFoto(url){
  fotoGrande.src=url;
  fotoModal.style.display="flex";
 }
 
-/* EDITAR */
 function openEdit(row){
  const r=RAW.find(x=>x._row==row);
  EDIT_ROW=row;
@@ -320,6 +377,7 @@ function openEdit(row){
  mCliente.value=r.cliente||"";
  mDireccion.value=r.direccion||"";
  mComuna.value=r.comuna||"";
+ mCajas.value=r.etiquetas||1;
  mStatus.value=r.status||"";
 
  editModal.style.display="flex";
@@ -329,7 +387,9 @@ function closeEdit(){
  editModal.style.display="none";
 }
 
-async function saveEdit(){
+btnGuardar.onclick=async()=>{
+ setLoading(btnGuardar,true);
+
  await fetch(API,{
   method:"POST",
   body:JSON.stringify({
@@ -339,35 +399,23 @@ async function saveEdit(){
    "CLIENTE":mCliente.value,
    "DIRECCION":mDireccion.value,
    "COMUNA":mComuna.value,
+   "ETIQUETAS":mCajas.value,
    "STATUS":mStatus.value
   })
  });
 
+ setLoading(btnGuardar,false);
  closeEdit();
  load();
-}
+};
 
-/* MODO TV */
 function toggleTV(){
  document.body.classList.toggle("tv-mode");
-
- if(document.body.classList.contains("tv-mode")){
-  document.documentElement.requestFullscreen().catch(()=>{});
-  tvScrollInterval=setInterval(()=>{
-   window.scrollBy({top:600,behavior:'smooth'});
-   if(window.innerHeight + window.scrollY >= document.body.offsetHeight){
-    window.scrollTo({top:0,behavior:'smooth'});
-   }
-  },8000);
- }else{
-  document.exitFullscreen().catch(()=>{});
-  clearInterval(tvScrollInterval);
-  window.scrollTo({top:0});
- }
 }
 
-load();
+btnReload.onclick=load;
 
+load();
 </script>
 
 </body>
