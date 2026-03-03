@@ -25,6 +25,7 @@ body{
  color:var(--text);
 }
 
+/* HEADER */
 .header{
  display:flex;
  justify-content:space-between;
@@ -77,6 +78,7 @@ input,select,textarea{
  border:1px solid #e2e8f0;
 }
 
+/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -84,6 +86,7 @@ input,select,textarea{
  font-weight:bold;
 }
 
+/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
@@ -101,7 +104,7 @@ input,select,textarea{
 .card-EN_RUTA{border-left-color:var(--danger)}
 
 .pedido-numero{
- font-size:30px;
+ font-size:28px;
  font-weight:900;
  margin-bottom:6px;
 }
@@ -132,7 +135,7 @@ input,select,textarea{
 
 .cajas-box span{
  display:block;
- font-size:36px;
+ font-size:34px;
  font-weight:900;
 }
 
@@ -149,16 +152,16 @@ input,select,textarea{
  font-size:14px;
 }
 
-.map-box{
+.map-container{
  margin-top:12px;
- border-radius:12px;
- overflow:hidden;
+ display:none;
 }
 
-.map-box iframe{
+.map-container iframe{
  width:100%;
- height:200px;
+ height:220px;
  border:0;
+ border-radius:12px;
 }
 
 .map-buttons{
@@ -176,22 +179,6 @@ input,select,textarea{
  border-radius:10px;
  text-decoration:none;
  font-size:13px;
-}
-
-.modal{
- position:fixed;
- inset:0;
- background:rgba(0,0,0,.7);
- display:none;
- align-items:center;
- justify-content:center;
- z-index:9999;
-}
-
-.modal img{
- max-width:90vw;
- max-height:85vh;
- border-radius:12px;
 }
 
 .edit-modal{
@@ -247,10 +234,6 @@ input,select,textarea{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<div class="modal" id="fotoModal" onclick="this.style.display='none'">
-  <img id="fotoGrande">
-</div>
-
 <div class="edit-modal" id="editModal">
   <div class="edit-box">
     <h3>Editar Pedido</h3>
@@ -268,10 +251,7 @@ input,select,textarea{
       <option>ENTREGADO</option>
       <option>CANCELADO</option>
     </select>
-    <button id="btnGuardar">
-      <span class="btn-text">Guardar</span>
-      <span class="btn-loader"></span>
-    </button>
+    <button id="btnGuardar">Guardar</button>
     <button onclick="closeEdit()">Cerrar</button>
   </div>
 </div>
@@ -279,15 +259,8 @@ input,select,textarea{
 <script>
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-let RAW=[], FILT=[], visibleCount=0, EDIT_ROW=null, PREV_IDS=[];
+let RAW=[], FILT=[], visibleCount=0, EDIT_ROW=null;
 const CHUNK=20;
-
-function parseFecha(f){ return f ? new Date(f) : null; }
-
-function setLoading(btn,state){
- btn.disabled=state;
- btn.classList.toggle("loading",state);
-}
 
 function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
 
@@ -313,41 +286,13 @@ function waze(r){
 }
 
 async function load(){
- setLoading(btnReload,true);
  const r=await fetch(API);
  RAW=await r.json();
-
- RAW.sort((a,b)=>parseFecha(b.fecha)-parseFecha(a.fecha));
-
- const ids=RAW.map(x=>x._row);
- if(PREV_IDS.length && ids.some(id=>!PREV_IDS.includes(id))){
-   new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg").play();
- }
- PREV_IDS=ids;
-
  applyFilter();
- setLoading(btnReload,false);
 }
 
 function applyFilter(){
- const texto=fBuscar.value.toLowerCase();
- const status=fStatus.value;
- const desde=fDesde.value?new Date(fDesde.value):null;
- const hasta=fHasta.value?new Date(fHasta.value):null;
-
- FILT=RAW.filter(r=>{
-   const combinado=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
-   if(texto && !combinado.includes(texto)) return false;
-   if(status && r.status!==status) return false;
-   const fecha=parseFecha(r.fecha);
-   if(desde && fecha && fecha<desde) return false;
-   if(hasta && fecha && fecha>hasta) return false;
-   return true;
- });
-
- totalPedidos.textContent=FILT.length;
- totalCajas.textContent=FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
-
+ FILT=[...RAW];
  visibleCount=0;
  cardsGrid.innerHTML="";
  renderMore();
@@ -359,6 +304,7 @@ function renderMore(){
 
  slice.forEach(r=>{
    const st=cleanStatus(r.status);
+   const mapId="map_"+r._row;
 
    const card=document.createElement("div");
    card.className="card card-"+st;
@@ -377,24 +323,37 @@ function renderMore(){
 
      ${r.observaciones ? `<div class="observaciones"><strong>Obs:</strong> ${r.observaciones}</div>` : ""}
 
-     <div class="map-box">
-       <iframe src="${mapEmbed(r)}" loading="lazy"></iframe>
-     </div>
+     <button onclick="toggleMap('${mapId}', this)">➕ Mostrar mapa</button>
 
-     <div class="map-buttons">
-       <a href="${googleMaps(r)}" target="_blank">Google Maps</a>
-       <a href="${waze(r)}" target="_blank">Waze</a>
+     <div class="map-container" id="${mapId}">
+       <iframe src="${mapEmbed(r)}" loading="lazy"></iframe>
+       <div class="map-buttons">
+         <a href="${googleMaps(r)}" target="_blank">Google Maps</a>
+         <a href="${waze(r)}" target="_blank">Waze</a>
+       </div>
      </div>
 
      <div style="margin-top:12px">
        <button onclick="openEdit(${r._row})">Editar</button>
      </div>
    `;
+
    fragment.appendChild(card);
  });
 
  cardsGrid.appendChild(fragment);
  visibleCount+=CHUNK;
+}
+
+function toggleMap(id,btn){
+ const el=document.getElementById(id);
+ if(el.style.display==="none" || el.style.display===""){
+   el.style.display="block";
+   btn.textContent="➖ Ocultar mapa";
+ }else{
+   el.style.display="none";
+   btn.textContent="➕ Mostrar mapa";
+ }
 }
 
 function openEdit(row){
@@ -413,36 +372,6 @@ function openEdit(row){
 
 function closeEdit(){ editModal.style.display="none"; }
 
-async function guardar(){
- setLoading(btnGuardar,true);
- await fetch(API,{
-   method:"POST",
-   body:JSON.stringify({
-     action:"update",
-     row:EDIT_ROW,
-     PEDIDO:mPedido.value,
-     CLIENTE:mCliente.value,
-     DIRECCION:mDireccion.value,
-     COMUNA:mComuna.value,
-     RESPONSABLE:mResponsable.value,
-     ETIQUETAS:mCajas.value,
-     OBSERVACIONES:mObservaciones.value,
-     STATUS:mStatus.value
-   })
- });
- closeEdit();
- load();
- setLoading(btnGuardar,false);
-}
-
-function toggleFullscreen(){
- if(!document.fullscreenElement){
-   document.documentElement.requestFullscreen();
- }else{
-   document.exitFullscreen();
- }
-}
-
 window.addEventListener("scroll",()=>{
  if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 200){
    if(visibleCount < FILT.length){
@@ -451,20 +380,6 @@ window.addEventListener("scroll",()=>{
  }
 });
 
-let debounce;
-fBuscar.oninput=()=>{
- clearTimeout(debounce);
- debounce=setTimeout(applyFilter,300);
-};
-
-fStatus.onchange=applyFilter;
-fDesde.onchange=applyFilter;
-fHasta.onchange=applyFilter;
-
-btnReload.onclick=load;
-btnGuardar.onclick=guardar;
-
-setInterval(load,15000);
 load();
 </script>
 
