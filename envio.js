@@ -9,7 +9,6 @@ let EDIT = null;
 let charts = {};
 let currentFoto = "";
 let cursorIndex = -1;
-let VIEW_MODE = "tabla"; // tabla | curso
 
 /* ======================================================
    HELPERS
@@ -22,6 +21,9 @@ function setLoading(btn, state){
   btn.classList.toggle("loading", state);
 }
 
+/* ======================================================
+   BASE64
+====================================================== */
 function toBase64(file){
   return new Promise(resolve=>{
     const reader = new FileReader();
@@ -30,6 +32,9 @@ function toBase64(file){
   });
 }
 
+/* ======================================================
+   FECHA
+====================================================== */
 function parseFechaCL(str){
   if(!str) return null;
   const [f,h] = str.split(" ");
@@ -39,36 +44,38 @@ function parseFechaCL(str){
 }
 
 /* ======================================================
-   STATUS BADGE
+   STATUS HTML (COLOR INTEGRADO)
 ====================================================== */
 function getStatusHTML(status){
 
   const map = {
-    "RECIBIDO":   "#ff4d4f",
-    "ENTREGADO":  "#22c55e",
-    "EN RUTA":    "#f97316",
-    "PENDIENTE":  "#3b82f6",
-    "CANCELADO":  "#9ca3af"
+    "RECIBIDO":   { color:"#ff4d4f" },
+    "ENTREGADO":  { color:"#22c55e" },
+    "EN RUTA":    { color:"#f97316" },
+    "PENDIENTE":  { color:"#3b82f6" },
+    "CANCELADO":  { color:"#9ca3af" }
   };
 
   const s = String(status || "").toUpperCase();
-  const color = map[s] || "#fff";
+  const style = map[s];
+
+  if(!style) return status || "";
 
   return `
     <span style="
       background:#000;
-      color:${color};
+      color:${style.color};
       font-weight:700;
       padding:4px 10px;
       border-radius:8px;
       font-size:12px;
+      letter-spacing:.5px;
       display:inline-block;
     ">
-      ${status || ""}
+      ${status}
     </span>
   `;
 }
-
 /* ======================================================
    LOAD
 ====================================================== */
@@ -95,10 +102,10 @@ function applyFilters(){
 
   FILT = RAW.filter(r => {
 
-    const pedido  = String(r.pedido ?? '').toLowerCase();
-    const cliente = String(r.cliente ?? '').toLowerCase();
-    const obs     = String(r.observaciones ?? '').toLowerCase();
-    const status  = String(r.status ?? '');
+    const pedido   = String(r.pedido ?? '').toLowerCase();
+    const cliente  = String(r.cliente ?? '').toLowerCase();
+    const obs      = String(r.observaciones ?? '').toLowerCase();
+    const status   = String(r.status ?? '');
     const fechaStr = r.fechaIngreso ?? null;
 
     const textOK = !q || (
@@ -125,23 +132,11 @@ function applyFilters(){
 }
 
 /* ======================================================
-   RENDER PRINCIPAL
+   RENDER
 ====================================================== */
 function render(){
-
+  cursorIndex = -1;
   renderKPIs();
-
-  /* === CAMBIO DE VISTA === */
-  if(VIEW_MODE === "curso"){
-    document.querySelector(".table-scroll").style.display = "none";
-    document.getElementById("kanbanView").style.display = "block";
-    renderPedidosEnCurso();
-    return;
-  }else{
-    document.querySelector(".table-scroll").style.display = "block";
-    const kv = document.getElementById("kanbanView");
-    if(kv) kv.style.display = "none";
-  }
 
   tbody.innerHTML = "";
   mobileList.innerHTML = "";
@@ -174,6 +169,7 @@ function render(){
           </td>
         </tr>
       `);
+
     });
   }
 
@@ -188,7 +184,7 @@ function render(){
           ${r.direccion || ""} (${r.comuna || ""})<br>
           🚚 ${r.transporte || ""}<br>
           📦 ${r.etiquetas || 0}<br>
-          👤 ${r.responsable || "-"}<br>
+          👤 ${r.responsable || ""}<br>
           ⏱ ${r.horaEntrega || ""}<br><br>
 
           ${renderFotos(r.foto)}
@@ -201,93 +197,10 @@ function render(){
           </div>
         </div>
       `);
+
     });
   }
 }
-
-
-/* ======================================================
-   VISTA PEDIDOS EN CURSO
-====================================================== */
-function renderPedidosEnCurso(){
-
-  document.querySelectorAll(".kanban-cards")
-    .forEach(c => c.innerHTML = "");
-
-  FILT.forEach(r=>{
-
-    const column = document.querySelector(
-      `.kanban-column[data-status="${r.status}"] .kanban-cards`
-    );
-
-    if(!column) return;
-
-    column.insertAdjacentHTML("beforeend", `
-      <div class="kanban-card">
-        <b>${r.pedido}</b>
-        ${r.cliente}<br>
-        ${r.direccion}<br>
-        📦 ${r.etiquetas}<br>
-        👤 ${r.responsable || "-"}<br>
-        ${getStatusHTML(r.status)}
-
-        <div class="kanban-actions">
-          <button onclick="openModal(RAW.find(x=>x._row==${r._row}))">✏️</button>
-          <button onclick="delRow(${r._row})">🗑️</button>
-        </div>
-      </div>
-    `);
-  });
-}
-
-
-/* ======================================================
-   CAMBIO DE VISTA
-====================================================== */
-document.getElementById("btnViewMode").onclick = ()=>{
-  VIEW_MODE = VIEW_MODE === "tabla" ? "curso" : "tabla";
-  render();
-};
-
-
-/* ======================================================
-   CURSOR TECLADO
-====================================================== */
-function moveCursor(dir){
-
-  const rows = [...tbody.querySelectorAll("tr")];
-  if(!rows.length) return;
-
-  rows.forEach(r=>r.classList.remove("cursor-active"));
-
-  cursorIndex += dir;
-
-  if(cursorIndex < 0) cursorIndex = 0;
-  if(cursorIndex >= rows.length) cursorIndex = rows.length - 1;
-
-  const row = rows[cursorIndex];
-  row.classList.add("cursor-active");
-
-  row.scrollIntoView({
-    behavior:"smooth",
-    block:"nearest"
-  });
-}
-
-document.addEventListener("keydown", e=>{
-  if(isMobile()) return;
-  if(VIEW_MODE !== "tabla") return;
-
-  if(e.key === "ArrowDown"){
-    e.preventDefault();
-    moveCursor(1);
-  }
-
-  if(e.key === "ArrowUp"){
-    e.preventDefault();
-    moveCursor(-1);
-  }
-});
 
 /* ======================================================
    FOTOS
@@ -312,6 +225,7 @@ function renderFotos(f){
             data-full="${u}"
             class="foto-thumb"
             loading="lazy"
+            decoding="async"
             onclick="openFoto(this.dataset.full)"
           >
         `;
@@ -516,8 +430,8 @@ function openModal(r=null){
     mHoraEntrega.value="";
   }
 
-  if(mFotos) mFotos.value="";
-  if(mPdf) mPdf.value="";
+  if(typeof mFotos !== "undefined") mFotos.value="";
+  if(typeof mPdf !== "undefined") mPdf.value="";
 }
 
 
@@ -531,6 +445,7 @@ btnGuardar.onclick = async ()=>{
 
   try{
 
+    /* IMÁGENES */
     let fotos64 = [];
     if(mFotos && mFotos.files.length){
       for(const file of mFotos.files){
@@ -538,6 +453,7 @@ btnGuardar.onclick = async ()=>{
       }
     }
 
+    /* PDF */
     let pdf64 = [];
     if(mPdf && mPdf.files.length){
       for(const file of mPdf.files){
@@ -667,6 +583,7 @@ function exportPDF(btn){
     });
 
     doc.save("Pedidos_Logisticos.pdf");
+
     setLoading(btn,false);
 
   },300);
