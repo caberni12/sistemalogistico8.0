@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>  
 <html lang="es">  
 <head>  
@@ -367,7 +368,8 @@ function updateStats(){
   
 fStatus.onchange=applyFilter;  
 fDesde.onchange=applyFilter;  
-fHasta.onchange=applyFilter;  
+fHasta.onchange=applyFilter; 
+search.oninput = applyFilter; 
   
 function render(){  
  cardsGrid.innerHTML="";  
