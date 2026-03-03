@@ -26,7 +26,12 @@ body{
 
 /* HEADER */
 .header{
- margin-bottom:20px;
+ margin-bottom:25px;
+}
+
+.header h2{
+ margin:0;
+ font-size:22px;
 }
 
 /* FILTROS */
@@ -34,7 +39,7 @@ body{
  display:flex;
  gap:10px;
  flex-wrap:wrap;
- margin-bottom:20px;
+ margin-bottom:25px;
 }
 
 input,select{
@@ -47,43 +52,43 @@ input,select{
 /* GRID TARJETAS */
 .cards-grid{
  display:grid;
- grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
- gap:18px;
+ grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+ gap:20px;
 }
 
 /* TARJETA */
 .card{
  background:var(--card);
- border-radius:16px;
- padding:16px;
- box-shadow:0 8px 20px rgba(0,0,0,.08);
- transition:.2s;
+ border-radius:18px;
+ padding:18px;
+ box-shadow:0 10px 24px rgba(0,0,0,.08);
+ transition:.25s;
  display:flex;
  flex-direction:column;
  justify-content:space-between;
 }
 
 .card:hover{
- transform:translateY(-4px);
+ transform:translateY(-5px);
 }
 
-/* HEADER TARJETA */
+/* CABECERA TARJETA */
 .card-header{
  display:flex;
  justify-content:space-between;
  align-items:center;
- margin-bottom:10px;
+ margin-bottom:12px;
 }
 
 .card-header strong{
- font-size:15px;
+ font-size:16px;
 }
 
 /* STATUS */
 .status{
- padding:5px 10px;
+ padding:6px 12px;
  border-radius:10px;
- font-size:11px;
+ font-size:12px;
  font-weight:700;
  background:#000;
 }
@@ -94,31 +99,36 @@ input,select{
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
 
-/* INFO */
+/* CUERPO */
 .card-body{
- font-size:13px;
- line-height:1.4;
- margin-bottom:12px;
+ font-size:14px;
+ line-height:1.5;
+ margin-bottom:14px;
 }
 
 /* ACCIONES */
 .card-actions{
  display:flex;
- gap:8px;
+ gap:10px;
 }
 
 .card-actions button{
  flex:1;
  border:0;
- border-radius:10px;
- padding:8px;
- font-size:12px;
+ border-radius:12px;
+ padding:10px;
+ font-size:13px;
  font-weight:600;
  cursor:pointer;
  background:#0f172a;
  color:#fff;
 }
 
+.card-actions button:hover{
+ opacity:.9;
+}
+
+/* RESPONSIVE */
 @media(max-width:768px){
  .cards-grid{
   grid-template-columns:1fr;
@@ -148,50 +158,23 @@ input,select{
   </select>
 </div>
 
-<div class="cards-grid" id="cardsGrid">
-  <!-- tarjetas dinámicas -->
-</div>
-
-<!-- ================= MODAL MAPA ================= -->
-<div id="mapModal" style="
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-">
-  <div style="
-    background:#fff;
-    padding:20px;
-    border-radius:16px;
-    max-width:95%;
-  ">
-    <iframe id="mapFrame"
-      style="width:90vw;height:70vh;border:0;border-radius:14px">
-    </iframe>
-    <br><br>
-    <button onclick="closeMap()">Cerrar</button>
-  </div>
-</div>
+<div class="cards-grid" id="cardsGrid"></div>
 
 <script>
 
-/* ================= CONFIG ================= */
 const API = "https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
 let RAW = [];
 let FILT = [];
 
-/* ================= LOAD ================= */
+/* LOAD */
 async function load(){
   const r = await fetch(API);
   RAW = await r.json();
   applyFilters();
 }
 
-/* ================= FILTROS ================= */
+/* FILTROS */
 function applyFilters(){
 
   const q = search.value.toLowerCase().trim();
@@ -220,7 +203,7 @@ function applyFilters(){
   render();
 }
 
-/* ================= PARSE FECHA ================= */
+/* PARSE FECHA */
 function parseFecha(str){
   if(!str) return new Date();
   const [f,h] = str.split(" ");
@@ -229,7 +212,7 @@ function parseFecha(str){
   return new Date(y,m-1,d,hh,mm);
 }
 
-/* ================= RENDER ================= */
+/* RENDER TARJETAS */
 function render(){
 
   cardsGrid.innerHTML = "";
@@ -252,12 +235,11 @@ function render(){
         📍 ${r.direccion || ""} (${r.comuna || ""})<br>
         🚚 ${r.transporte || ""}<br>
         📦 Cajas: ${r.etiquetas || 0}<br>
-        ⏱ ${r.horaEntrega || ""}<br>
+        ⏱ ${r.horaEntrega || ""}
       </div>
 
       <div class="card-actions">
         <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
-        <button onclick="editPedido(${r._row})">✏️</button>
         <button onclick="deletePedido(${r._row})">🗑</button>
       </div>
     `;
@@ -266,19 +248,15 @@ function render(){
   });
 }
 
-/* ================= MAPA ================= */
+/* MAPA */
 function openMap(d,c){
-  mapFrame.src =
-    `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}&output=embed`;
-  mapModal.style.display="flex";
+  window.open(
+    `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}`,
+    "_blank"
+  );
 }
 
-function closeMap(){
-  mapModal.style.display="none";
-  mapFrame.src="";
-}
-
-/* ================= DELETE ================= */
+/* DELETE */
 async function deletePedido(row){
   if(!confirm("¿Eliminar pedido?")) return;
 
@@ -293,18 +271,13 @@ async function deletePedido(row){
   load();
 }
 
-/* ================= EDIT ================= */
-function editPedido(row){
-  alert("Puedes redirigir aquí al dashboard para editar pedido ID: "+row);
-}
-
-/* ================= EVENTOS ================= */
+/* EVENTOS */
 search.oninput = applyFilters;
 fStatus.onchange = applyFilters;
 fDesde.onchange = applyFilters;
 fHasta.onchange = applyFilters;
 
-/* ================= INIT ================= */
+/* INIT */
 load();
 
 </script>
