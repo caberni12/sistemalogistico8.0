@@ -284,59 +284,69 @@ input,select{
 <audio id="notifSound">  
  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">  
 </audio>  
-  
-<script>  
-const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";  
-  
-let RAW=[];  
-let FILT=[];  
-let PREVIOUS_IDS=[];  
-let EDIT_ROW=null;  
-  
-setInterval(load,15000);  
-  
-function setLoading(btn,state){  
- btn.disabled=state;  
- btn.classList.toggle("loading",state);  
-}  
-  
-async function load(){  
- setLoading(btnReload,true);  
-  
- const r=await fetch(API);  
- const data=await r.json();  
-  
- const newIDs=data.map(x=>x._row);  
- const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));  
-  
- if(hasNew && PREVIOUS_IDS.length){  
-  document.getElementById("notifSound").play();  
- }  
-  
- PREVIOUS_IDS=newIDs;  
- RAW=data;  
-  
- applyFilter();  
- setLoading(btnReload,false);  
-}  
-  
-function parseFecha(str){  
- if(!str) return null;  
- const [f] = str.split(" ");  
- const [d,m,y] = f.split("-").map(Number);  
- return new Date(y,m-1,d);  
-}  
-  
+ <script>
+const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
+
+let RAW=[];
+let FILT=[];
+let PREVIOUS_IDS=[];
+let EDIT_ROW=null;
+
+/* AUTO REFRESH */
+setInterval(load,15000);
+
+/* LOADER */
+function setLoading(btn,state){
+ if(!btn) return;
+ btn.disabled=state;
+ btn.classList.toggle("loading",state);
+}
+
+/* LOAD DATA */
+async function load(){
+ setLoading(btnReload,true);
+
+ try{
+  const r=await fetch(API);
+  const data=await r.json();
+
+  const newIDs=data.map(x=>x._row);
+  const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
+
+  if(hasNew && PREVIOUS_IDS.length){
+   document.getElementById("notifSound").play();
+  }
+
+  PREVIOUS_IDS=newIDs;
+  RAW=data;
+
+  applyFilter();
+ }catch(e){
+  console.error("Error cargando:",e);
+ }
+
+ setLoading(btnReload,false);
+}
+
+/* PARSE FECHA */
+function parseFecha(str){
+ if(!str) return null;
+ const [f] = str.split(" ");
+ const [d,m,y] = f.split("-").map(Number);
+ return new Date(y,m-1,d);
+}
+
+/* FILTROS */
 function applyFilter(){
 
  const status = fStatus.value;
  const desde  = fDesde.value ? new Date(fDesde.value) : null;
  const hasta  = fHasta.value ? new Date(fHasta.value) : null;
- const q      = search.value.toLowerCase().trim();
+ const q      = search ? search.value.toLowerCase().trim() : "";
 
  FILT = RAW.filter(r=>{
 
-   /* FILTRO TEXTO */
+   /* TEXTO */
    const textoOK = !q || (
      (r.pedido || "").toLowerCase().includes(q) ||
      (r.cliente || "").toLowerCase().includes(q) ||
@@ -346,13 +356,13 @@ function applyFilter(){
 
    if(!textoOK) return false;
 
-   /* FILTRO ESTADO */
+   /* ESTADO */
    if(status && r.status !== status) return false;
 
-   /* FILTRO FECHA */
+   /* FECHA */
    const fecha = parseFecha(r.fechaIngreso);
-   if(desde && fecha < desde) return false;
-   if(hasta && fecha > hasta) return false;
+   if(desde && fecha && fecha < desde) return false;
+   if(hasta && fecha && fecha > hasta) return false;
 
    return true;
  });
@@ -360,108 +370,135 @@ function applyFilter(){
  updateStats();
  render();
 }
-  
-function updateStats(){  
- totalPedidos.textContent = FILT.length;  
- totalCajas.textContent = FILT.reduce((sum,r)=>sum + Number(r.etiquetas||0),0);  
-}  
-  
-fStatus.onchange=applyFilter;  
-fDesde.onchange=applyFilter;  
-fHasta.onchange=applyFilter; 
-search.oninput = applyFilter; 
-  
-function render(){  
- cardsGrid.innerHTML="";  
-  
- FILT.forEach(r=>{  
-  const card=document.createElement("div");  
-  card.className="card "+r.status;  
-  
-  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));  
-  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));  
-  
-  card.innerHTML=`  
-   <h3>${r.pedido||""}</h3>  
-   <div class="status ${r.status}">${r.status||""}</div>  
-   <div style="margin-top:8px">  
-     👤 ${r.cliente||""}<br>  
-     📍 ${r.direccion||""} (${r.comuna||""})  
-   </div>  
-   <div class="cajas">📦 ${r.etiquetas || 0} CAJAS</div>  
-  
-   <div class="photo-wrap">  
-     ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s300')}" onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')">`).join("")}  
-   </div>  
-  
-   <div class="pdf-wrap">  
-     ${pdfs.map(p=>`  
-       <a href="${p}" target="_blank">📄 Ver</a>  
-       <a href="${p}" download>⬇ Descargar</a>  
-     `).join("")}  
-   </div>  
-  
-   <div style="margin-top:12px">  
-     <button onclick="openEdit(${r._row})">✏️ Editar</button>  
-   </div>  
-  `;  
-  cardsGrid.appendChild(card);  
- });  
-}  
-  
-function showFoto(url){  
- fotoGrande.src=url;  
- fotoModal.style.display="flex";  
-}  
-  
-function openEdit(row){  
- const r=RAW.find(x=>x._row==row);  
- EDIT_ROW=row;  
-  
- mPedido.value=r.pedido||"";  
- mCliente.value=r.cliente||"";  
- mDireccion.value=r.direccion||"";  
- mComuna.value=r.comuna||"";  
- mCajas.value=r.etiquetas||1;  
- mStatus.value=r.status||"";  
-  
- editModal.style.display="flex";  
-}  
-  
-function closeEdit(){  
- editModal.style.display="none";  
-}  
-  
-btnGuardar.onclick=async()=>{  
- setLoading(btnGuardar,true);  
-  
- await fetch(API,{  
-  method:"POST",  
-  body:JSON.stringify({  
-   action:"update",  
-   row:EDIT_ROW,  
-   "PEDIDO":mPedido.value,  
-   "CLIENTE":mCliente.value,  
-   "DIRECCION":mDireccion.value,  
-   "COMUNA":mComuna.value,  
-   "ETIQUETAS":mCajas.value,  
-   "STATUS":mStatus.value  
-  })  
- });  
-  
- setLoading(btnGuardar,false);  
- closeEdit();  
- load();  
-};  
-  
-function toggleTV(){  
- document.body.classList.toggle("tv-mode");  
-}  
-  
-btnReload.onclick=load;  
-  
-load();  
-</script>  
-  
+
+/* CONTADORES */
+function updateStats(){
+ totalPedidos.textContent = FILT.length;
+ totalCajas.textContent = FILT.reduce((sum,r)=>sum + Number(r.etiquetas||0),0);
+}
+
+/* EVENTOS FILTROS */
+if(fStatus) fStatus.onchange=applyFilter;
+if(fDesde)  fDesde.onchange=applyFilter;
+if(fHasta)  fHasta.onchange=applyFilter;
+if(search)  search.oninput=applyFilter;
+
+/* RENDER TARJETAS */
+function render(){
+ cardsGrid.innerHTML="";
+
+ FILT.forEach(r=>{
+
+  const card=document.createElement("div");
+  card.className="card "+r.status;
+
+  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
+  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
+
+  card.innerHTML=`
+   <h3>${r.pedido||""}</h3>
+
+   <div class="status ${r.status}">
+     ${r.status||""}
+   </div>
+
+   <div style="margin-top:8px">
+     👤 ${r.cliente||""}<br>
+     📍 ${r.direccion||""} (${r.comuna||""})
+   </div>
+
+   <div class="cajas">
+     📦 ${r.etiquetas || 0} CAJAS
+   </div>
+
+   <div class="photo-wrap">
+     ${fotos.map(f=>`
+       <img 
+         src="${f.replace(/=s\\d+$/,'=s300')}" 
+         onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')"
+       >
+     `).join("")}
+   </div>
+
+   <div class="pdf-wrap">
+     ${pdfs.map(p=>`
+       <a href="${p}" target="_blank">📄 Ver</a>
+       <a href="${p}" download>⬇ Descargar</a>
+     `).join("")}
+   </div>
+
+   <div style="margin-top:12px">
+     <button onclick="openEdit(${r._row})">
+       ✏️ Editar
+     </button>
+   </div>
+  `;
+
+  cardsGrid.appendChild(card);
+ });
+}
+
+/* VER FOTO */
+function showFoto(url){
+ fotoGrande.src=url;
+ fotoModal.style.display="flex";
+}
+
+/* EDITAR */
+function openEdit(row){
+ const r=RAW.find(x=>x._row==row);
+ if(!r) return;
+
+ EDIT_ROW=row;
+
+ mPedido.value=r.pedido||"";
+ mCliente.value=r.cliente||"";
+ mDireccion.value=r.direccion||"";
+ mComuna.value=r.comuna||"";
+ mCajas.value=r.etiquetas||1;
+ mStatus.value=r.status||"";
+
+ editModal.style.display="flex";
+}
+
+function closeEdit(){
+ editModal.style.display="none";
+}
+
+/* GUARDAR */
+btnGuardar.onclick=async()=>{
+
+ setLoading(btnGuardar,true);
+
+ await fetch(API,{
+  method:"POST",
+  body:JSON.stringify({
+   action:"update",
+   row:EDIT_ROW,
+   "PEDIDO":mPedido.value,
+   "CLIENTE":mCliente.value,
+   "DIRECCION":mDireccion.value,
+   "COMUNA":mComuna.value,
+   "ETIQUETAS":mCajas.value,
+   "STATUS":mStatus.value
+  })
+ });
+
+ setLoading(btnGuardar,false);
+ closeEdit();
+ load();
+};
+
+/* MODO TV */
+function toggleTV(){
+ document.body.classList.toggle("tv-mode");
+}
+
+/* RECARGAR */
+btnReload.onclick=load;
+
+/* INIT */
+load();
+</script>
 </body>  
 </html>
