@@ -326,24 +326,39 @@ function parseFecha(str){
  return new Date(y,m-1,d);  
 }  
   
-function applyFilter(){  
- const status=fStatus.value;  
- const desde=fDesde.value ? new Date(fDesde.value) : null;  
- const hasta=fHasta.value ? new Date(fHasta.value) : null;  
-  
- FILT=RAW.filter(r=>{  
-   if(status && r.status!==status) return false;  
-  
-   const fecha=parseFecha(r.fechaIngreso);  
-   if(desde && fecha<desde) return false;  
-   if(hasta && fecha>hasta) return false;  
-  
-   return true;  
- });  
-  
- updateStats();  
- render();  
-}  
+function applyFilter(){
+
+ const status = fStatus.value;
+ const desde  = fDesde.value ? new Date(fDesde.value) : null;
+ const hasta  = fHasta.value ? new Date(fHasta.value) : null;
+ const q      = search.value.toLowerCase().trim();
+
+ FILT = RAW.filter(r=>{
+
+   /* FILTRO TEXTO */
+   const textoOK = !q || (
+     (r.pedido || "").toLowerCase().includes(q) ||
+     (r.cliente || "").toLowerCase().includes(q) ||
+     (r.direccion || "").toLowerCase().includes(q) ||
+     (r.comuna || "").toLowerCase().includes(q)
+   );
+
+   if(!textoOK) return false;
+
+   /* FILTRO ESTADO */
+   if(status && r.status !== status) return false;
+
+   /* FILTRO FECHA */
+   const fecha = parseFecha(r.fechaIngreso);
+   if(desde && fecha < desde) return false;
+   if(hasta && fecha > hasta) return false;
+
+   return true;
+ });
+
+ updateStats();
+ render();
+}
   
 function updateStats(){  
  totalPedidos.textContent = FILT.length;  
