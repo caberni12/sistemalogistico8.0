@@ -5,21 +5,21 @@
 <title>Dashboard Logístico</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- ================== LIBRERÍAS ================== -->
+<!-- LIBRERÍAS -->
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
 
 <style>
-/* ================== VARIABLES ================== */
+
+/* ================= VARIABLES ================= */
 :root{
  --bg:#f8fafc;
  --card:#ffffff;
  --txt:#0f172a;
  --muted:#64748b;
  --pri:#14b8a6;
- --pri-dark:#0d9488;
  --border:#cbd5e1;
 }
 
@@ -33,49 +33,50 @@ body{
  padding:16px;
 }
 
+/* ================= HEADER ================= */
+.topbar{
+ margin-bottom:16px;
+}
 
-
-
-/* ================== HEADER ================== */
-.topbar{margin-bottom:12px}
-
-/* ================== KPIs ================== */
+/* ================= KPIs ================= */
 .kpis{
  display:grid;
- grid-template-columns:repeat(auto-fit,120px);
+ grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
  gap:12px;
- margin-bottom:16px
-}
-.kpi{
- background:var(--card);
- border-radius:16px;
- padding:10px;
- text-align:center;
- box-shadow:0 4px 12px #0001
-}
-.kpi canvas{
- width:90px!important;
- height:90px!important
+ margin-bottom:16px;
 }
 
-/* ================== FILTROS ================== */
+.kpi{
+ background:var(--card);
+ border-radius:12px;
+ padding:12px;
+ text-align:center;
+ box-shadow:0 4px 10px rgba(0,0,0,.08);
+ cursor:pointer;
+ transition:.2s;
+}
+
+.kpi:hover{
+ transform:translateY(-2px);
+}
+
+/* ================= FILTROS ================= */
 .filters{
  display:flex;
  gap:8px;
  flex-wrap:wrap;
- margin-bottom:12px
+ margin-bottom:16px;
 }
+
 input,select{
  padding:10px 12px;
  border-radius:12px;
  border:1px solid var(--border);
  font-size:14px;
- min-width:140px;
 }
 
-/* ================== BOTONES ================== */
+/* ================= BOTONES ================= */
 button{
- position:relative;
  padding:10px 14px;
  border-radius:12px;
  border:0;
@@ -86,345 +87,140 @@ button{
  display:flex;
  align-items:center;
  justify-content:center;
- gap:8px;
-}
-button:disabled{
- opacity:.7;
- cursor:not-allowed
+ gap:6px;
+ transition:.2s;
 }
 
-/* ===== LOADER REAL ===== */
-.btn-text{display:inline}
+button:hover{
+ opacity:.9;
+}
+
+button.loading .btn-text{display:none}
+button.loading .btn-loader{display:inline-block}
+
 .btn-loader{
  display:none;
- width:18px;
- height:18px;
+ width:16px;
+ height:16px;
  border:3px solid rgba(255,255,255,.4);
  border-top:3px solid #fff;
  border-radius:50%;
  animation:spin .8s linear infinite;
 }
-button.loading .btn-text{display:none}
-button.loading .btn-loader{display:inline-block}
+
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ================== TABLA ================== */
+/* ================= TABLA ================= */
 .table-scroll{
  max-height:70vh;
  overflow-y:auto;
- border-radius:16px;
+ border-radius:12px;
 }
 
 table{
  width:100%;
  border-collapse:collapse;
  background:var(--card);
- box-shadow:0 8px 24px #0001
+ box-shadow:0 8px 20px rgba(0,0,0,.06);
 }
+
 th,td{
  padding:10px;
  border-bottom:1px solid var(--border);
- vertical-align:top;
-}
-th{
- color:var(--muted);
- text-align:left;
- position:sticky;
- top:0;
- background:var(--card);
- z-index:2;
+ font-size:14px;
 }
 
-/* ===== FECHAS NO MONTADAS ===== */
-td.fecha{
- white-space:nowrap;
+th{
+ background:#fff;
+ position:sticky;
+ top:0;
+ z-index:2;
+ text-align:left;
+}
+
+/* ================= PEDIDOS EN CURSO ================= */
+#kanbanView{
+ margin-top:10px;
+}
+
+.kanban-board{
+ display:flex;
+ gap:16px;
+ overflow-x:auto;
+ padding-bottom:10px;
+}
+
+.kanban-column{
+ min-width:260px;
+ background:#eef2f7;
+ border-radius:14px;
+ padding:12px;
+}
+
+.kanban-column h3{
+ text-align:center;
+ margin-bottom:12px;
+ font-size:14px;
+}
+
+.kanban-card{
+ background:#fff;
+ border-radius:12px;
+ padding:10px;
+ margin-bottom:10px;
+ box-shadow:0 4px 10px rgba(0,0,0,.08);
  font-size:13px;
 }
 
-/* ================== FOTOS ================== */
-.foto-thumb{
- width:48px;
- height:48px;
- object-fit:cover;
- border-radius:8px;
- cursor:pointer;
- border:1px solid var(--border);
- transition:.2s;
+.kanban-actions{
+ display:flex;
+ gap:6px;
+ margin-top:8px;
 }
-.foto-thumb:hover{transform:scale(1.05)}
 
-/* ================== MODALES (BASE) ================== */
+.kanban-actions button{
+ flex:1;
+ height:32px;
+ font-size:13px;
+}
+
+/* ================= MODALES ================= */
 .modal{
  position:fixed;
  inset:0;
- background:rgba(0,0,0,.65);
+ background:rgba(0,0,0,.6);
  display:none;
  align-items:center;
  justify-content:center;
  z-index:9999;
 }
+
 .modal-content{
- background:var(--card);
+ background:#fff;
  padding:20px;
- border-radius:18px;
+ border-radius:16px;
  max-width:95%;
  max-height:90vh;
  overflow:auto;
 }
 
-/* ================== MODAL FOTO ================== */
-.foto-modal-grande{
- width:90vw;
- max-width:1000px;
- display:flex;
- flex-direction:column;
- align-items:center;
-}
-.foto-grande{
- width:100%;
- max-height:75vh;
- object-fit:contain;
- border-radius:16px;
- box-shadow:0 12px 30px rgba(0,0,0,.4);
-}
-
-/* ================== MODAL MAPA ================== */
-.map-frame{
- width:90vw;
- max-width:1000px;
- height:70vh;
- border:0;
- border-radius:16px;
-}
-
-/* ================== MOBILE ================== */
-.mobile-list{display:none}
-
-.row-card{
- background:var(--card);
- border-radius:18px;
- padding:14px;
- box-shadow:0 6px 18px #0001;
- margin-bottom:12px
-}
-
-
-
-/* ===== FIX DEFINITIVO ACCIONES ===== */
-td .actions{
-  display:flex !important;
-  flex-direction:row !important;
-  gap:8px;
-  justify-content:center;
-  align-items:center;
-  white-space:nowrap;
-}
-
-td .actions button{
-  display:inline-flex !important;
-  width:38px;
-  height:38px;
-  padding:0;
-  border-radius:10px;
-}
-
-
-@media(max-width:768px){
- .table-scroll{display:none}
- .mobile-list{display:block}
-}
-
-/* ===== ACCIONES MOBILE (LINEALES) ===== */
-.row-actions{
-  display:flex;
-  flex-direction:row;          /* 👈 CLAVE */
-  gap:10px;
-  justify-content:space-between;
-  align-items:center;
-  margin-top:10px;
-}
-
-.row-actions button{
-  flex:1;                      /* todos mismo ancho */
-  height:40px;
-  padding:0;
-  border-radius:10px;
-  font-size:16px;
-}
-
-/* ================= DASHBOARD / KPIs ================= */
-#kpis{
-  display:grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap:12px;
-  margin-bottom:16px;
-}
-
-/* Tarjeta KPI */
-.kpi{
-  background:#fff;
-  border-radius:12px;
-  padding:12px 8px;
-  text-align:center;
-  box-shadow:0 4px 10px rgba(0,0,0,.08);
-}
-
-/* Canvas centrado */
-.kpi canvas{
-  width:90px !important;
-  height:90px !important;
-  margin:auto;
-}
-
-/* ================= MOBILE ================= */
-@media (max-width:768px){
-
-  /* 👉 2 columnas reales en móvil */
-  #kpis{
-    grid-template-columns: repeat(2, 1fr);
-    gap:14px;
-  }
-
-  /* KPI más ancho y cómodo */
-  .kpi{
-    padding:14px 10px;
-  }
-
-  .kpi b{
-    font-size:18px;
-    display:block;
-    margin-top:4px;
-  }
-
-  .kpi br{
-    display:none;
-  }
-}
-
-/* ================= KPI TOCABLE ================= */
-.kpi{
-  cursor:pointer;
-  transition:transform .15s ease, box-shadow .15s ease, background .15s;
-  user-select:none;
-}
-
-.kpi:active{
-  transform:scale(0.97);
-}
-
-.kpi:hover{
-  box-shadow:0 6px 16px rgba(0,0,0,.15);
-}
-
-/* KPI activo (filtro aplicado) */
-.kpi.active{
-  outline:3px solid #2563eb;
-  background:#eff6ff;
-}
-
-/* Texto */
-.kpi b{
-  font-size:18px;
-  display:block;
-}
-
-
- /* ================= TOGGLE DASHBOARD ================= */
-.btn-kpi-toggle{
-  background:#2563eb;
-  color:#fff;
-  border:none;
-  padding:10px 14px;
-  border-radius:10px;
-  cursor:pointer;
-  font-size:14px;
-  margin-bottom:12px;
-}
-
-.btn-kpi-toggle:active{
-  transform:scale(.96);
-}
-
-/* contenedor KPIs */
-#kpis{
-  transition: max-height .35s ease, opacity .25s ease, margin .25s;
-  overflow:hidden;
-}
-
-/* oculto */
-#kpis.hidden{
-  max-height:0;
-  opacity:0;
-  margin:0;
-  pointer-events:none;
-}
-
-/* visible */
-#kpis:not(.hidden){
-  max-height:600px; /* suficiente para KPIs */
-  opacity:1;
-}
-
-
- /* ================= CURSOR TABLA ================= */
-tr.cursor-active{
-  background:#e0f2fe !important;
-}
-
-tr.cursor-active td{
-  border-top:1px solid #38bdf8;
-  border-bottom:1px solid #38bdf8;
-}
-
-/* hover normal sigue funcionando */
-tbody tr:hover{
-  background:#f1f5f9;
-}
-
-
-/* ================= MOBILE ================= */
-@media (max-width:768px){
-  .kpi{
-    padding:16px 12px;
-  }
-}
-
-.foto-wrap{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  min-height:50px;
-  align-items:center;
-}
-
-td{
-  overflow: visible !important;
-}
-
-table{
-  table-layout: fixed;
-}
-
-
-
-
-
 </style>
 </head>
-
 <body>
 
-<!-- ================== HEADER ================== -->
+<!-- ================= HEADER ================= -->
 <div class="topbar">
   <h2>🚚 Tracking de Pedidos</h2>
 </div>
 
-<!-- ================== KPIs ================== -->
+<!-- ================= KPIs ================= -->
 <div class="kpis" id="kpis"></div>
 
-<!-- ================== FILTROS ================== -->
+<!-- ================= FILTROS ================= -->
 <div class="filters">
+
   <input id="search" placeholder="Buscar pedido o cliente">
+
   <input type="date" id="fDesde">
   <input type="date" id="fHasta">
 
@@ -452,16 +248,14 @@ table{
     <span class="btn-loader"></span>
   </button>
 
-  <button id="btnToggleKPI" class="btn-text">
+  <button id="btnToggleKPI">
     📊 Ocultar dashboard
   </button>
 
-  <button id="btnReload" class="btn-text">
+  <button id="btnReload">
     🔄 Recargar
   </button>
 
-
-  <!-- 👇 AQUÍ -->
   <button id="btnViewMode">
     📋 PEDIDOS EN CURSO
   </button>
@@ -469,14 +263,12 @@ table{
 </div>
 
 
-
-
-<!-- ================== TABLA DESKTOP ================== -->
-<div class="table-scroll" tabindex="0">
+<!-- ================= TABLA DESKTOP ================= -->
+<div class="table-scroll" id="tableView">
   <table>
     <thead>
       <tr>
-        <th>Fecha Ingreso</th>
+        <th>Fecha</th>
         <th>Pedido</th>
         <th>Cliente</th>
         <th>Dirección</th>
@@ -488,90 +280,167 @@ table{
         <th>Responsable</th>
         <th>Hora Entrega</th>
         <th>Foto</th>
-        <th>PDF</th> <!-- ✅ AGREGADO -->
+        <th>PDF</th>
         <th>Acciones</th>
       </tr>
     </thead>
-    <tbody id="tbody">
-      <!-- filas dinámicas -->
-    </tbody>
+    <tbody id="tbody"></tbody>
   </table>
 </div>
 
-<!-- ================== MOBILE ================== -->
+
+<!-- ================= PEDIDOS EN CURSO ================= -->
+<div id="kanbanView" style="display:none">
+
+  <div class="kanban-board">
+
+    <div class="kanban-column" data-status="PENDIENTE">
+      <h3>🟡 Pendiente</h3>
+      <div class="kanban-cards"></div>
+    </div>
+
+    <div class="kanban-column" data-status="EN RUTA">
+      <h3>🟠 En Ruta</h3>
+      <div class="kanban-cards"></div>
+    </div>
+
+    <div class="kanban-column" data-status="RECIBIDO">
+      <h3>🔴 Recibido</h3>
+      <div class="kanban-cards"></div>
+    </div>
+
+    <div class="kanban-column" data-status="ENTREGADO">
+      <h3>🟢 Entregado</h3>
+      <div class="kanban-cards"></div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ================= MOBILE ================= -->
 <div class="mobile-list" id="mobileList"></div>
 
-<!-- ================== MODAL FOTO ================== -->
+<!-- ================= MODAL FOTO ================= -->
 <div class="modal" id="fotoModal">
-  <div class="modal-content foto-modal-grande">
-    <img id="fotoGrande" class="foto-grande" alt="Foto pedido">
-    <br>
-    <div style="display:flex;gap:10px">
+  <div class="modal-content" style="max-width:1000px;text-align:center">
+
+    <img id="fotoGrande"
+         style="width:100%;max-height:75vh;object-fit:contain;border-radius:14px">
+
+    <br><br>
+
+    <div style="display:flex;gap:10px;justify-content:center">
+
       <button id="btnDescargarFoto">
         <span class="btn-text">⬇ Descargar</span>
         <span class="btn-loader"></span>
       </button>
-      <button id="btnCerrarFoto">❌ Cerrar</button>
+
+      <button id="btnCerrarFoto">
+        ❌ Cerrar
+      </button>
+
     </div>
+
   </div>
 </div>
 
-<!-- ================== MODAL MAPA ================== -->
+
+<!-- ================= MODAL MAPA ================= -->
 <div class="modal" id="mapModal">
-  <div class="modal-content">
-    <iframe id="mapFrame" class="map-frame"></iframe>
-    <br>
-    <button id="btnCerrarMapa">❌ Cerrar</button>
+  <div class="modal-content" style="max-width:1000px">
+
+    <iframe id="mapFrame"
+            style="width:100%;height:70vh;border:0;border-radius:14px">
+    </iframe>
+
+    <br><br>
+
+    <button id="btnCerrarMapa">
+      ❌ Cerrar
+    </button>
+
   </div>
 </div>
 
-<!-- ================== MODAL FORMULARIO ================== -->
+
+<!-- ================= MODAL FORMULARIO ================= -->
 <div class="modal" id="modalForm">
-  <div class="modal-content">
+  <div class="modal-content" style="width:420px;max-width:95%">
 
     <h3 id="mtitle">Nuevo Pedido</h3>
 
     <input id="mPedido" placeholder="Pedido">
+    <br><br>
+
     <input id="mCliente" placeholder="Cliente">
+    <br><br>
+
     <input id="mDireccion" placeholder="Dirección">
+    <br><br>
+
     <input id="mComuna" placeholder="Comuna">
+    <br><br>
+
     <input id="mTransporte" placeholder="Transporte">
+    <br><br>
 
     <input id="mCajas" type="number" min="1" placeholder="Cajas">
+    <br><br>
 
     <select id="mStatus">
       <option>PENDIENTE</option>
       <option>EN RUTA</option>
-      <option>ENTREGADO</option>
       <option>RECIBIDO</option>
+      <option>ENTREGADO</option>
       <option>CANCELADO</option>
     </select>
-
-    <input id="mResponsable" placeholder="Responsable Entrega">
-    <input id="mHoraEntrega" type="datetime-local">
-    <input id="mObs" placeholder="Observaciones">
-
-    <!-- FOTOS -->
-    <input type="file" id="mFotos" accept="image/*" multiple capture="environment">
-
     <br><br>
 
-    <!-- ✅ PDF AGREGADO -->
-    <input type="file" id="mPdf" accept="application/pdf" multiple>
+    <input id="mResponsable" placeholder="Responsable Entrega">
+    <br><br>
 
+    <input id="mHoraEntrega" type="datetime-local">
+    <br><br>
+
+    <input id="mObs" placeholder="Observaciones">
+    <br><br>
+
+    <!-- FOTOS -->
+    <input type="file"
+           id="mFotos"
+           accept="image/*"
+           multiple
+           capture="environment">
+    <br><br>
+
+    <!-- PDF -->
+    <input type="file"
+           id="mPdf"
+           accept="application/pdf"
+           multiple>
     <br><br>
 
     <div style="display:flex;gap:10px">
+
       <button id="btnGuardar">
         <span class="btn-text">💾 Guardar</span>
         <span class="btn-loader"></span>
       </button>
-      <button id="btnCancelar">❌ Cancelar</button>
+
+      <button id="btnCancelar">
+        ❌ Cancelar
+      </button>
+
     </div>
 
   </div>
 </div>
 
+
+<!-- ================= SCRIPT PRINCIPAL ================= -->
 <script src="envio.js"></script>
 
 </body>
