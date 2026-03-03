@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-
 :root{
  --bg:#f8fafc;
  --card:#ffffff;
@@ -36,9 +35,7 @@ body{
  gap:10px;
 }
 
-.counter{
- font-weight:600;
-}
+.counter{font-weight:600}
 
 /* BOTONES */
 button{
@@ -58,7 +55,6 @@ button{
 }
 
 button:hover{background:var(--turq-dark)}
-
 button.loading .btn-text{display:none}
 button.loading .btn-loader{display:inline-block}
 
@@ -71,7 +67,6 @@ button.loading .btn-loader{display:inline-block}
  border-radius:50%;
  animation:spin .8s linear infinite;
 }
-
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* FILTROS */
@@ -81,7 +76,6 @@ button.loading .btn-loader{display:inline-block}
  flex-wrap:wrap;
  margin-bottom:25px;
 }
-
 input,select{
  padding:10px 12px;
  border-radius:12px;
@@ -112,6 +106,7 @@ input,select{
 .card.ENTREGADO{border-left-color:#22c55e}
 .card.CANCELADO{border-left-color:#9ca3af}
 
+/* STATUS */
 .status{
  padding:5px 10px;
  border-radius:8px;
@@ -126,12 +121,38 @@ input,select{
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
 
+/* FOTO */
+.photo-wrap{
+ display:flex;
+ gap:8px;
+ flex-wrap:wrap;
+ margin:10px 0;
+}
+.photo-wrap img{
+ width:70px;
+ height:70px;
+ object-fit:cover;
+ border-radius:10px;
+ cursor:pointer;
+ border:1px solid var(--border);
+}
+
+/* PDF */
+.pdf-wrap a{
+ font-size:13px;
+ font-weight:600;
+ text-decoration:none;
+ color:var(--turq-dark);
+ display:block;
+ margin-bottom:4px;
+}
+
+/* ACCIONES */
 .card-actions{
  display:flex;
  gap:8px;
  margin-top:12px;
 }
-
 .card-actions button{flex:1}
 
 /* MODAL */
@@ -144,7 +165,6 @@ input,select{
  justify-content:center;
  z-index:9999;
 }
-
 .modal-content{
  background:#fff;
  padding:20px;
@@ -152,11 +172,17 @@ input,select{
  width:400px;
  max-width:95%;
 }
-
 .modal-content input,
 .modal-content select{
  width:100%;
  margin-bottom:10px;
+}
+
+/* MODAL FOTO */
+.foto-modal img{
+ max-width:90vw;
+ max-height:80vh;
+ border-radius:12px;
 }
 
 </style>
@@ -166,7 +192,7 @@ input,select{
 <div class="header">
   <h2>📋 PEDIDOS EN CURSO</h2>
   <div class="counter" id="counter">Total: 0</div>
-  <button onclick="load()" id="btnReload">
+  <button id="btnReload">
     <span class="btn-text">🔄 Recargar</span>
     <span class="btn-loader"></span>
   </button>
@@ -186,7 +212,7 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<!-- MODAL EDITAR -->
+<!-- MODAL EDIT -->
 <div class="modal" id="editModal">
   <div class="modal-content">
     <h3>Editar Pedido</h3>
@@ -209,27 +235,45 @@ input,select{
   </div>
 </div>
 
+<!-- MODAL FOTO -->
+<div class="modal foto-modal" id="fotoModal" onclick="this.style.display='none'">
+  <img id="fotoGrande">
+</div>
+
+<audio id="notifSound">
+ <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
+</audio>
+
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
 let RAW=[];
+let PREVIOUS_IDS=[];
 let EDIT_ROW=null;
 let autoRefresh;
 
 /* AUTO REFRESH */
-function startAuto(){
- autoRefresh=setInterval(load,15000);
-}
-function stopAuto(){
- clearInterval(autoRefresh);
-}
+function startAuto(){ autoRefresh=setInterval(load,15000); }
+function stopAuto(){ clearInterval(autoRefresh); }
 
 /* LOAD */
 async function load(){
  setLoading(btnReload,true);
  const r=await fetch(API);
- RAW=await r.json();
+ const data=await r.json();
+
+ // detectar nuevos pedidos
+ const newIDs=data.map(x=>x._row);
+ const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
+
+ if(hasNew && PREVIOUS_IDS.length){
+  document.getElementById("notifSound").play();
+ }
+
+ PREVIOUS_IDS=newIDs;
+ RAW=data;
+
  render();
  setLoading(btnReload,false);
 }
@@ -243,6 +287,9 @@ function render(){
   const card=document.createElement("div");
   card.className="card "+r.status;
 
+  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
+  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
+
   card.innerHTML=`
    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
      <strong>${r.pedido||""}</strong>
@@ -251,6 +298,14 @@ function render(){
 
    👤 ${r.cliente||""}<br>
    📍 ${r.direccion||""} (${r.comuna||""})<br>
+
+   <div class="photo-wrap">
+     ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s200')}" onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')">`).join("")}
+   </div>
+
+   <div class="pdf-wrap">
+     ${pdfs.map(p=>`<a href="${p}" target="_blank">📄 Ver PDF</a>`).join("")}
+   </div>
 
    <div class="card-actions">
      <button onclick="openEdit(${r._row})">
@@ -263,7 +318,13 @@ function render(){
  });
 }
 
-/* EDITAR */
+/* FOTO */
+function showFoto(url){
+ fotoGrande.src=url;
+ fotoModal.style.display="flex";
+}
+
+/* EDIT */
 function openEdit(row){
  stopAuto();
  const r=RAW.find(x=>x._row==row);
@@ -283,9 +344,9 @@ function closeModal(){
  startAuto();
 }
 
+/* GUARDAR */
 btnGuardar.onclick=async()=>{
  setLoading(btnGuardar,true);
-
  await fetch(API,{
   method:"POST",
   body:JSON.stringify({
@@ -298,7 +359,6 @@ btnGuardar.onclick=async()=>{
    "STATUS":mStatus.value
   })
  });
-
  setLoading(btnGuardar,false);
  closeModal();
  load();
@@ -309,6 +369,10 @@ function setLoading(btn,state){
  btn.disabled=state;
  btn.classList.toggle("loading",state);
 }
+
+btnReload.onclick=load;
+search.oninput=render;
+fStatus.onchange=render;
 
 startAuto();
 load();
