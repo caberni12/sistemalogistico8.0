@@ -65,6 +65,7 @@ button.loading .btn-loader{display:inline-block}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* FILTROS */
 .filters{
  display:flex;
  gap:10px;
@@ -78,6 +79,7 @@ input,select,textarea{
  border:1px solid #e2e8f0;
 }
 
+/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -85,6 +87,7 @@ input,select,textarea{
  font-weight:bold;
 }
 
+/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
@@ -137,8 +140,13 @@ input,select,textarea{
  font-weight:900;
 }
 
+.responsable{
+ margin-top:8px;
+ font-weight:bold;
+}
+
 .observaciones{
- margin-top:12px;
+ margin-top:10px;
  background:#f1f5f9;
  padding:10px;
  border-radius:10px;
@@ -194,7 +202,7 @@ input,select,textarea{
  background:#fff;
  padding:20px;
  border-radius:16px;
- width:400px;
+ width:420px;
  max-width:95%;
 }
 </style>
@@ -213,7 +221,7 @@ input,select,textarea{
 </div>
 
 <div class="filters">
-  <input type="text" id="fBuscar" placeholder="Buscar pedido, cliente o comuna">
+  <input type="text" id="fBuscar" placeholder="Buscar pedido, cliente, comuna o responsable">
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -222,6 +230,8 @@ input,select,textarea{
     <option>ENTREGADO</option>
     <option>CANCELADO</option>
   </select>
+  <input type="date" id="fDesde">
+  <input type="date" id="fHasta">
 </div>
 
 <div class="stats">
@@ -242,6 +252,7 @@ input,select,textarea{
     <input id="mCliente" placeholder="Cliente">
     <input id="mDireccion" placeholder="Dirección">
     <input id="mComuna" placeholder="Comuna">
+    <input id="mResponsable" placeholder="Responsable">
     <input type="number" id="mCajas" placeholder="Cajas">
     <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea>
     <select id="mStatus">
@@ -262,14 +273,14 @@ input,select,textarea{
 <script>
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-let RAW=[], FILT=[];
-let visibleCount=0;
+let RAW=[], FILT=[], visibleCount=0, EDIT_ROW=null, PREV_IDS=[];
 const CHUNK=50;
-let EDIT_ROW=null;
-let PREV_IDS=[];
 
-const btnReload=document.getElementById("btnReload");
-const btnGuardar=document.getElementById("btnGuardar");
+function parseFecha(fecha){
+ if(!fecha) return null;
+ const d=new Date(fecha);
+ return isNaN(d)?null:d;
+}
 
 function setLoading(btn,state){
  btn.disabled=state;
@@ -282,6 +293,12 @@ async function load(){
  setLoading(btnReload,true);
  const r=await fetch(API);
  RAW=await r.json();
+
+ RAW.sort((a,b)=>{
+   const fa=parseFecha(a.fecha);
+   const fb=parseFecha(b.fecha);
+   return fb-fa;
+ });
 
  const ids=RAW.map(x=>x._row);
  if(PREV_IDS.length && ids.some(id=>!PREV_IDS.includes(id))){
@@ -296,11 +313,18 @@ async function load(){
 function applyFilter(){
  const texto=fBuscar.value.toLowerCase();
  const status=fStatus.value;
+ const desde=fDesde.value ? new Date(fDesde.value) : null;
+ const hasta=fHasta.value ? new Date(fHasta.value) : null;
 
  FILT=RAW.filter(r=>{
-   const combinado=(r.pedido+" "+r.cliente+" "+r.comuna).toLowerCase();
+   const combinado=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
    if(texto && !combinado.includes(texto)) return false;
    if(status && r.status!==status) return false;
+
+   const fecha=parseFecha(r.fecha);
+   if(desde && fecha && fecha<desde) return false;
+   if(hasta && fecha && fecha>hasta) return false;
+
    return true;
  });
 
@@ -329,6 +353,7 @@ function renderMore(){
      <div class="status status-${st}">${r.status||""}</div>
      <div>👤 ${r.cliente||""}</div>
      <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
+     <div class="responsable">👨‍💼 ${r.responsable||""}</div>
 
      <div class="cajas-box">
        CAJAS
@@ -342,10 +367,7 @@ function renderMore(){
      </div>
 
      <div class="pdf-wrap">
-       ${pdfs.map(p=>`
-         <a href="${p}" target="_blank">Ver</a>
-         <a href="${p}" download>Descargar</a>
-       `).join("")}
+       ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a>`).join("")}
      </div>
 
      <div style="margin-top:12px">
@@ -367,6 +389,7 @@ function openEdit(row){
  mCliente.value=r.cliente||"";
  mDireccion.value=r.direccion||"";
  mComuna.value=r.comuna||"";
+ mResponsable.value=r.responsable||"";
  mCajas.value=r.etiquetas||1;
  mObservaciones.value=r.observaciones||"";
  mStatus.value=r.status||"";
@@ -387,6 +410,7 @@ async function guardar(){
      CLIENTE:mCliente.value,
      DIRECCION:mDireccion.value,
      COMUNA:mComuna.value,
+     RESPONSABLE:mResponsable.value,
      ETIQUETAS:mCajas.value,
      OBSERVACIONES:mObservaciones.value,
      STATUS:mStatus.value
@@ -425,6 +449,9 @@ fBuscar.oninput=()=>{
 };
 
 fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
+
 btnReload.onclick=load;
 btnGuardar.onclick=guardar;
 
