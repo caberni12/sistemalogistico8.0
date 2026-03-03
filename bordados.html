@@ -292,17 +292,32 @@ let FILT=[];
 let PREVIOUS_IDS=[];
 let EDIT_ROW=null;
 
-/* AUTO REFRESH */
+/* ================== ELEMENTOS ================== */
+const btnReload = document.getElementById("btnReload");
+const fStatus   = document.getElementById("fStatus");
+const fDesde    = document.getElementById("fDesde");
+const fHasta    = document.getElementById("fHasta");
+const search    = document.getElementById("search");
+const totalPedidos = document.getElementById("totalPedidos");
+const totalCajas   = document.getElementById("totalCajas");
+const cardsGrid    = document.getElementById("cardsGrid");
+const btnGuardar   = document.getElementById("btnGuardar");
+const editModal    = document.getElementById("editModal");
+const fotoModal    = document.getElementById("fotoModal");
+const fotoGrande   = document.getElementById("fotoGrande");
+const notifSound   = document.getElementById("notifSound");
+
+/* ================== AUTO REFRESH ================== */
 setInterval(load,15000);
 
-/* LOADER */
+/* ================== LOADER ================== */
 function setLoading(btn,state){
  if(!btn) return;
  btn.disabled=state;
  btn.classList.toggle("loading",state);
 }
 
-/* LOAD DATA */
+/* ================== LOAD DATA ================== */
 async function load(){
  setLoading(btnReload,true);
 
@@ -314,13 +329,14 @@ async function load(){
   const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
 
   if(hasNew && PREVIOUS_IDS.length){
-   document.getElementById("notifSound").play();
+   notifSound.play();
   }
 
   PREVIOUS_IDS=newIDs;
   RAW=data;
 
   applyFilter();
+
  }catch(e){
   console.error("Error cargando:",e);
  }
@@ -328,7 +344,7 @@ async function load(){
  setLoading(btnReload,false);
 }
 
-/* PARSE FECHA */
+/* ================== PARSE FECHA ================== */
 function parseFecha(str){
  if(!str) return null;
  const [f] = str.split(" ");
@@ -336,13 +352,13 @@ function parseFecha(str){
  return new Date(y,m-1,d);
 }
 
-/* FILTROS */
+/* ================== FILTROS ================== */
 function applyFilter(){
 
  const status = fStatus.value;
- const desde  = fDesde.value ? new Date(fDesde.value) : null;
- const hasta  = fHasta.value ? new Date(fHasta.value) : null;
- const q      = search ? search.value.toLowerCase().trim() : "";
+ const desde  = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
+ const hasta  = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
+ const q      = search.value.toLowerCase().trim();
 
  FILT = RAW.filter(r=>{
 
@@ -371,19 +387,19 @@ function applyFilter(){
  render();
 }
 
-/* CONTADORES */
+/* ================== CONTADORES ================== */
 function updateStats(){
  totalPedidos.textContent = FILT.length;
  totalCajas.textContent = FILT.reduce((sum,r)=>sum + Number(r.etiquetas||0),0);
 }
 
-/* EVENTOS FILTROS */
-if(fStatus) fStatus.onchange=applyFilter;
-if(fDesde)  fDesde.onchange=applyFilter;
-if(fHasta)  fHasta.onchange=applyFilter;
-if(search)  search.oninput=applyFilter;
+/* ================== EVENTOS FILTRO ================== */
+fStatus.addEventListener("change", applyFilter);
+fDesde.addEventListener("change", applyFilter);
+fHasta.addEventListener("change", applyFilter);
+search.addEventListener("input", applyFilter);
 
-/* RENDER TARJETAS */
+/* ================== RENDER TARJETAS ================== */
 function render(){
  cardsGrid.innerHTML="";
 
@@ -438,25 +454,25 @@ function render(){
  });
 }
 
-/* VER FOTO */
+/* ================== FOTO GRANDE ================== */
 function showFoto(url){
  fotoGrande.src=url;
  fotoModal.style.display="flex";
 }
 
-/* EDITAR */
+/* ================== EDITAR ================== */
 function openEdit(row){
  const r=RAW.find(x=>x._row==row);
  if(!r) return;
 
  EDIT_ROW=row;
 
- mPedido.value=r.pedido||"";
- mCliente.value=r.cliente||"";
- mDireccion.value=r.direccion||"";
- mComuna.value=r.comuna||"";
- mCajas.value=r.etiquetas||1;
- mStatus.value=r.status||"";
+ document.getElementById("mPedido").value=r.pedido||"";
+ document.getElementById("mCliente").value=r.cliente||"";
+ document.getElementById("mDireccion").value=r.direccion||"";
+ document.getElementById("mComuna").value=r.comuna||"";
+ document.getElementById("mCajas").value=r.etiquetas||1;
+ document.getElementById("mStatus").value=r.status||"";
 
  editModal.style.display="flex";
 }
@@ -465,7 +481,7 @@ function closeEdit(){
  editModal.style.display="none";
 }
 
-/* GUARDAR */
+/* ================== GUARDAR ================== */
 btnGuardar.onclick=async()=>{
 
  setLoading(btnGuardar,true);
@@ -475,12 +491,12 @@ btnGuardar.onclick=async()=>{
   body:JSON.stringify({
    action:"update",
    row:EDIT_ROW,
-   "PEDIDO":mPedido.value,
-   "CLIENTE":mCliente.value,
-   "DIRECCION":mDireccion.value,
-   "COMUNA":mComuna.value,
-   "ETIQUETAS":mCajas.value,
-   "STATUS":mStatus.value
+   "PEDIDO":document.getElementById("mPedido").value,
+   "CLIENTE":document.getElementById("mCliente").value,
+   "DIRECCION":document.getElementById("mDireccion").value,
+   "COMUNA":document.getElementById("mComuna").value,
+   "ETIQUETAS":document.getElementById("mCajas").value,
+   "STATUS":document.getElementById("mStatus").value
   })
  });
 
@@ -489,15 +505,15 @@ btnGuardar.onclick=async()=>{
  load();
 };
 
-/* MODO TV */
+/* ================== MODO TV ================== */
 function toggleTV(){
  document.body.classList.toggle("tv-mode");
 }
 
-/* RECARGAR */
+/* ================== RECARGAR ================== */
 btnReload.onclick=load;
 
-/* INIT */
+/* ================== INIT ================== */
 load();
 </script>
 </body>  
