@@ -293,7 +293,7 @@ let FILT=[];
 let PREVIOUS_IDS=[];
 let EDIT_ROW=null;
 
-/* ================== ELEMENTOS ================== */
+/* ELEMENTOS */
 const btnReload = document.getElementById("btnReload");
 const fStatus   = document.getElementById("fStatus");
 const fDesde    = document.getElementById("fDesde");
@@ -308,62 +308,61 @@ const fotoModal    = document.getElementById("fotoModal");
 const fotoGrande   = document.getElementById("fotoGrande");
 const notifSound   = document.getElementById("notifSound");
 
-/* ================== AUTO REFRESH ================== */
+/* AUTO REFRESH */
 setInterval(load,15000);
 
-/* ================== LOADER ================== */
+/* LOADER */
 function setLoading(btn,state){
  if(!btn) return;
  btn.disabled=state;
  btn.classList.toggle("loading",state);
 }
 
-/* ================== LOAD DATA ================== */
+/* LOAD */
 async function load(){
+
  setLoading(btnReload,true);
 
  try{
-  const r=await fetch(API);
-  const data=await r.json();
+  const response = await fetch(API);
+  const data = await response.json();
 
-  const newIDs=data.map(x=>x._row);
-  const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
-
-  if(hasNew && PREVIOUS_IDS.length){
-   notifSound.play();
+  if(!Array.isArray(data)){
+   console.error("La API no devolvió un array:", data);
+   RAW=[];
+  }else{
+   RAW=data;
   }
-
-  PREVIOUS_IDS=newIDs;
-  RAW=data;
 
   applyFilter();
 
- }catch(e){
-  console.error("Error cargando:",e);
+ }catch(error){
+  console.error("Error API:", error);
+  RAW=[];
  }
 
  setLoading(btnReload,false);
 }
 
-/* ================== PARSE FECHA ================== */
+/* PARSE FECHA */
 function parseFecha(str){
  if(!str) return null;
  try{
   const [f] = str.split(" ");
-  const [d,m,y] = f.split("-").map(Number);
-  return new Date(y,m-1,d);
+  const [d,m,y] = f.split("-");
+  return new Date(y, m-1, d);
  }catch{
   return null;
  }
 }
 
-/* ================== FILTROS ================== */
+/* FILTROS */
 function applyFilter(){
 
- const status = fStatus.value.trim();
- const desde  = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
- const hasta  = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
- const q      = search.value.toLowerCase().trim();
+ const status = (fStatus.value||"").trim();
+ const desde  = fDesde.value ? new Date(fDesde.value+"T00:00:00") : null;
+ const hasta  = fHasta.value ? new Date(fHasta.value+"T23:59:59") : null;
+ const q      = (search.value||"").toLowerCase().trim();
 
  FILT = RAW.filter(r=>{
 
@@ -373,7 +372,6 @@ function applyFilter(){
    const comuna   = (r.comuna||"").toLowerCase();
    const estado   = (r.status||"").trim();
 
-   /* BUSCADOR */
    if(q){
      if(!pedido.includes(q) &&
         !cliente.includes(q) &&
@@ -383,10 +381,8 @@ function applyFilter(){
      }
    }
 
-   /* ESTADO */
    if(status && estado !== status) return false;
 
-   /* FECHA */
    const fecha = parseFecha(r.fechaIngreso);
    if(desde && fecha && fecha < desde) return false;
    if(hasta && fecha && fecha > hasta) return false;
@@ -398,23 +394,31 @@ function applyFilter(){
  render();
 }
 
-/* ================== CONTADORES ================== */
+/* CONTADORES */
 function updateStats(){
  totalPedidos.textContent = FILT.length;
- totalCajas.textContent = FILT.reduce((sum,r)=>sum + Number(r.etiquetas||0),0);
+ totalCajas.textContent = FILT.reduce((s,r)=> s + Number(r.etiquetas||0),0);
 }
 
-/* ================== EVENTOS ================== */
+/* EVENTOS */
 fStatus.addEventListener("change", applyFilter);
 fDesde.addEventListener("change", applyFilter);
 fHasta.addEventListener("change", applyFilter);
 search.addEventListener("input", applyFilter);
 
-/* ================== RENDER ================== */
+/* RENDER */
 function render(){
+
  cardsGrid.innerHTML="";
 
- FILT.forEach(r=>{
+ if(FILT.length===0){
+  cardsGrid.innerHTML="<p>No hay pedidos.</p>";
+  return;
+ }
+
+ FILT.forEach((r,index)=>{
+
+  const rowId = r._row || index;
 
   const card=document.createElement("div");
   card.className="card "+(r.status||"");
@@ -423,15 +427,15 @@ function render(){
   const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
 
   card.innerHTML=`
-   <h3>${r.pedido||""}</h3>
+   <h3>${r.pedido||"-"}</h3>
 
-   <div class="status ${(r.status||"")}">
-     ${r.status||""}
+   <div class="status ${r.status||""}">
+     ${r.status||"-"}
    </div>
 
    <div style="margin-top:8px">
-     👤 ${r.cliente||""}<br>
-     📍 ${r.direccion||""} (${r.comuna||""})
+     👤 ${r.cliente||"-"}<br>
+     📍 ${r.direccion||"-"} (${r.comuna||"-"})
    </div>
 
    <div class="cajas">
@@ -440,10 +444,7 @@ function render(){
 
    <div class="photo-wrap">
      ${fotos.map(f=>`
-       <img 
-         src="${f.replace(/=s\\d+$/,'=s300')}" 
-         onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')"
-       >
+       <img src="${f}" onclick="showFoto('${f}')">
      `).join("")}
    </div>
 
@@ -455,7 +456,7 @@ function render(){
    </div>
 
    <div style="margin-top:12px">
-     <button onclick="openEdit(${r._row})">
+     <button onclick="openEdit(${rowId})">
        ✏️ Editar
      </button>
    </div>
@@ -465,15 +466,15 @@ function render(){
  });
 }
 
-/* ================== FOTO ================== */
+/* FOTO */
 function showFoto(url){
  fotoGrande.src=url;
  fotoModal.style.display="flex";
 }
 
-/* ================== EDITAR ================== */
+/* EDITAR */
 function openEdit(row){
- const r=RAW.find(x=>x._row==row);
+ const r=RAW.find(x=>x._row==row) || RAW[row];
  if(!r) return;
 
  EDIT_ROW=row;
@@ -492,9 +493,8 @@ function closeEdit(){
  editModal.style.display="none";
 }
 
-/* ================== GUARDAR ================== */
+/* GUARDAR */
 btnGuardar.onclick=async()=>{
-
  setLoading(btnGuardar,true);
 
  await fetch(API,{
@@ -502,12 +502,12 @@ btnGuardar.onclick=async()=>{
   body:JSON.stringify({
    action:"update",
    row:EDIT_ROW,
-   "PEDIDO":document.getElementById("mPedido").value,
-   "CLIENTE":document.getElementById("mCliente").value,
-   "DIRECCION":document.getElementById("mDireccion").value,
-   "COMUNA":document.getElementById("mComuna").value,
-   "ETIQUETAS":document.getElementById("mCajas").value,
-   "STATUS":document.getElementById("mStatus").value
+   PEDIDO:document.getElementById("mPedido").value,
+   CLIENTE:document.getElementById("mCliente").value,
+   DIRECCION:document.getElementById("mDireccion").value,
+   COMUNA:document.getElementById("mComuna").value,
+   ETIQUETAS:document.getElementById("mCajas").value,
+   STATUS:document.getElementById("mStatus").value
   })
  });
 
@@ -516,15 +516,15 @@ btnGuardar.onclick=async()=>{
  load();
 };
 
-/* ================== MODO TV ================== */
+/* MODO TV */
 function toggleTV(){
  document.body.classList.toggle("tv-mode");
 }
 
-/* ================== RECARGAR ================== */
+/* RECARGAR */
 btnReload.onclick=load;
 
-/* ================== INIT ================== */
+/* INIT */
 load();
 </script>
 </body>  
