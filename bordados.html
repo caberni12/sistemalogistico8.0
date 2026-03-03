@@ -225,7 +225,7 @@ input,select{
 </div>
 
 <div class="filters">
-  <input type="text" id="search" placeholder="🔎 Buscar pedido, cliente, dirección o comuna">
+  <input type="text" id="search" placeholder="🔎 Buscar pedido, cliente o dirección">
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -292,9 +292,6 @@ const totalPedidos=document.getElementById("totalPedidos");
 const totalCajas=document.getElementById("totalCajas");
 const cardsGrid=document.getElementById("cardsGrid");
 const btnGuardar=document.getElementById("btnGuardar");
-const editModal=document.getElementById("editModal");
-const fotoModal=document.getElementById("fotoModal");
-const fotoGrande=document.getElementById("fotoGrande");
 
 setInterval(load,15000);
 
@@ -305,21 +302,11 @@ function setLoading(btn,state){
 
 async function load(){
  setLoading(btnReload,true);
- try{
-  const r=await fetch(API);
-  const data=await r.json();
-
-  const newIDs=data.map(x=>x._row);
-  const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
-  if(hasNew && PREVIOUS_IDS.length){
-    document.getElementById("notifSound").play();
-  }
-
-  PREVIOUS_IDS=newIDs;
-  RAW=data;
-  applyFilter();
-
- }catch(e){console.error(e);}
+ const r=await fetch(API);
+ const data=await r.json();
+ PREVIOUS_IDS=data.map(x=>x._row);
+ RAW=data;
+ applyFilter();
  setLoading(btnReload,false);
 }
 
@@ -331,16 +318,18 @@ function parseFecha(str){
 }
 
 function applyFilter(){
+
  const status=fStatus.value;
  const desde=fDesde.value ? new Date(fDesde.value) : null;
  const hasta=fHasta.value ? new Date(fHasta.value) : null;
  const q=search.value.toLowerCase().trim();
 
  FILT=RAW.filter(r=>{
-   const pedido=(r.pedido||"").toLowerCase();
-   const cliente=(r.cliente||"").toLowerCase();
-   const direccion=(r.direccion||"").toLowerCase();
-   const comuna=(r.comuna||"").toLowerCase();
+
+   const pedido   =(r.PEDIDO || r.pedido || "").toLowerCase();
+   const cliente  =(r.CLIENTE || r.cliente || "").toLowerCase();
+   const direccion=(r.DIRECCION || r.direccion || "").toLowerCase();
+   const comuna   =(r.COMUNA || r.comuna || "").toLowerCase();
 
    if(q){
      if(!pedido.includes(q) &&
@@ -375,73 +364,9 @@ function render(){
  FILT.forEach(r=>{
   const card=document.createElement("div");
   card.className="card "+r.status;
-
-  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
-  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
-
-  card.innerHTML=`
-   <h3>${r.pedido||""}</h3>
-   <div class="status ${r.status}">${r.status||""}</div>
-   <div style="margin-top:8px">
-     👤 ${r.cliente||""}<br>
-     📍 ${r.direccion||""} (${r.comuna||""})
-   </div>
-   <div class="cajas">📦 ${r.etiquetas||0} CAJAS</div>
-   <div class="photo-wrap">
-     ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s300')}" onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')">`).join("")}
-   </div>
-   <div class="pdf-wrap">
-     ${pdfs.map(p=>`<a href="${p}" target="_blank">📄 Ver</a><a href="${p}" download>⬇ Descargar</a>`).join("")}
-   </div>
-   <div style="margin-top:12px">
-     <button onclick="openEdit(${r._row})">✏️ Editar</button>
-   </div>
-  `;
+  card.innerHTML=`<h3>${r.pedido||r.PEDIDO||""}</h3>`;
   cardsGrid.appendChild(card);
  });
-}
-
-function showFoto(url){
- fotoGrande.src=url;
- fotoModal.style.display="flex";
-}
-
-function openEdit(row){
- const r=RAW.find(x=>x._row==row);
- EDIT_ROW=row;
- mPedido.value=r.pedido||"";
- mCliente.value=r.cliente||"";
- mDireccion.value=r.direccion||"";
- mComuna.value=r.comuna||"";
- mCajas.value=r.etiquetas||1;
- mStatus.value=r.status||"";
- editModal.style.display="flex";
-}
-
-function closeEdit(){ editModal.style.display="none"; }
-
-btnGuardar.onclick=async()=>{
- setLoading(btnGuardar,true);
- await fetch(API,{
-  method:"POST",
-  body:JSON.stringify({
-   action:"update",
-   row:EDIT_ROW,
-   PEDIDO:mPedido.value,
-   CLIENTE:mCliente.value,
-   DIRECCION:mDireccion.value,
-   COMUNA:mComuna.value,
-   ETIQUETAS:mCajas.value,
-   STATUS:mStatus.value
-  })
- });
- setLoading(btnGuardar,false);
- closeEdit();
- load();
-};
-
-function toggleTV(){
- document.body.classList.toggle("tv-mode");
 }
 
 btnReload.onclick=load;
