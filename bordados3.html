@@ -24,8 +24,8 @@ body{
  justify-content:space-between;
  align-items:center;
  flex-wrap:wrap;
- margin-bottom:15px;
  gap:10px;
+ margin-bottom:15px;
 }
 
 button{
@@ -129,11 +129,35 @@ input,select,textarea{
  display:block;
 }
 
-.observaciones{
+.photo-wrap{
+ display:flex;
+ gap:8px;
+ flex-wrap:wrap;
  margin-top:10px;
- background:#f1f5f9;
- padding:10px;
+}
+
+.photo-wrap img{
+ width:80px;
+ height:80px;
+ object-fit:cover;
  border-radius:10px;
+ cursor:pointer;
+}
+
+.pdf-wrap{
+ margin-top:10px;
+ display:flex;
+ gap:6px;
+ flex-wrap:wrap;
+}
+
+.pdf-wrap a{
+ background:#0f172a;
+ color:#fff;
+ padding:6px 10px;
+ border-radius:8px;
+ font-size:12px;
+ text-decoration:none;
 }
 
 .map-container{
@@ -168,19 +192,17 @@ input,select,textarea{
 .modal{
  position:fixed;
  inset:0;
- background:rgba(0,0,0,.6);
+ background:rgba(0,0,0,.7);
  display:none;
  align-items:center;
  justify-content:center;
  z-index:9999;
 }
 
-.modal-box{
- background:#fff;
- padding:20px;
- border-radius:16px;
- width:420px;
- max-width:95%;
+.modal img{
+ max-width:90vw;
+ max-height:85vh;
+ border-radius:12px;
 }
 </style>
 </head>
@@ -218,26 +240,8 @@ input,select,textarea{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<div class="modal" id="editModal">
- <div class="modal-box">
-  <h3>Editar Pedido</h3>
-  <input id="mPedido" placeholder="Pedido"><br><br>
-  <input id="mCliente" placeholder="Cliente"><br><br>
-  <input id="mDireccion" placeholder="Dirección"><br><br>
-  <input id="mComuna" placeholder="Comuna"><br><br>
-  <input id="mResponsable" placeholder="Responsable"><br><br>
-  <input id="mCajas" type="number" placeholder="Cajas"><br><br>
-  <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea><br><br>
-  <select id="mStatus">
-   <option>PENDIENTE</option>
-   <option>EN RUTA</option>
-   <option>RECIBIDO</option>
-   <option>ENTREGADO</option>
-   <option>CANCELADO</option>
-  </select><br><br>
-  <button id="btnGuardar">Guardar</button>
-  <button onclick="closeEdit()">Cerrar</button>
- </div>
+<div class="modal" id="imgModal" onclick="this.style.display='none'">
+ <img id="imgGrande">
 </div>
 
 <audio id="notifSound">
@@ -247,25 +251,10 @@ input,select,textarea{
 <script>
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0, EDIT_ROW=null;
+let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0;
 const CHUNK=20;
 
 function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
-
-function mapEmbed(r){
- if(r.lat && r.lng) return `https://maps.google.com/maps?q=${r.lat},${r.lng}&z=15&output=embed`;
- return `https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed`;
-}
-
-function googleMaps(r){
- if(r.lat && r.lng) return `https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}`;
- return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.direccion+" "+r.comuna)}`;
-}
-
-function waze(r){
- if(r.lat && r.lng) return `https://waze.com/ul?ll=${r.lat},${r.lng}&navigate=yes`;
- return `https://waze.com/ul?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&navigate=yes`;
-}
 
 function setLoading(btn,state){
  btn.disabled=state;
@@ -274,20 +263,16 @@ function setLoading(btn,state){
 
 async function load(){
  setLoading(btnReload,true);
-
  const r=await fetch(API);
  const data=await r.json();
 
  const ids=data.map(x=>x._row);
- const hasNew=ids.some(id=>!PREVIOUS_IDS.includes(id));
-
- if(hasNew && PREVIOUS_IDS.length){
+ if(PREVIOUS_IDS.length && ids.some(id=>!PREVIOUS_IDS.includes(id))){
    document.getElementById("notifSound").play();
  }
-
  PREVIOUS_IDS=ids;
- RAW=data.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
 
+ RAW=data.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
  applyFilter();
  setLoading(btnReload,false);
 }
@@ -324,6 +309,8 @@ function renderMore(){
 
  slice.forEach(r=>{
   const st=cleanStatus(r.status);
+  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
+  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
   const mapId="map_"+r._row;
 
   const card=document.createElement("div");
@@ -337,21 +324,31 @@ function renderMore(){
    <div>👨‍💼 ${r.responsable||""}</div>
    <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
    ${r.observaciones?`<div class="observaciones">${r.observaciones}</div>`:""}
+   <div class="photo-wrap">
+     ${fotos.map(f=>`<img src="${f}" onclick="verImagen('${f}')">`).join("")}
+   </div>
+   <div class="pdf-wrap">
+     ${pdfs.map(p=>`<a href="${p}" target="_blank">📄 Ver</a><a href="${p}" download>⬇ Descargar</a>`).join("")}
+   </div>
    <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
    <div class="map-container" id="${mapId}">
-    <iframe src="${mapEmbed(r)}"></iframe>
+    <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed"></iframe>
     <div class="map-buttons">
-      <a href="${googleMaps(r)}" target="_blank">Google Maps</a>
-      <a href="${waze(r)}" target="_blank">Waze</a>
+     <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.direccion+" "+r.comuna)}" target="_blank">Google Maps</a>
+     <a href="https://waze.com/ul?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&navigate=yes" target="_blank">Waze</a>
     </div>
    </div>
-   <button onclick="openEdit(${r._row})" style="margin-top:10px">Editar</button>
   `;
   fragment.appendChild(card);
  });
 
  cardsGrid.appendChild(fragment);
  visibleCount+=CHUNK;
+}
+
+function verImagen(url){
+ imgGrande.src=url;
+ imgModal.style.display="flex";
 }
 
 function toggleMap(id,btn){
@@ -365,22 +362,6 @@ function toggleMap(id,btn){
  }
 }
 
-function openEdit(row){
- const r=RAW.find(x=>x._row==row);
- EDIT_ROW=row;
- mPedido.value=r.pedido||"";
- mCliente.value=r.cliente||"";
- mDireccion.value=r.direccion||"";
- mComuna.value=r.comuna||"";
- mResponsable.value=r.responsable||"";
- mCajas.value=r.etiquetas||1;
- mObservaciones.value=r.observaciones||"";
- mStatus.value=r.status||"";
- editModal.style.display="flex";
-}
-
-function closeEdit(){ editModal.style.display="none"; }
-
 function toggleFullscreen(){
  if(!document.fullscreenElement){
   document.documentElement.requestFullscreen();
@@ -389,22 +370,21 @@ function toggleFullscreen(){
  }
 }
 
-btnReload.onclick=load;
-
-fBuscar.oninput=()=>setTimeout(applyFilter,300);
-fStatus.onchange=applyFilter;
-fDesde.onchange=applyFilter;
-fHasta.onchange=applyFilter;
-
 window.addEventListener("scroll",()=>{
  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200){
   if(visibleCount<FILT.length) renderMore();
  }
 });
 
-setInterval(load,15000);
+fBuscar.oninput=()=>setTimeout(applyFilter,300);
+fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
+btnReload.onclick=load;
 
+setInterval(load,15000);
 load();
 </script>
+
 </body>
 </html>
