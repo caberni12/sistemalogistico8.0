@@ -12,6 +12,8 @@
  --card:#ffffff;
  --border:#e2e8f0;
  --text:#0f172a;
+ --turq:#14b8a6;
+ --turq-dark:#0d9488;
 }
 
 *{box-sizing:border-box}
@@ -120,12 +122,13 @@ input,select{
  font-size:13px;
  font-weight:600;
  cursor:pointer;
- background:#0f172a;
+ background:var(--turq);
  color:#fff;
+ transition:.2s;
 }
 
 .card-actions button:hover{
- opacity:.9;
+ background:var(--turq-dark);
 }
 
 /* RESPONSIVE */
@@ -239,8 +242,9 @@ function render(){
       </div>
 
       <div class="card-actions">
-        <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
-        <button onclick="deletePedido(${r._row})">🗑</button>
+        <button onclick="openMap('${r.direccion}','${r.comuna}')">📍 Mapa</button>
+        <button onclick="editPedido(${r._row})">✏️ Editar</button>
+        <button onclick="deletePedido(${r._row})">🗑 Eliminar</button>
       </div>
     `;
 
@@ -254,6 +258,11 @@ function openMap(d,c){
     `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}`,
     "_blank"
   );
+}
+
+/* EDITAR */
+function editPedido(row){
+  window.location.href = "index.html#edit="+row;
 }
 
 /* DELETE */
