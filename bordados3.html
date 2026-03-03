@@ -2,36 +2,28 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>PEDIDOS EN CURSO</title>
+<title>Pedidos en Curso</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 :root{
- --bg:#f8fafc;
- --card:#ffffff;
- --text:#0f172a;
  --primary:#14b8a6;
  --primary-dark:#0d9488;
  --danger:#dc2626;
 }
 
-*{box-sizing:border-box}
-
 body{
  margin:0;
  font-family:Arial, sans-serif;
- background:var(--bg);
+ background:#f8fafc;
  padding:20px;
- color:var(--text);
 }
 
-/* HEADER */
 .header{
  display:flex;
  justify-content:space-between;
  align-items:center;
  flex-wrap:wrap;
- gap:10px;
  margin-bottom:15px;
 }
 
@@ -78,7 +70,6 @@ input,select,textarea{
  border:1px solid #e2e8f0;
 }
 
-/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -86,36 +77,34 @@ input,select,textarea{
  font-weight:bold;
 }
 
-/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
- gap:22px;
+ gap:20px;
 }
 
 .card{
  background:#fff;
  border-radius:18px;
- padding:20px;
- box-shadow:0 8px 22px rgba(0,0,0,.08);
+ padding:18px;
+ box-shadow:0 8px 20px rgba(0,0,0,.08);
  border-left:6px solid #ccc;
 }
 
 .card-EN_RUTA{border-left-color:var(--danger)}
 
 .pedido-numero{
- font-size:28px;
+ font-size:26px;
  font-weight:900;
- margin-bottom:6px;
 }
 
 .status{
- padding:6px 14px;
+ display:inline-block;
+ padding:6px 12px;
  border-radius:20px;
  font-weight:700;
  color:#fff;
- display:inline-block;
- margin-bottom:10px;
+ margin-top:6px;
 }
 
 .status-EN_RUTA{background:var(--danger)}
@@ -125,49 +114,36 @@ input,select,textarea{
 .status-CANCELADO{background:#6b7280}
 
 .cajas-box{
- margin-top:12px;
  background:#111827;
  color:#fff;
  text-align:center;
- padding:14px;
- border-radius:14px;
+ padding:10px;
+ border-radius:12px;
+ margin-top:10px;
 }
 
 .cajas-box span{
- display:block;
- font-size:34px;
+ font-size:30px;
  font-weight:900;
-}
-
-.responsable{
- margin-top:8px;
- font-weight:bold;
-}
-
-.observaciones{
- margin-top:10px;
- background:#f1f5f9;
- padding:10px;
- border-radius:10px;
- font-size:14px;
+ display:block;
 }
 
 .map-container{
- margin-top:12px;
  display:none;
+ margin-top:10px;
 }
 
 .map-container iframe{
  width:100%;
  height:220px;
- border:0;
  border-radius:12px;
+ border:0;
 }
 
 .map-buttons{
- margin-top:8px;
  display:flex;
  gap:6px;
+ margin-top:6px;
 }
 
 .map-buttons a{
@@ -188,7 +164,6 @@ input,select,textarea{
  display:none;
  align-items:center;
  justify-content:center;
- z-index:9999;
 }
 
 .edit-box{
@@ -204,17 +179,14 @@ input,select,textarea{
 
 <div class="header">
   <h2>📋 PEDIDOS EN CURSO</h2>
-  <div style="display:flex;gap:10px">
-    <button onclick="toggleFullscreen()">Modo TV</button>
-    <button id="btnReload">
-      <span class="btn-text">Recargar</span>
-      <span class="btn-loader"></span>
-    </button>
-  </div>
+  <button id="btnReload">
+    <span class="btn-text">Recargar</span>
+    <span class="btn-loader"></span>
+  </button>
 </div>
 
 <div class="filters">
-  <input type="text" id="fBuscar" placeholder="Buscar pedido, cliente, comuna o responsable">
+  <input type="text" id="fBuscar" placeholder="Buscar">
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -235,25 +207,25 @@ input,select,textarea{
 <div class="cards-grid" id="cardsGrid"></div>
 
 <div class="edit-modal" id="editModal">
-  <div class="edit-box">
-    <h3>Editar Pedido</h3>
-    <input id="mPedido" placeholder="Pedido">
-    <input id="mCliente" placeholder="Cliente">
-    <input id="mDireccion" placeholder="Dirección">
-    <input id="mComuna" placeholder="Comuna">
-    <input id="mResponsable" placeholder="Responsable">
-    <input type="number" id="mCajas" placeholder="Cajas">
-    <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea>
-    <select id="mStatus">
-      <option>PENDIENTE</option>
-      <option>EN RUTA</option>
-      <option>RECIBIDO</option>
-      <option>ENTREGADO</option>
-      <option>CANCELADO</option>
-    </select>
-    <button id="btnGuardar">Guardar</button>
-    <button onclick="closeEdit()">Cerrar</button>
-  </div>
+ <div class="edit-box">
+  <h3>Editar Pedido</h3>
+  <input id="mPedido" placeholder="Pedido">
+  <input id="mCliente" placeholder="Cliente">
+  <input id="mDireccion" placeholder="Dirección">
+  <input id="mComuna" placeholder="Comuna">
+  <input id="mResponsable" placeholder="Responsable">
+  <input type="number" id="mCajas" placeholder="Cajas">
+  <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea>
+  <select id="mStatus">
+    <option>PENDIENTE</option>
+    <option>EN RUTA</option>
+    <option>RECIBIDO</option>
+    <option>ENTREGADO</option>
+    <option>CANCELADO</option>
+  </select>
+  <button id="btnGuardar">Guardar</button>
+  <button onclick="closeEdit()">Cerrar</button>
+ </div>
 </div>
 
 <script>
@@ -286,13 +258,34 @@ function waze(r){
 }
 
 async function load(){
+ document.getElementById("btnReload").classList.add("loading");
  const r=await fetch(API);
  RAW=await r.json();
  applyFilter();
+ document.getElementById("btnReload").classList.remove("loading");
 }
 
 function applyFilter(){
- FILT=[...RAW];
+ const texto=fBuscar.value.toLowerCase();
+ const status=fStatus.value;
+ const desde=fDesde.value?new Date(fDesde.value):null;
+ const hasta=fHasta.value?new Date(fHasta.value):null;
+
+ FILT=RAW.filter(r=>{
+  const combinado=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
+  if(texto && !combinado.includes(texto)) return false;
+  if(status && r.status!==status) return false;
+  if(r.fecha){
+   const f=new Date(r.fecha);
+   if(desde && f<desde) return false;
+   if(hasta && f>hasta) return false;
+  }
+  return true;
+ });
+
+ totalPedidos.textContent=FILT.length;
+ totalCajas.textContent=FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
+
  visibleCount=0;
  cardsGrid.innerHTML="";
  renderMore();
@@ -303,42 +296,36 @@ function renderMore(){
  const slice=FILT.slice(visibleCount, visibleCount+CHUNK);
 
  slice.forEach(r=>{
-   const st=cleanStatus(r.status);
-   const mapId="map_"+r._row;
+  const st=cleanStatus(r.status);
+  const mapId="map_"+r._row;
 
-   const card=document.createElement("div");
-   card.className="card card-"+st;
+  const card=document.createElement("div");
+  card.className="card card-"+st;
 
-   card.innerHTML=`
-     <div class="pedido-numero">#${r.pedido||""}</div>
-     <div class="status status-${st}">${r.status||""}</div>
-     <div>👤 ${r.cliente||""}</div>
-     <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
-     <div class="responsable">👨‍💼 ${r.responsable||""}</div>
+  card.innerHTML=`
+   <div class="pedido-numero">#${r.pedido||""}</div>
+   <div class="status status-${st}">${r.status||""}</div>
+   <div>👤 ${r.cliente||""}</div>
+   <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
+   <div>👨‍💼 ${r.responsable||""}</div>
 
-     <div class="cajas-box">
-       CAJAS
-       <span>${r.etiquetas||0}</span>
+   <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
+
+   ${r.observaciones?`<div class="observaciones">${r.observaciones}</div>`:""}
+
+   <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
+
+   <div class="map-container" id="${mapId}">
+     <iframe src="${mapEmbed(r)}"></iframe>
+     <div class="map-buttons">
+       <a href="${googleMaps(r)}" target="_blank">Google Maps</a>
+       <a href="${waze(r)}" target="_blank">Waze</a>
      </div>
+   </div>
 
-     ${r.observaciones ? `<div class="observaciones"><strong>Obs:</strong> ${r.observaciones}</div>` : ""}
-
-     <button onclick="toggleMap('${mapId}', this)">➕ Mostrar mapa</button>
-
-     <div class="map-container" id="${mapId}">
-       <iframe src="${mapEmbed(r)}" loading="lazy"></iframe>
-       <div class="map-buttons">
-         <a href="${googleMaps(r)}" target="_blank">Google Maps</a>
-         <a href="${waze(r)}" target="_blank">Waze</a>
-       </div>
-     </div>
-
-     <div style="margin-top:12px">
-       <button onclick="openEdit(${r._row})">Editar</button>
-     </div>
-   `;
-
-   fragment.appendChild(card);
+   <button onclick="openEdit(${r._row})" style="margin-top:10px">Editar</button>
+  `;
+  fragment.appendChild(card);
  });
 
  cardsGrid.appendChild(fragment);
@@ -347,12 +334,12 @@ function renderMore(){
 
 function toggleMap(id,btn){
  const el=document.getElementById(id);
- if(el.style.display==="none" || el.style.display===""){
-   el.style.display="block";
-   btn.textContent="➖ Ocultar mapa";
+ if(el.style.display==="none"||el.style.display===""){
+  el.style.display="block";
+  btn.textContent="➖ Ocultar mapa";
  }else{
-   el.style.display="none";
-   btn.textContent="➕ Mostrar mapa";
+  el.style.display="none";
+  btn.textContent="➕ Mostrar mapa";
  }
 }
 
@@ -373,15 +360,24 @@ function openEdit(row){
 function closeEdit(){ editModal.style.display="none"; }
 
 window.addEventListener("scroll",()=>{
- if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 200){
-   if(visibleCount < FILT.length){
-     renderMore();
-   }
+ if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200){
+  if(visibleCount<FILT.length) renderMore();
  }
 });
 
+let debounce;
+fBuscar.oninput=()=>{
+ clearTimeout(debounce);
+ debounce=setTimeout(applyFilter,300);
+};
+
+fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
+
+btnReload.onclick=load;
+
 load();
 </script>
-
 </body>
 </html>
