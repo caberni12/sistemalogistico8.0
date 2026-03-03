@@ -95,10 +95,17 @@ input,select,textarea{
  border-radius:18px;
  padding:20px;
  box-shadow:0 8px 22px rgba(0,0,0,.08);
- border-left:6px solid #ccc;
+ border-left:8px solid #ccc;
 }
 
-/* 🔥 PEDIDO GRANDE */
+/* BORDE POR ESTADO */
+.card-EN_RUTA{border-left-color:#dc2626}
+.card-PENDIENTE{border-left-color:#2563eb}
+.card-RECIBIDO{border-left-color:#7c3aed}
+.card-ENTREGADO{border-left-color:#16a34a}
+.card-CANCELADO{border-left-color:#6b7280}
+
+/* PEDIDO GRANDE */
 .pedido-numero{
  font-size:32px;
  font-weight:900;
@@ -106,7 +113,7 @@ input,select,textarea{
  margin-bottom:4px;
 }
 
-/* 🔥 CLIENTE GRANDE */
+/* CLIENTE GRANDE */
 .cliente-destacado{
  font-size:22px;
  font-weight:800;
@@ -114,7 +121,7 @@ input,select,textarea{
  color:#111827;
 }
 
-/* STATUS */
+/* STATUS BADGE */
 .status{
  display:inline-block;
  padding:6px 12px;
@@ -263,22 +270,20 @@ input,select,textarea{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<!-- MODAL IMAGEN -->
 <div class="modal" id="imgModal" onclick="this.style.display='none'">
  <img id="imgGrande" style="max-width:90vw;max-height:85vh;border-radius:12px;">
 </div>
 
-<!-- MODAL EDITAR -->
 <div class="modal" id="editModal">
  <div class="modal-box">
   <h3>Editar Pedido</h3>
-  <input id="mPedido" placeholder="Pedido"><br><br>
-  <input id="mCliente" placeholder="Cliente"><br><br>
-  <input id="mDireccion" placeholder="Dirección"><br><br>
-  <input id="mComuna" placeholder="Comuna"><br><br>
-  <input id="mResponsable" placeholder="Responsable"><br><br>
-  <input id="mCajas" type="number" placeholder="Cajas"><br><br>
-  <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea><br><br>
+  <input id="mPedido"><br><br>
+  <input id="mCliente"><br><br>
+  <input id="mDireccion"><br><br>
+  <input id="mComuna"><br><br>
+  <input id="mResponsable"><br><br>
+  <input id="mCajas" type="number"><br><br>
+  <textarea id="mObservaciones" rows="3"></textarea><br><br>
   <select id="mStatus">
    <option>PENDIENTE</option>
    <option>EN RUTA</option>
@@ -364,7 +369,7 @@ function renderMore(){
   const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
 
   const card=document.createElement("div");
-  card.className="card";
+  card.className="card card-"+st;
 
   card.innerHTML=`
    <div class="pedido-numero">#${r.pedido||""}</div>
@@ -453,6 +458,11 @@ window.addEventListener("scroll",()=>{
   if(visibleCount<FILT.length) renderMore();
  }
 });
+
+fBuscar.oninput=()=>setTimeout(applyFilter,300);
+fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
 
 btnReload.onclick=load;
 btnGuardar.onclick=guardar;
