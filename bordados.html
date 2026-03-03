@@ -2,25 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard Logístico</title>
+<title>PEDIDOS EN CURSO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<!-- LIBRERÍAS -->
-<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.29/dist/jspdf.plugin.autotable.min.js"></script>
 
 <style>
 
-/* ================= VARIABLES ================= */
 :root{
- --bg:#f8fafc;
+ --bg:#f1f5f9;
  --card:#ffffff;
- --txt:#0f172a;
- --muted:#64748b;
- --pri:#14b8a6;
- --border:#cbd5e1;
+ --border:#e2e8f0;
+ --text:#0f172a;
 }
 
 *{box-sizing:border-box}
@@ -29,43 +20,21 @@ body{
  margin:0;
  font-family:Inter,Arial;
  background:var(--bg);
- color:var(--txt);
- padding:16px;
+ padding:20px;
+ color:var(--text);
 }
 
-/* ================= HEADER ================= */
-.topbar{
- margin-bottom:16px;
+/* HEADER */
+.header{
+ margin-bottom:20px;
 }
 
-/* ================= KPIs ================= */
-.kpis{
- display:grid;
- grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
- gap:12px;
- margin-bottom:16px;
-}
-
-.kpi{
- background:var(--card);
- border-radius:12px;
- padding:12px;
- text-align:center;
- box-shadow:0 4px 10px rgba(0,0,0,.08);
- cursor:pointer;
- transition:.2s;
-}
-
-.kpi:hover{
- transform:translateY(-2px);
-}
-
-/* ================= FILTROS ================= */
+/* FILTROS */
 .filters{
  display:flex;
- gap:8px;
+ gap:10px;
  flex-wrap:wrap;
- margin-bottom:16px;
+ margin-bottom:20px;
 }
 
 input,select{
@@ -75,152 +44,97 @@ input,select{
  font-size:14px;
 }
 
-/* ================= BOTONES ================= */
-button{
- padding:10px 14px;
- border-radius:12px;
+/* GRID TARJETAS */
+.cards-grid{
+ display:grid;
+ grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+ gap:18px;
+}
+
+/* TARJETA */
+.card{
+ background:var(--card);
+ border-radius:16px;
+ padding:16px;
+ box-shadow:0 8px 20px rgba(0,0,0,.08);
+ transition:.2s;
+ display:flex;
+ flex-direction:column;
+ justify-content:space-between;
+}
+
+.card:hover{
+ transform:translateY(-4px);
+}
+
+/* HEADER TARJETA */
+.card-header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:10px;
+}
+
+.card-header strong{
+ font-size:15px;
+}
+
+/* STATUS */
+.status{
+ padding:5px 10px;
+ border-radius:10px;
+ font-size:11px;
+ font-weight:700;
+ background:#000;
+}
+
+.status.PENDIENTE{color:#3b82f6}
+.status.EN\ RUTA{color:#f97316}
+.status.RECIBIDO{color:#ef4444}
+.status.ENTREGADO{color:#22c55e}
+.status.CANCELADO{color:#9ca3af}
+
+/* INFO */
+.card-body{
+ font-size:13px;
+ line-height:1.4;
+ margin-bottom:12px;
+}
+
+/* ACCIONES */
+.card-actions{
+ display:flex;
+ gap:8px;
+}
+
+.card-actions button{
+ flex:1;
  border:0;
- background:var(--pri);
- color:#fff;
+ border-radius:10px;
+ padding:8px;
+ font-size:12px;
  font-weight:600;
  cursor:pointer;
- display:flex;
- align-items:center;
- justify-content:center;
- gap:6px;
- transition:.2s;
+ background:#0f172a;
+ color:#fff;
 }
 
-button:hover{
- opacity:.9;
-}
-
-button.loading .btn-text{display:none}
-button.loading .btn-loader{display:inline-block}
-
-.btn-loader{
- display:none;
- width:16px;
- height:16px;
- border:3px solid rgba(255,255,255,.4);
- border-top:3px solid #fff;
- border-radius:50%;
- animation:spin .8s linear infinite;
-}
-
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ================= TABLA ================= */
-.table-scroll{
- max-height:70vh;
- overflow-y:auto;
- border-radius:12px;
-}
-
-table{
- width:100%;
- border-collapse:collapse;
- background:var(--card);
- box-shadow:0 8px 20px rgba(0,0,0,.06);
-}
-
-th,td{
- padding:10px;
- border-bottom:1px solid var(--border);
- font-size:14px;
-}
-
-th{
- background:#fff;
- position:sticky;
- top:0;
- z-index:2;
- text-align:left;
-}
-
-/* ================= PEDIDOS EN CURSO ================= */
-#kanbanView{
- margin-top:10px;
-}
-
-.kanban-board{
- display:flex;
- gap:16px;
- overflow-x:auto;
- padding-bottom:10px;
-}
-
-.kanban-column{
- min-width:260px;
- background:#eef2f7;
- border-radius:14px;
- padding:12px;
-}
-
-.kanban-column h3{
- text-align:center;
- margin-bottom:12px;
- font-size:14px;
-}
-
-.kanban-card{
- background:#fff;
- border-radius:12px;
- padding:10px;
- margin-bottom:10px;
- box-shadow:0 4px 10px rgba(0,0,0,.08);
- font-size:13px;
-}
-
-.kanban-actions{
- display:flex;
- gap:6px;
- margin-top:8px;
-}
-
-.kanban-actions button{
- flex:1;
- height:32px;
- font-size:13px;
-}
-
-/* ================= MODALES ================= */
-.modal{
- position:fixed;
- inset:0;
- background:rgba(0,0,0,.6);
- display:none;
- align-items:center;
- justify-content:center;
- z-index:9999;
-}
-
-.modal-content{
- background:#fff;
- padding:20px;
- border-radius:16px;
- max-width:95%;
- max-height:90vh;
- overflow:auto;
+@media(max-width:768px){
+ .cards-grid{
+  grid-template-columns:1fr;
+ }
 }
 
 </style>
 </head>
 <body>
 
-<!-- ================= HEADER ================= -->
-<div class="topbar">
-  <h2>🚚 Tracking de Pedidos</h2>
+<div class="header">
+  <h2>📋 PEDIDOS EN CURSO</h2>
 </div>
 
-<!-- ================= KPIs ================= -->
-<div class="kpis" id="kpis"></div>
-
-<!-- ================= FILTROS ================= -->
 <div class="filters">
-
   <input id="search" placeholder="Buscar pedido o cliente">
-
   <input type="date" id="fDesde">
   <input type="date" id="fHasta">
 
@@ -228,220 +142,172 @@ th{
     <option value="">Todos</option>
     <option>PENDIENTE</option>
     <option>EN RUTA</option>
-    <option>ENTREGADO</option>
     <option>RECIBIDO</option>
+    <option>ENTREGADO</option>
     <option>CANCELADO</option>
   </select>
-
-  <button id="btnNuevo">
-    <span class="btn-text">➕ Nuevo</span>
-    <span class="btn-loader"></span>
-  </button>
-
-  <button id="btnPDF">
-    <span class="btn-text">📄 PDF</span>
-    <span class="btn-loader"></span>
-  </button>
-
-  <button id="btnExcel">
-    <span class="btn-text">📊 Excel</span>
-    <span class="btn-loader"></span>
-  </button>
-
-  <button id="btnToggleKPI">
-    📊 Ocultar dashboard
-  </button>
-
-  <button id="btnReload">
-    🔄 Recargar
-  </button>
-
-  <button id="btnViewMode">
-    📋 PEDIDOS EN CURSO
-  </button>
-
 </div>
 
-
-<!-- ================= TABLA DESKTOP ================= -->
-<div class="table-scroll" id="tableView">
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Pedido</th>
-        <th>Cliente</th>
-        <th>Dirección</th>
-        <th>Comuna</th>
-        <th>Transporte</th>
-        <th>Cajas</th>
-        <th>Obs</th>
-        <th>Estado</th>
-        <th>Responsable</th>
-        <th>Hora Entrega</th>
-        <th>Foto</th>
-        <th>PDF</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+<div class="cards-grid" id="cardsGrid">
+  <!-- tarjetas dinámicas -->
 </div>
-
-
-<!-- ================= PEDIDOS EN CURSO ================= -->
-<div id="kanbanView" style="display:none">
-
-  <div class="kanban-board">
-
-    <div class="kanban-column" data-status="PENDIENTE">
-      <h3>🟡 Pendiente</h3>
-      <div class="kanban-cards"></div>
-    </div>
-
-    <div class="kanban-column" data-status="EN RUTA">
-      <h3>🟠 En Ruta</h3>
-      <div class="kanban-cards"></div>
-    </div>
-
-    <div class="kanban-column" data-status="RECIBIDO">
-      <h3>🔴 Recibido</h3>
-      <div class="kanban-cards"></div>
-    </div>
-
-    <div class="kanban-column" data-status="ENTREGADO">
-      <h3>🟢 Entregado</h3>
-      <div class="kanban-cards"></div>
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- ================= MOBILE ================= -->
-<div class="mobile-list" id="mobileList"></div>
-
-<!-- ================= MODAL FOTO ================= -->
-<div class="modal" id="fotoModal">
-  <div class="modal-content" style="max-width:1000px;text-align:center">
-
-    <img id="fotoGrande"
-         style="width:100%;max-height:75vh;object-fit:contain;border-radius:14px">
-
-    <br><br>
-
-    <div style="display:flex;gap:10px;justify-content:center">
-
-      <button id="btnDescargarFoto">
-        <span class="btn-text">⬇ Descargar</span>
-        <span class="btn-loader"></span>
-      </button>
-
-      <button id="btnCerrarFoto">
-        ❌ Cerrar
-      </button>
-
-    </div>
-
-  </div>
-</div>
-
 
 <!-- ================= MODAL MAPA ================= -->
-<div class="modal" id="mapModal">
-  <div class="modal-content" style="max-width:1000px">
-
+<div id="mapModal" style="
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+">
+  <div style="
+    background:#fff;
+    padding:20px;
+    border-radius:16px;
+    max-width:95%;
+  ">
     <iframe id="mapFrame"
-            style="width:100%;height:70vh;border:0;border-radius:14px">
+      style="width:90vw;height:70vh;border:0;border-radius:14px">
     </iframe>
-
     <br><br>
-
-    <button id="btnCerrarMapa">
-      ❌ Cerrar
-    </button>
-
+    <button onclick="closeMap()">Cerrar</button>
   </div>
 </div>
 
+<script>
 
-<!-- ================= MODAL FORMULARIO ================= -->
-<div class="modal" id="modalForm">
-  <div class="modal-content" style="width:420px;max-width:95%">
+/* ================= CONFIG ================= */
+const API = "https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-    <h3 id="mtitle">Nuevo Pedido</h3>
+let RAW = [];
+let FILT = [];
 
-    <input id="mPedido" placeholder="Pedido">
-    <br><br>
+/* ================= LOAD ================= */
+async function load(){
+  const r = await fetch(API);
+  RAW = await r.json();
+  applyFilters();
+}
 
-    <input id="mCliente" placeholder="Cliente">
-    <br><br>
+/* ================= FILTROS ================= */
+function applyFilters(){
 
-    <input id="mDireccion" placeholder="Dirección">
-    <br><br>
+  const q = search.value.toLowerCase().trim();
+  const s = fStatus.value;
 
-    <input id="mComuna" placeholder="Comuna">
-    <br><br>
+  const d1 = fDesde.value ? new Date(fDesde.value+"T00:00:00") : null;
+  const d2 = fHasta.value ? new Date(fHasta.value+"T23:59:59") : null;
 
-    <input id="mTransporte" placeholder="Transporte">
-    <br><br>
+  FILT = RAW.filter(r=>{
 
-    <input id="mCajas" type="number" min="1" placeholder="Cajas">
-    <br><br>
+    const pedido = String(r.pedido||"").toLowerCase();
+    const cliente = String(r.cliente||"").toLowerCase();
+    const status = String(r.status||"");
+    const fecha = parseFecha(r.fechaIngreso);
 
-    <select id="mStatus">
-      <option>PENDIENTE</option>
-      <option>EN RUTA</option>
-      <option>RECIBIDO</option>
-      <option>ENTREGADO</option>
-      <option>CANCELADO</option>
-    </select>
-    <br><br>
+    const textOK = !q || pedido.includes(q) || cliente.includes(q);
+    const statusOK = !s || status === s;
 
-    <input id="mResponsable" placeholder="Responsable Entrega">
-    <br><br>
+    let fechaOK = true;
+    if(d1 && fecha < d1) fechaOK = false;
+    if(d2 && fecha > d2) fechaOK = false;
 
-    <input id="mHoraEntrega" type="datetime-local">
-    <br><br>
+    return textOK && statusOK && fechaOK;
+  });
 
-    <input id="mObs" placeholder="Observaciones">
-    <br><br>
+  render();
+}
 
-    <!-- FOTOS -->
-    <input type="file"
-           id="mFotos"
-           accept="image/*"
-           multiple
-           capture="environment">
-    <br><br>
+/* ================= PARSE FECHA ================= */
+function parseFecha(str){
+  if(!str) return new Date();
+  const [f,h] = str.split(" ");
+  const [d,m,y] = f.split("-").map(Number);
+  const [hh=0,mm=0] = (h||"0:0").split(":").map(Number);
+  return new Date(y,m-1,d,hh,mm);
+}
 
-    <!-- PDF -->
-    <input type="file"
-           id="mPdf"
-           accept="application/pdf"
-           multiple>
-    <br><br>
+/* ================= RENDER ================= */
+function render(){
 
-    <div style="display:flex;gap:10px">
+  cardsGrid.innerHTML = "";
 
-      <button id="btnGuardar">
-        <span class="btn-text">💾 Guardar</span>
-        <span class="btn-loader"></span>
-      </button>
+  FILT.forEach(r=>{
 
-      <button id="btnCancelar">
-        ❌ Cancelar
-      </button>
+    const card = document.createElement("div");
+    card.className = "card";
 
-    </div>
+    card.innerHTML = `
+      <div class="card-header">
+        <strong>${r.pedido || ""}</strong>
+        <span class="status ${r.status}">
+          ${r.status || ""}
+        </span>
+      </div>
 
-  </div>
-</div>
+      <div class="card-body">
+        👤 ${r.cliente || ""}<br>
+        📍 ${r.direccion || ""} (${r.comuna || ""})<br>
+        🚚 ${r.transporte || ""}<br>
+        📦 Cajas: ${r.etiquetas || 0}<br>
+        ⏱ ${r.horaEntrega || ""}<br>
+      </div>
 
+      <div class="card-actions">
+        <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
+        <button onclick="editPedido(${r._row})">✏️</button>
+        <button onclick="deletePedido(${r._row})">🗑</button>
+      </div>
+    `;
 
-<!-- ================= SCRIPT PRINCIPAL ================= -->
-<script src="envio.js"></script>
+    cardsGrid.appendChild(card);
+  });
+}
+
+/* ================= MAPA ================= */
+function openMap(d,c){
+  mapFrame.src =
+    `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}&output=embed`;
+  mapModal.style.display="flex";
+}
+
+function closeMap(){
+  mapModal.style.display="none";
+  mapFrame.src="";
+}
+
+/* ================= DELETE ================= */
+async function deletePedido(row){
+  if(!confirm("¿Eliminar pedido?")) return;
+
+  await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"delete",
+      row
+    })
+  });
+
+  load();
+}
+
+/* ================= EDIT ================= */
+function editPedido(row){
+  alert("Puedes redirigir aquí al dashboard para editar pedido ID: "+row);
+}
+
+/* ================= EVENTOS ================= */
+search.oninput = applyFilters;
+fStatus.onchange = applyFilters;
+fDesde.onchange = applyFilters;
+fHasta.onchange = applyFilters;
+
+/* ================= INIT ================= */
+load();
+
+</script>
 
 </body>
 </html>
