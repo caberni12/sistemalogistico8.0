@@ -35,7 +35,10 @@ body{
  gap:10px;
 }
 
-.counter{font-weight:600}
+.counter{
+ font-weight:600;
+ font-size:15px;
+}
 
 /* BOTONES */
 button{
@@ -55,6 +58,7 @@ button{
 }
 
 button:hover{background:var(--turq-dark)}
+
 button.loading .btn-text{display:none}
 button.loading .btn-loader{display:inline-block}
 
@@ -67,6 +71,7 @@ button.loading .btn-loader{display:inline-block}
  border-radius:50%;
  animation:spin .8s linear infinite;
 }
+
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* FILTROS */
@@ -76,6 +81,7 @@ button.loading .btn-loader{display:inline-block}
  flex-wrap:wrap;
  margin-bottom:25px;
 }
+
 input,select{
  padding:10px 12px;
  border-radius:12px;
@@ -90,6 +96,7 @@ input,select{
  gap:22px;
 }
 
+/* TARJETA */
 .card{
  background:var(--card);
  border-radius:18px;
@@ -121,6 +128,16 @@ input,select{
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
 
+/* CAJAS DESTACADAS */
+.cajas-box{
+ background:#f1f5f9;
+ padding:8px 12px;
+ border-radius:12px;
+ display:inline-block;
+ font-weight:700;
+ margin-top:8px;
+}
+
 /* FOTO */
 .photo-wrap{
  display:flex;
@@ -128,6 +145,7 @@ input,select{
  flex-wrap:wrap;
  margin:10px 0;
 }
+
 .photo-wrap img{
  width:70px;
  height:70px;
@@ -153,9 +171,12 @@ input,select{
  gap:8px;
  margin-top:12px;
 }
-.card-actions button{flex:1}
 
-/* MODAL */
+.card-actions button{
+ flex:1;
+}
+
+/* MODAL GENERAL */
 .modal{
  position:fixed;
  inset:0;
@@ -165,6 +186,7 @@ input,select{
  justify-content:center;
  z-index:9999;
 }
+
 .modal-content{
  background:#fff;
  padding:20px;
@@ -172,6 +194,7 @@ input,select{
  width:400px;
  max-width:95%;
 }
+
 .modal-content input,
 .modal-content select{
  width:100%;
@@ -212,7 +235,7 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<!-- MODAL EDIT -->
+<!-- MODAL EDITAR -->
 <div class="modal" id="editModal">
   <div class="modal-content">
     <h3>Editar Pedido</h3>
@@ -253,17 +276,17 @@ let PREVIOUS_IDS=[];
 let EDIT_ROW=null;
 let autoRefresh;
 
-/* AUTO REFRESH */
+/* AUTO REFRESH 15 SEG */
 function startAuto(){ autoRefresh=setInterval(load,15000); }
 function stopAuto(){ clearInterval(autoRefresh); }
 
 /* LOAD */
 async function load(){
  setLoading(btnReload,true);
+
  const r=await fetch(API);
  const data=await r.json();
 
- // detectar nuevos pedidos
  const newIDs=data.map(x=>x._row);
  const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
 
@@ -299,6 +322,10 @@ function render(){
    👤 ${r.cliente||""}<br>
    📍 ${r.direccion||""} (${r.comuna||""})<br>
 
+   <div class="cajas-box">
+     📦 ${r.etiquetas || 0} CAJAS
+   </div>
+
    <div class="photo-wrap">
      ${fotos.map(f=>`<img src="${f.replace(/=s\\d+$/,'=s200')}" onclick="showFoto('${f.replace(/=s\\d+$/,'=s1600')}')">`).join("")}
    </div>
@@ -309,7 +336,7 @@ function render(){
 
    <div class="card-actions">
      <button onclick="openEdit(${r._row})">
-       <span class="btn-text">✏️</span>
+       <span class="btn-text">✏️ Editar</span>
        <span class="btn-loader"></span>
      </button>
    </div>
@@ -324,7 +351,7 @@ function showFoto(url){
  fotoModal.style.display="flex";
 }
 
-/* EDIT */
+/* EDITAR */
 function openEdit(row){
  stopAuto();
  const r=RAW.find(x=>x._row==row);
@@ -347,6 +374,7 @@ function closeModal(){
 /* GUARDAR */
 btnGuardar.onclick=async()=>{
  setLoading(btnGuardar,true);
+
  await fetch(API,{
   method:"POST",
   body:JSON.stringify({
@@ -359,6 +387,7 @@ btnGuardar.onclick=async()=>{
    "STATUS":mStatus.value
   })
  });
+
  setLoading(btnGuardar,false);
  closeModal();
  load();
@@ -370,10 +399,10 @@ function setLoading(btn,state){
  btn.classList.toggle("loading",state);
 }
 
+/* EVENTOS */
 btnReload.onclick=load;
-search.oninput=render;
-fStatus.onchange=render;
 
+/* INIT */
 startAuto();
 load();
 
