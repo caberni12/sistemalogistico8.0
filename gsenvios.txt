@@ -1,0 +1,251 @@
+/***************************************************
+ * CONFIGURACIÓN GENERAL
+ ***************************************************/
+const SHEET_ID = "1FaN8iMl78JO7lEwF6X-rbC0gQKzu8N0HA7oHUuD8wAk";
+const SHEET_NAME = "Pedidos";
+const AUDIT_SHEET = "Auditoria";
+
+/* 📁 Carpeta Drive IMÁGENES */
+const DRIVE_FOLDER_ID = "1rLCUmUzK_wqbmeA_a6pQZLkp--1BYMO8";
+
+/***************************************************
+ * HEADERS DEFINITIVOS (ORDEN FIJO)
+ ***************************************************/
+const HEADERS = [
+  "FECHA Y HORA DE INGRESO",
+  "PEDIDO",
+  "CLIENTE",
+  "DIRECCION",
+  "COMUNA",
+  "TRANSPORTE",
+  "ETIQUETAS",
+  "OBSERVACIONES",
+  "STATUS",
+  "HORA ENTREGA",
+  "RESPONSABLE ENTREGA",
+  "FOTO"
+];
+
+/***************************************************
+ * UTILIDADES
+ ***************************************************/
+function fmt(d){
+  return d
+    ? Utilities.formatDate(
+        new Date(d),
+        Session.getScriptTimeZone(),
+        "dd-MM-yyyy HH:mm"
+      )
+    : "";
+}
+
+function json(o){
+  return ContentService
+    .createTextOutput(JSON.stringify(o))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/***************************************************
+ * SHEETS
+ ***************************************************/
+function getSheet(){
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(SHEET_NAME);
+
+  if(!sh){
+    sh = ss.insertSheet(SHEET_NAME);
+    sh.appendRow(HEADERS);
+  }
+
+  return sh;
+}
+
+function getAuditSheet(){
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let sh = ss.getSheetByName(AUDIT_SHEET);
+
+  if(!sh){
+    sh = ss.insertSheet(AUDIT_SHEET);
+    sh.appendRow([
+      "FECHA",
+      "PEDIDO",
+      "ACCION",
+      "CAMPO",
+      "ANTES",
+      "DESPUES",
+      "USUARIO"
+    ]);
+  }
+
+  return sh;
+}
+
+/***************************************************
+ * DRIVE — GUARDAR FOTO (URL DIRECTA Y ESTABLE)
+ ***************************************************/
+function savePhoto(base64, pedido){
+  if(!base64) return "";
+
+  const bytes = Utilities.base64Decode(base64.split(",")[1]);
+  const blob = Utilities.newBlob(
+    bytes,
+    "image/jpeg",
+    `pedido_${pedido}_${Date.now()}.jpg`
+  );
+
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const file = folder.createFile(blob);
+
+  // hacer público
+  file.setSharing(
+    DriveApp.Access.ANYONE,
+    DriveApp.Permission.VIEW
+  );
+
+  // ✅ URL QUE SÍ FUNCIONA EN <img>
+  return `https://lh3.googleusercontent.com/d/${file.getId()}=s1000`;
+}
+
+
+/***************************************************
+ * GET — LISTADO
+ ***************************************************/
+function doGet(){
+  const sh = getSheet();
+  const lastRow = sh.getLastRow();
+  if(lastRow < 2) return json([]);
+
+  const data = sh
+    .getRange(2,1,lastRow-1,HEADERS.length)
+    .getValues();
+
+  return json(
+    data.map((r,i)=>({
+      _row: i + 2,
+      fechaIngreso: fmt(r[0]),
+      pedido: r[1],
+      cliente: r[2],
+      direccion: r[3],
+      comuna: r[4],
+      transporte: r[5],
+      etiquetas: Number(r[6]) || 0,
+      observaciones: r[7],
+      status: r[8],
+      horaEntrega: fmt(r[9]),
+      responsable: r[10],
+      foto: r[11] || ""
+    }))
+  );
+}
+
+/***************************************************
+ * POST — CRUD + AUDITORÍA
+ ***************************************************/
+function doPost(e){
+  const sh = getSheet();
+  const audit = getAuditSheet();
+  const body = JSON.parse(e.postData.contents || "{}");
+  const now = new Date();
+  const user = body.user || "sistema";
+
+  /* ========= AGREGAR ========= */
+  if(body.action === "add"){
+    let fotos = [];
+
+    if(body.FOTO){
+      const arr = Array.isArray(body.FOTO) ? body.FOTO : [body.FOTO];
+      arr.forEach(f=>{
+        const url = savePhoto(f, body.PEDIDO);
+        if(url) fotos.push(url);
+      });
+    }
+
+    const row = HEADERS.map(h=>{
+      if(h === "FECHA Y HORA DE INGRESO") return now;
+      if(h === "FOTO") return fotos.join("|");
+      return body[h] || "";
+    });
+
+    sh.appendRow(row);
+
+    audit.appendRow([
+      now,
+      body.PEDIDO,
+      "CREATE",
+      "",
+      "",
+      "CREADO",
+      user
+    ]);
+
+    return json({ ok:true });
+  }
+
+  /* ========= EDITAR ========= */
+  if(body.action === "update"){
+    const row = Number(body.row);
+    if(!row || row < 2) return json({ ok:false });
+
+    // fotos nuevas (no sobrescribe)
+    if(body.FOTO && body.FOTO.length){
+      const prev = sh.getRange(row,12).getValue() || "";
+      let nuevas = [];
+
+      body.FOTO.forEach(f=>{
+        const url = savePhoto(f, body.PEDIDO);
+        if(url) nuevas.push(url);
+      });
+
+      sh.getRange(row,12).setValue(
+        prev ? prev + "|" + nuevas.join("|") : nuevas.join("|")
+      );
+    }
+
+    // auditoría + actualización campos
+    HEADERS.forEach((h,i)=>{
+      if(body[h] !== undefined && h !== "FOTO"){
+        const cell = sh.getRange(row,i+1);
+        const before = cell.getValue();
+        const after = body[h];
+
+        if(String(before) !== String(after)){
+          cell.setValue(after);
+          audit.appendRow([
+            now,
+            body.PEDIDO,
+            "UPDATE",
+            h,
+            before,
+            after,
+            user
+          ]);
+        }
+      }
+    });
+
+    return json({ ok:true });
+  }
+
+  /* ========= ELIMINAR ========= */
+  if(body.action === "delete"){
+    const row = Number(body.row);
+    if(!row || row < 2) return json({ ok:false });
+
+    const pedido = sh.getRange(row,2).getValue();
+    sh.deleteRow(row);
+
+    audit.appendRow([
+      now,
+      pedido,
+      "DELETE",
+      "",
+      "",
+      "ELIMINADO",
+      user
+    ]);
+
+    return json({ ok:true });
+  }
+
+  return json({ ok:false, error:"Acción inválida" });
+}

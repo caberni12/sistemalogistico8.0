@@ -413,6 +413,7 @@ table{
 </head>
 
 <body>
+
 <!-- ================== HEADER ================== -->
 <div class="topbar">
   <h2>🚚 Tracking de Pedidos</h2>
@@ -451,18 +452,14 @@ table{
     <span class="btn-loader"></span>
   </button>
 
-<button id="btnToggleKPI" class="btn-text">
-  📊 Ocultar dashboard
-</button>
+  <button id="btnToggleKPI" class="btn-text">
+    📊 Ocultar dashboard
+  </button>
 
-<button id="btnReload" class="btn-text">
-  🔄 Recargar
-</button>
-
-
- </div>
-
-
+  <button id="btnReload" class="btn-text">
+    🔄 Recargar
+  </button>
+</div>
 
 <!-- ================== TABLA DESKTOP ================== -->
 <div class="table-scroll" tabindex="0">
@@ -481,6 +478,7 @@ table{
         <th>Responsable</th>
         <th>Hora Entrega</th>
         <th>Foto</th>
+        <th>PDF</th> <!-- ✅ AGREGADO -->
         <th>Acciones</th>
       </tr>
     </thead>
@@ -491,9 +489,7 @@ table{
 </div>
 
 <!-- ================== MOBILE ================== -->
-<div class="mobile-list" id="mobileList">
-  <!-- cards dinámicas -->
-</div>
+<div class="mobile-list" id="mobileList"></div>
 
 <!-- ================== MODAL FOTO ================== -->
 <div class="modal" id="fotoModal">
@@ -543,11 +539,15 @@ table{
 
     <input id="mResponsable" placeholder="Responsable Entrega">
     <input id="mHoraEntrega" type="datetime-local">
-
     <input id="mObs" placeholder="Observaciones">
 
     <!-- FOTOS -->
     <input type="file" id="mFotos" accept="image/*" multiple capture="environment">
+
+    <br><br>
+
+    <!-- ✅ PDF AGREGADO -->
+    <input type="file" id="mPdf" accept="application/pdf" multiple>
 
     <br><br>
 
@@ -562,10 +562,7 @@ table{
   </div>
 </div>
 
- 
-  
-  <script src="envio.js"></script>
+<script src="envio.js"></script>
 
-
-  </body>
-  </html>
+</body>
+</html>
