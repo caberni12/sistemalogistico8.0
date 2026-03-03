@@ -12,6 +12,7 @@
  --border:#e2e8f0;
  --text:#0f172a;
  --primary:#14b8a6;
+ --primary-dark:#0d9488;
  --danger:#dc2626;
 }
 
@@ -46,6 +47,8 @@ button{
  align-items:center;
  gap:6px;
 }
+
+button:hover{background:var(--primary-dark)}
 
 button.loading .btn-text{display:none}
 button.loading .btn-loader{display:inline-block}
@@ -147,6 +150,32 @@ input,select{
  max-height:85vh;
  border-radius:12px;
 }
+
+/* EDIT MODAL */
+.edit-modal{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.6);
+ display:none;
+ align-items:center;
+ justify-content:center;
+ z-index:9999;
+}
+
+.edit-box{
+ background:#fff;
+ padding:20px;
+ border-radius:16px;
+ width:400px;
+ max-width:95%;
+}
+
+.edit-box input,
+.edit-box select{
+ width:100%;
+ margin-bottom:10px;
+ padding:8px;
+}
 </style>
 </head>
 <body>
@@ -185,16 +214,40 @@ input,select{
   <img id="fotoGrande">
 </div>
 
+<div class="edit-modal" id="editModal">
+  <div class="edit-box">
+    <h3>Editar Pedido</h3>
+    <input id="mPedido">
+    <input id="mCliente">
+    <input id="mDireccion">
+    <input id="mComuna">
+    <input type="number" id="mCajas">
+    <select id="mStatus">
+      <option>PENDIENTE</option>
+      <option>EN RUTA</option>
+      <option>RECIBIDO</option>
+      <option>ENTREGADO</option>
+      <option>CANCELADO</option>
+    </select>
+
+    <button id="btnGuardar">
+      <span class="btn-text">Guardar</span>
+      <span class="btn-loader"></span>
+    </button>
+    <button onclick="closeEdit()">Cerrar</button>
+  </div>
+</div>
+
 <script>
 const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
-let RAW=[];
-let FILT=[];
+let RAW=[], FILT=[];
 let visibleCount=0;
 const CHUNK=50;
-let loadingMore=false;
+let EDIT_ROW=null;
 
 const btnReload=document.getElementById("btnReload");
+const btnGuardar=document.getElementById("btnGuardar");
 
 function setLoading(btn,state){
  btn.disabled=state;
@@ -233,9 +286,6 @@ function applyFilter(){
 }
 
 function renderMore(){
- if(loadingMore) return;
- loadingMore=true;
-
  const fragment=document.createDocumentFragment();
  const slice=FILT.slice(visibleCount, visibleCount+CHUNK);
 
@@ -262,13 +312,53 @@ function renderMore(){
          <a href="${p}" download>Descargar</a>
        `).join("")}
      </div>
+     <div style="margin-top:10px">
+       <button onclick="openEdit(${r._row})">Editar</button>
+     </div>
    `;
    fragment.appendChild(card);
  });
 
  cardsGrid.appendChild(fragment);
  visibleCount+=CHUNK;
- loadingMore=false;
+}
+
+function openEdit(row){
+ const r=RAW.find(x=>x._row==row);
+ EDIT_ROW=row;
+
+ mPedido.value=r.pedido||"";
+ mCliente.value=r.cliente||"";
+ mDireccion.value=r.direccion||"";
+ mComuna.value=r.comuna||"";
+ mCajas.value=r.etiquetas||1;
+ mStatus.value=r.status||"";
+
+ editModal.style.display="flex";
+}
+
+function closeEdit(){
+ editModal.style.display="none";
+}
+
+async function guardar(){
+ setLoading(btnGuardar,true);
+ await fetch(API,{
+   method:"POST",
+   body:JSON.stringify({
+     action:"update",
+     row:EDIT_ROW,
+     PEDIDO:mPedido.value,
+     CLIENTE:mCliente.value,
+     DIRECCION:mDireccion.value,
+     COMUNA:mComuna.value,
+     ETIQUETAS:mCajas.value,
+     STATUS:mStatus.value
+   })
+ });
+ closeEdit();
+ load();
+ setLoading(btnGuardar,false);
 }
 
 function showFoto(url){
@@ -284,16 +374,14 @@ function toggleFullscreen(){
  }
 }
 
-/* Scroll infinito */
 window.addEventListener("scroll",()=>{
- if((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200){
+ if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 200){
    if(visibleCount < FILT.length){
      renderMore();
    }
  }
 });
 
-/* Debounce buscador */
 let debounce;
 fBuscar.oninput=()=>{
  clearTimeout(debounce);
@@ -302,6 +390,7 @@ fBuscar.oninput=()=>{
 
 fStatus.onchange=applyFilter;
 btnReload.onclick=load;
+btnGuardar.onclick=guardar;
 
 setInterval(load,15000);
 load();
