@@ -16,7 +16,6 @@
  --turq-dark:#0d9488;
 }
 
-
 *{box-sizing:border-box}
 
 body{
@@ -56,7 +55,6 @@ button{
  align-items:center;
  justify-content:center;
  gap:6px;
- position:relative;
 }
 
 button:hover{background:var(--turq-dark)}
@@ -136,12 +134,6 @@ input,select{
  margin-top:6px;
 }
 
-.status.PENDIENTE{color:#3b82f6}
-.status.EN\ RUTA{color:#f97316}
-.status.RECIBIDO{color:#ef4444}
-.status.ENTREGADO{color:#22c55e}
-.status.CANCELADO{color:#9ca3af}
-
 .cajas{
  background:#f1f5f9;
  padding:8px 12px;
@@ -166,22 +158,6 @@ input,select{
  cursor:pointer;
 }
 
-.pdf-wrap{
- margin-top:10px;
- display:flex;
- gap:6px;
- flex-wrap:wrap;
-}
-
-.pdf-wrap a{
- background:#0f172a;
- color:#fff;
- padding:6px 10px;
- border-radius:8px;
- font-size:12px;
- text-decoration:none;
-}
-
 .modal{
  position:fixed;
  inset:0;
@@ -190,21 +166,6 @@ input,select{
  align-items:center;
  justify-content:center;
  z-index:9999;
-}
-
-.modal-content{
- background:#fff;
- padding:20px;
- border-radius:16px;
- width:400px;
- max-width:95%;
-}
-
-.modal-content input,
-.modal-content select{
- width:100%;
- margin-bottom:10px;
- padding:8px;
 }
 
 .foto-modal img{
@@ -228,6 +189,8 @@ input,select{
 </div>
 
 <div class="filters">
+  <input type="text" id="fBuscar" placeholder="🔎 Buscar pedido, cliente, dirección o comuna">
+  
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -248,35 +211,8 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<!-- MODAL FOTO -->
 <div class="modal foto-modal" id="fotoModal" onclick="this.style.display='none'">
   <img id="fotoGrande">
-</div>
-
-<!-- MODAL EDITAR -->
-<div class="modal" id="editModal">
-  <div class="modal-content">
-    <h3>Editar Pedido</h3>
-    <input id="mPedido">
-    <input id="mCliente">
-    <input id="mDireccion">
-    <input id="mComuna">
-    <input type="number" id="mCajas" min="1">
-    <select id="mStatus">
-      <option>PENDIENTE</option>
-      <option>EN RUTA</option>
-      <option>RECIBIDO</option>
-      <option>ENTREGADO</option>
-      <option>CANCELADO</option>
-    </select>
-
-    <button id="btnGuardar">
-      <span class="btn-text">💾 Guardar</span>
-      <span class="btn-loader"></span>
-    </button>
-
-    <button onclick="closeEdit()">Cerrar</button>
-  </div>
 </div>
 
 <audio id="notifSound">
@@ -289,19 +225,17 @@ const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTqu
 let RAW=[];
 let FILT=[];
 let PREVIOUS_IDS=[];
-let EDIT_ROW=null;
 
 const btnReload=document.getElementById("btnReload");
-const btnGuardar=document.getElementById("btnGuardar");
 const cardsGrid=document.getElementById("cardsGrid");
 const fStatus=document.getElementById("fStatus");
 const fDesde=document.getElementById("fDesde");
 const fHasta=document.getElementById("fHasta");
+const fBuscar=document.getElementById("fBuscar");
 const totalPedidos=document.getElementById("totalPedidos");
 const totalCajas=document.getElementById("totalCajas");
 const fotoModal=document.getElementById("fotoModal");
 const fotoGrande=document.getElementById("fotoGrande");
-const editModal=document.getElementById("editModal");
 
 setInterval(load,15000);
 
@@ -317,7 +251,6 @@ async function load(){
 
  const newIDs=data.map(x=>x._row);
  const hasNew=newIDs.some(id=>!PREVIOUS_IDS.includes(id));
-
  if(hasNew && PREVIOUS_IDS.length){
   document.getElementById("notifSound").play();
  }
@@ -339,12 +272,24 @@ function applyFilter(){
  const status=fStatus.value;
  const desde=fDesde.value ? new Date(fDesde.value) : null;
  const hasta=fHasta.value ? new Date(fHasta.value) : null;
+ const texto=fBuscar.value.toLowerCase();
 
  FILT=RAW.filter(r=>{
    if(status && r.status!==status) return false;
+
    const fecha=parseFecha(r.fechaIngreso);
    if(desde && fecha<desde) return false;
    if(hasta && fecha>hasta) return false;
+
+   const combinado = `
+     ${r.pedido||""}
+     ${r.cliente||""}
+     ${r.direccion||""}
+     ${r.comuna||""}
+   `.toLowerCase();
+
+   if(texto && !combinado.includes(texto)) return false;
+
    return true;
  });
 
@@ -360,6 +305,7 @@ function updateStats(){
 fStatus.onchange=applyFilter;
 fDesde.onchange=applyFilter;
 fHasta.onchange=applyFilter;
+fBuscar.oninput=applyFilter;
 
 function render(){
  cardsGrid.innerHTML="";
@@ -368,11 +314,10 @@ function render(){
   card.className="card "+r.status;
 
   const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
-  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
 
   card.innerHTML=`
    <h3>${r.pedido||""}</h3>
-   <div class="status ${r.status}">${r.status||""}</div>
+   <div class="status">${r.status||""}</div>
    <div style="margin-top:8px">
      👤 ${r.cliente||""}<br>
      📍 ${r.direccion||""} (${r.comuna||""})
@@ -381,17 +326,6 @@ function render(){
 
    <div class="photo-wrap">
      ${fotos.map(f=>`<img src="${f}" onclick="showFoto('${f}')">`).join("")}
-   </div>
-
-   <div class="pdf-wrap">
-     ${pdfs.map(p=>`
-       <a href="${p}" target="_blank">📄 Ver</a>
-       <a href="${p}" download>⬇ Descargar</a>
-     `).join("")}
-   </div>
-
-   <div style="margin-top:12px">
-     <button onclick="openEdit(${r._row})">✏️ Editar</button>
    </div>
   `;
   cardsGrid.appendChild(card);
@@ -402,46 +336,6 @@ function showFoto(url){
  fotoGrande.src=url;
  fotoModal.style.display="flex";
 }
-
-function openEdit(row){
- const r=RAW.find(x=>x._row==row);
- EDIT_ROW=row;
-
- document.getElementById("mPedido").value=r.pedido||"";
- document.getElementById("mCliente").value=r.cliente||"";
- document.getElementById("mDireccion").value=r.direccion||"";
- document.getElementById("mComuna").value=r.comuna||"";
- document.getElementById("mCajas").value=r.etiquetas||1;
- document.getElementById("mStatus").value=r.status||"";
-
- editModal.style.display="flex";
-}
-
-function closeEdit(){
- editModal.style.display="none";
-}
-
-btnGuardar.onclick=async()=>{
- setLoading(btnGuardar,true);
-
- await fetch(API,{
-  method:"POST",
-  body:JSON.stringify({
-   action:"update",
-   row:EDIT_ROW,
-   PEDIDO:mPedido.value,
-   CLIENTE:mCliente.value,
-   DIRECCION:mDireccion.value,
-   COMUNA:mComuna.value,
-   ETIQUETAS:mCajas.value,
-   STATUS:mStatus.value
-  })
- });
-
- setLoading(btnGuardar,false);
- closeEdit();
- load();
-};
 
 function toggleTV(){
  document.body.classList.toggle("tv-mode");
