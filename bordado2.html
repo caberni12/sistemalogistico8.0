@@ -9,7 +9,6 @@
 :root{
  --bg:#f8fafc;
  --card:#ffffff;
- --border:#e2e8f0;
  --text:#0f172a;
  --primary:#14b8a6;
  --primary-dark:#0d9488;
@@ -66,7 +65,6 @@ button.loading .btn-loader{display:inline-block}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* FILTROS */
 .filters{
  display:flex;
  gap:10px;
@@ -74,13 +72,12 @@ button.loading .btn-loader{display:inline-block}
  margin-bottom:15px;
 }
 
-input,select{
+input,select,textarea{
  padding:8px 12px;
  border-radius:10px;
- border:1px solid var(--border);
+ border:1px solid #e2e8f0;
 }
 
-/* CONTADORES */
 .stats{
  display:flex;
  gap:20px;
@@ -88,7 +85,6 @@ input,select{
  font-weight:bold;
 }
 
-/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
@@ -96,7 +92,7 @@ input,select{
 }
 
 .card{
- background:var(--card);
+ background:#fff;
  border-radius:18px;
  padding:20px;
  box-shadow:0 8px 22px rgba(0,0,0,.08);
@@ -141,6 +137,14 @@ input,select{
  font-weight:900;
 }
 
+.observaciones{
+ margin-top:12px;
+ background:#f1f5f9;
+ padding:10px;
+ border-radius:10px;
+ font-size:14px;
+}
+
 .photo-wrap img{
  width:80px;
  height:80px;
@@ -160,7 +164,6 @@ input,select{
  margin-right:6px;
 }
 
-/* MODALS */
 .modal{
  position:fixed;
  inset:0;
@@ -193,13 +196,6 @@ input,select{
  border-radius:16px;
  width:400px;
  max-width:95%;
-}
-
-.edit-box input,
-.edit-box select{
- width:100%;
- margin-bottom:10px;
- padding:8px;
 }
 </style>
 </head>
@@ -242,11 +238,12 @@ input,select{
 <div class="edit-modal" id="editModal">
   <div class="edit-box">
     <h3>Editar Pedido</h3>
-    <input id="mPedido">
-    <input id="mCliente">
-    <input id="mDireccion">
-    <input id="mComuna">
-    <input type="number" id="mCajas">
+    <input id="mPedido" placeholder="Pedido">
+    <input id="mCliente" placeholder="Cliente">
+    <input id="mDireccion" placeholder="Dirección">
+    <input id="mComuna" placeholder="Comuna">
+    <input type="number" id="mCajas" placeholder="Cajas">
+    <textarea id="mObservaciones" rows="3" placeholder="Observaciones"></textarea>
     <select id="mStatus">
       <option>PENDIENTE</option>
       <option>EN RUTA</option>
@@ -279,9 +276,7 @@ function setLoading(btn,state){
  btn.classList.toggle("loading",state);
 }
 
-function cleanStatus(s){
- return (s||"").replace(/\s+/g,"_");
-}
+function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
 
 async function load(){
  setLoading(btnReload,true);
@@ -340,6 +335,8 @@ function renderMore(){
        <span>${r.etiquetas||0}</span>
      </div>
 
+     ${r.observaciones ? `<div class="observaciones"><strong>Obs:</strong> ${r.observaciones}</div>` : ""}
+
      <div class="photo-wrap">
        ${fotos.map(f=>`<img src="${f}" onclick="showFoto('${f}')">`).join("")}
      </div>
@@ -365,18 +362,19 @@ function renderMore(){
 function openEdit(row){
  const r=RAW.find(x=>x._row==row);
  EDIT_ROW=row;
+
  mPedido.value=r.pedido||"";
  mCliente.value=r.cliente||"";
  mDireccion.value=r.direccion||"";
  mComuna.value=r.comuna||"";
  mCajas.value=r.etiquetas||1;
+ mObservaciones.value=r.observaciones||"";
  mStatus.value=r.status||"";
+
  editModal.style.display="flex";
 }
 
-function closeEdit(){
- editModal.style.display="none";
-}
+function closeEdit(){ editModal.style.display="none"; }
 
 async function guardar(){
  setLoading(btnGuardar,true);
@@ -390,6 +388,7 @@ async function guardar(){
      DIRECCION:mDireccion.value,
      COMUNA:mComuna.value,
      ETIQUETAS:mCajas.value,
+     OBSERVACIONES:mObservaciones.value,
      STATUS:mStatus.value
    })
  });
