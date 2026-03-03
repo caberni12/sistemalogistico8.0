@@ -33,7 +33,6 @@ body.tv-mode{
  padding:30px;
 }
 
-/* HEADER */
 .header{
  display:flex;
  justify-content:space-between;
@@ -52,9 +51,29 @@ button{
  cursor:pointer;
  background:var(--primary);
  color:#fff;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:6px;
+ position:relative;
 }
 
 button:hover{background:var(--primary-dark)}
+
+button.loading .btn-text{display:none}
+button.loading .btn-loader{display:inline-block}
+
+.btn-loader{
+ display:none;
+ width:16px;
+ height:16px;
+ border:3px solid rgba(255,255,255,.4);
+ border-top:3px solid #fff;
+ border-radius:50%;
+ animation:spin .8s linear infinite;
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
 
 .filters{
  display:flex;
@@ -83,7 +102,6 @@ input,select{
  border-radius:12px;
 }
 
-/* GRID */
 .cards-grid{
  display:grid;
  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
@@ -98,14 +116,12 @@ input,select{
  border-left:6px solid #ccc;
 }
 
-/* BORDES POR ESTADO */
 .card-PENDIENTE{border-left-color:#2563eb}
 .card-EN_RUTA{border-left-color:#dc2626}
 .card-RECIBIDO{border-left-color:#7c3aed}
 .card-ENTREGADO{border-left-color:#16a34a}
 .card-CANCELADO{border-left-color:#6b7280}
 
-/* BADGE ESTADO */
 .status{
  padding:6px 14px;
  border-radius:20px;
@@ -117,7 +133,7 @@ input,select{
 }
 
 .status-PENDIENTE{background:#2563eb}
-.status-EN_RUTA{background:#dc2626} /* ROJO FUERTE */
+.status-EN_RUTA{background:#dc2626}
 .status-RECIBIDO{background:#7c3aed}
 .status-ENTREGADO{background:#16a34a}
 .status-CANCELADO{background:#6b7280}
@@ -131,7 +147,6 @@ input,select{
  display:inline-block;
 }
 
-/* FOTOS */
 .photo-wrap{
  display:flex;
  gap:8px;
@@ -148,7 +163,6 @@ input,select{
  border:2px solid #e2e8f0;
 }
 
-/* PDF */
 .pdf-wrap{
  margin-top:10px;
  display:flex;
@@ -165,7 +179,6 @@ input,select{
  text-decoration:none;
 }
 
-/* MODAL FOTO */
 .modal{
  position:fixed;
  inset:0;
@@ -182,7 +195,6 @@ input,select{
  border-radius:12px;
 }
 
-/* MODAL EDIT */
 .edit-modal{
  position:fixed;
  inset:0;
@@ -200,6 +212,7 @@ input,select{
  width:400px;
  max-width:95%;
 }
+
 .edit-box input,
 .edit-box select{
  width:100%;
@@ -212,9 +225,12 @@ input,select{
 
 <div class="header">
   <h2>📋 PEDIDOS EN CURSO</h2>
-  <div>
+  <div style="display:flex;gap:10px">
     <button onclick="toggleTV()">Modo TV</button>
-    <button onclick="load()">Recargar</button>
+    <button id="btnReload">
+      <span class="btn-text">Recargar</span>
+      <span class="btn-loader"></span>
+    </button>
   </div>
 </div>
 
@@ -239,12 +255,10 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
-<!-- MODAL FOTO -->
 <div class="modal" id="fotoModal" onclick="this.style.display='none'">
   <img id="fotoGrande">
 </div>
 
-<!-- MODAL EDITAR -->
 <div class="edit-modal" id="editModal">
   <div class="edit-box">
     <h3>Editar Pedido</h3>
@@ -260,7 +274,12 @@ input,select{
       <option>ENTREGADO</option>
       <option>CANCELADO</option>
     </select>
-    <button onclick="guardar()">Guardar</button>
+
+    <button id="btnGuardar">
+      <span class="btn-text">Guardar</span>
+      <span class="btn-loader"></span>
+    </button>
+
     <button onclick="closeEdit()">Cerrar</button>
   </div>
 </div>
@@ -276,11 +295,21 @@ let RAW=[];
 let EDIT_ROW=null;
 let PREV_IDS=[];
 
+const btnReload=document.getElementById("btnReload");
+const btnGuardar=document.getElementById("btnGuardar");
+
+function setLoading(btn,state){
+ btn.disabled=state;
+ btn.classList.toggle("loading",state);
+}
+
 function cleanStatus(s){
  return (s||"").replace(/\s+/g,"_");
 }
 
 async function load(){
+ setLoading(btnReload,true);
+
  const r=await fetch(API);
  RAW=await r.json();
 
@@ -291,6 +320,7 @@ async function load(){
  PREV_IDS=ids;
 
  applyFilter();
+ setLoading(btnReload,false);
 }
 
 function parseFecha(str){
@@ -370,12 +400,14 @@ function showFoto(url){
 function openEdit(row){
  const r=RAW.find(x=>x._row==row);
  EDIT_ROW=row;
+
  mPedido.value=r.pedido||"";
  mCliente.value=r.cliente||"";
  mDireccion.value=r.direccion||"";
  mComuna.value=r.comuna||"";
  mCajas.value=r.etiquetas||1;
  mStatus.value=r.status||"";
+
  editModal.style.display="flex";
 }
 
@@ -384,6 +416,8 @@ function closeEdit(){
 }
 
 async function guardar(){
+ setLoading(btnGuardar,true);
+
  await fetch(API,{
   method:"POST",
   body:JSON.stringify({
@@ -397,18 +431,23 @@ async function guardar(){
     STATUS:mStatus.value
   })
  });
+
  closeEdit();
  load();
+ setLoading(btnGuardar,false);
 }
 
-function toggleTV(){
- document.body.classList.toggle("tv-mode");
-}
+btnReload.onclick=load;
+btnGuardar.onclick=guardar;
 
 fBuscar.oninput=applyFilter;
 fStatus.onchange=applyFilter;
 fDesde.onchange=applyFilter;
 fHasta.onchange=applyFilter;
+
+function toggleTV(){
+ document.body.classList.toggle("tv-mode");
+}
 
 setInterval(load,15000);
 load();
