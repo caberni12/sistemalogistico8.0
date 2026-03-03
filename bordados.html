@@ -122,15 +122,22 @@ input,select{
 .card.ENTREGADO{border-left-color:#22c55e}
 .card.CANCELADO{border-left-color:#9ca3af}
 
+/* ESTADOS VISIBLES */
 .status{
- background:#000;
  padding:6px 12px;
- border-radius:8px;
+ border-radius:20px;
  font-size:12px;
- font-weight:bold;
+ font-weight:600;
  display:inline-block;
  margin-top:6px;
+ color:#fff;
 }
+
+.status.PENDIENTE{background:#3b82f6}
+.status.EN\ RUTA{background:#f97316}
+.status.RECIBIDO{background:#ef4444}
+.status.ENTREGADO{background:#22c55e}
+.status.CANCELADO{background:#6b7280}
 
 .cajas{
  background:#f1f5f9;
@@ -298,7 +305,7 @@ function render(data){
 
   card.innerHTML=`
    <h3>${r.pedido||""}</h3>
-   <div class="status">${r.status||""}</div>
+   <div class="status ${r.status}">${r.status||""}</div>
    <div style="margin-top:8px">
      👤 ${r.cliente||""}<br>
      📍 ${r.direccion||""} (${r.comuna||""})
