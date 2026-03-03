@@ -22,7 +22,7 @@ function setLoading(btn, state){
 }
 
 /* ======================================================
-   BASE64 (IMAGEN Y PDF)
+   BASE64
 ====================================================== */
 function toBase64(file){
   return new Promise(resolve=>{
@@ -33,7 +33,7 @@ function toBase64(file){
 }
 
 /* ======================================================
-   FECHA (dd-MM-yyyy HH:mm)
+   FECHA
 ====================================================== */
 function parseFechaCL(str){
   if(!str) return null;
@@ -43,6 +43,39 @@ function parseFechaCL(str){
   return new Date(y, m-1, d, hh, mm);
 }
 
+/* ======================================================
+   STATUS HTML (COLOR INTEGRADO)
+====================================================== */
+function getStatusHTML(status){
+
+  const map = {
+    "RECIBIDO":   { color:"#ff4d4f" },
+    "ENTREGADO":  { color:"#22c55e" },
+    "EN RUTA":    { color:"#f97316" },
+    "PENDIENTE":  { color:"#3b82f6" },
+    "CANCELADO":  { color:"#9ca3af" }
+  };
+
+  const s = String(status || "").toUpperCase();
+  const style = map[s];
+
+  if(!style) return status || "";
+
+  return `
+    <span style="
+      background:#000;
+      color:${style.color};
+      font-weight:700;
+      padding:4px 10px;
+      border-radius:8px;
+      font-size:12px;
+      letter-spacing:.5px;
+      display:inline-block;
+    ">
+      ${status}
+    </span>
+  `;
+}
 /* ======================================================
    LOAD
 ====================================================== */
@@ -99,43 +132,6 @@ function applyFilters(){
 }
 
 /* ======================================================
-   CURSOR TECLADO
-====================================================== */
-function moveCursor(dir){
-  const rows = [...tbody.querySelectorAll("tr")];
-  if(!rows.length) return;
-
-  rows.forEach(r=>r.classList.remove("cursor-active"));
-
-  cursorIndex += dir;
-  if(cursorIndex < 0) cursorIndex = 0;
-  if(cursorIndex >= rows.length) cursorIndex = rows.length - 1;
-
-  const row = rows[cursorIndex];
-  row.classList.add("cursor-active");
-
-  row.scrollIntoView({
-    behavior:"smooth",
-    block:"nearest"
-  });
-}
-
-document.addEventListener("keydown", e=>{
-  if(isMobile()) return;
-  if(modalForm.style.display==="flex") return;
-
-  if(e.key === "ArrowDown"){
-    e.preventDefault();
-    moveCursor(1);
-  }
-
-  if(e.key === "ArrowUp"){
-    e.preventDefault();
-    moveCursor(-1);
-  }
-});
-
-/* ======================================================
    RENDER
 ====================================================== */
 function render(){
@@ -148,6 +144,7 @@ function render(){
   /* ================= DESKTOP ================= */
   if(!isMobile()){
     FILT.forEach(r=>{
+
       tbody.insertAdjacentHTML("beforeend", `
         <tr>
           <td class="fecha">${r.fechaIngreso || ""}</td>
@@ -158,7 +155,7 @@ function render(){
           <td>${r.transporte || ""}</td>
           <td>${r.etiquetas || 0}</td>
           <td>${r.observaciones || ""}</td>
-          <td>${r.status || ""}</td>
+          <td>${getStatusHTML(r.status)}</td>
           <td>${r.responsable || ""}</td>
           <td>${r.horaEntrega || ""}</td>
           <td>${renderFotos(r.foto)}</td>
@@ -172,15 +169,17 @@ function render(){
           </td>
         </tr>
       `);
+
     });
   }
 
   /* ================= MOBILE ================= */
   else{
     FILT.forEach(r=>{
+
       mobileList.insertAdjacentHTML("beforeend", `
         <div class="row-card">
-          <b>${r.pedido || ""}</b> · ${r.status || ""}<br>
+          <b>${r.pedido || ""}</b> · ${getStatusHTML(r.status)}<br>
           ${r.cliente || ""}<br>
           ${r.direccion || ""} (${r.comuna || ""})<br>
           🚚 ${r.transporte || ""}<br>
@@ -198,6 +197,7 @@ function render(){
           </div>
         </div>
       `);
+
     });
   }
 }
@@ -258,8 +258,9 @@ btnDescargarFoto.onclick = ()=>{
   document.body.removeChild(a);
 };
 
+
 /* ======================================================
-   PDF (NUEVO)
+   PDF
 ====================================================== */
 function renderPDF(p){
   if(!p) return "";
@@ -282,12 +283,14 @@ function renderPDF(p){
   `;
 }
 
+
 /* ======================================================
    MAPA
 ====================================================== */
 function openMap(d,c){
   mapFrame.src =
     `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}&output=embed`;
+
   mapModal.style.display="flex";
 }
 
@@ -296,22 +299,35 @@ btnCerrarMapa.onclick = ()=>{
   mapFrame.src="";
 };
 
+
 /* ======================================================
    KPIS
 ====================================================== */
 function drawKPI(id,val,total,color){
   if(charts[id]) charts[id].destroy();
+
   charts[id] = new Chart(document.getElementById(id),{
     type:"doughnut",
-    data:{datasets:[{data:[val,total-val],backgroundColor:[color,"#e5e7eb"]}]},
-    options:{cutout:"70%",plugins:{legend:{display:false}}}
+    data:{
+      datasets:[{
+        data:[val,total-val],
+        backgroundColor:[color,"#e5e7eb"]
+      }]
+    },
+    options:{
+      cutout:"70%",
+      plugins:{ legend:{ display:false } }
+    }
   });
 }
 
 function kpiFilter(status){
-  document.querySelectorAll('.kpi').forEach(k=>k.classList.remove('active'));
+  document.querySelectorAll('.kpi')
+    .forEach(k=>k.classList.remove('active'));
+
   const active = [...document.querySelectorAll('.kpi')]
     .find(k=>k.dataset.status===status);
+
   if(active) active.classList.add('active');
 
   fStatus.value = status;
@@ -324,6 +340,7 @@ btnToggleKPI.onclick = ()=>{
   kpis.classList.toggle('hidden');
 
   const hidden = kpis.classList.contains('hidden');
+
   btnToggleKPI.textContent = hidden
     ? '📊 Mostrar dashboard'
     : '📊 Ocultar dashboard';
@@ -337,6 +354,7 @@ if(localStorage.getItem('kpiHidden') === '1'){
 }
 
 function renderKPIs(){
+
   const t = FILT.length || 1;
   const c = s => FILT.filter(r=>r.status===s).length;
 
@@ -382,6 +400,7 @@ btnNuevo.onclick = ()=> openModal();
 btnCancelar.onclick = ()=> modalForm.style.display="none";
 
 function openModal(r=null){
+
   modalForm.style.display="flex";
   EDIT = r;
 
@@ -411,32 +430,33 @@ function openModal(r=null){
     mHoraEntrega.value="";
   }
 
-  // limpiar archivos
   if(typeof mFotos !== "undefined") mFotos.value="";
   if(typeof mPdf !== "undefined") mPdf.value="";
 }
 
+
 /* ======================================================
-   GUARDAR (IMAGEN + PDF)
+   GUARDAR
 ====================================================== */
 
 btnGuardar.onclick = async ()=>{
+
   setLoading(btnGuardar, true);
 
   try{
 
-    /* ===== IMÁGENES ===== */
+    /* IMÁGENES */
     let fotos64 = [];
-    if(typeof mFotos !== "undefined" && mFotos.files.length > 0){
-      for (const file of mFotos.files) {
+    if(mFotos && mFotos.files.length){
+      for(const file of mFotos.files){
         fotos64.push(await toBase64(file));
       }
     }
 
-    /* ===== PDF ===== */
+    /* PDF */
     let pdf64 = [];
-    if(typeof mPdf !== "undefined" && mPdf.files.length > 0){
-      for (const file of mPdf.files) {
+    if(mPdf && mPdf.files.length){
+      for(const file of mPdf.files){
         pdf64.push(await toBase64(file));
       }
     }
@@ -475,10 +495,13 @@ btnGuardar.onclick = async ()=>{
   setLoading(btnGuardar, false);
 };
 
+
 /* ======================================================
-   ELIMINAR REGISTRO
+   ELIMINAR
 ====================================================== */
+
 async function delRow(row){
+
   if(!confirm("¿Eliminar pedido?")) return;
 
   await fetch(API,{
@@ -492,6 +515,7 @@ async function delRow(row){
   load();
 }
 
+
 /* ======================================================
    EXPORTES
 ====================================================== */
@@ -499,11 +523,13 @@ async function delRow(row){
 btnPDF.onclick = ()=> exportPDF(btnPDF);
 btnExcel.onclick = ()=> exportExcel(btnExcel);
 
-/* ================== EXPORT PDF ================== */
+/* ---------- EXPORT PDF ---------- */
 function exportPDF(btn){
+
   setLoading(btn,true);
 
   setTimeout(()=>{
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation:'landscape' });
 
@@ -514,7 +540,7 @@ function exportPDF(btn){
 
     doc.autoTable({
       head:[[
-        'Fecha Ingreso',
+        'Fecha',
         'Pedido',
         'Cliente',
         'Dirección',
@@ -522,7 +548,7 @@ function exportPDF(btn){
         'Transporte',
         'Cajas',
         'Responsable',
-        'Hora Entrega',
+        'Hora',
         'Estado',
         'Obs'
       ]],
@@ -552,30 +578,27 @@ function exportPDF(btn){
         `PEDIDOS: ${totalPedidos}`,
         ''
       ]],
-      styles:{
-        fontSize:9,
-        cellPadding:3
-      },
-      footStyles:{
-        fontStyle:'bold',
-        halign:'right'
-      },
+      styles:{ fontSize:9 },
       margin:{ top:20 }
     });
 
     doc.save("Pedidos_Logisticos.pdf");
+
     setLoading(btn,false);
+
   },300);
 }
 
-/* ================== EXPORT EXCEL ================== */
+
+/* ---------- EXPORT EXCEL ---------- */
 function exportExcel(btn){
+
   setLoading(btn,true);
 
   setTimeout(()=>{
 
     const data = FILT.map(r=>({
-      "Fecha Ingreso": r.fechaIngreso || '',
+      "Fecha": r.fechaIngreso || '',
       "Pedido": r.pedido || '',
       "Cliente": r.cliente || '',
       "Dirección": r.direccion || '',
@@ -583,7 +606,7 @@ function exportExcel(btn){
       "Transporte": r.transporte || '',
       "Cajas": r.etiquetas || 0,
       "Responsable": r.responsable || '',
-      "Hora Entrega": r.horaEntrega || '',
+      "Hora": r.horaEntrega || '',
       "Estado": r.status || '',
       "Observaciones": r.observaciones || ''
     }));
@@ -592,26 +615,20 @@ function exportExcel(btn){
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
-
     XLSX.writeFile(wb, "Pedidos_Logisticos.xlsx");
 
     setLoading(btn,false);
+
   },300);
 }
 
-/* ======================================================
-   SET LOADING
-====================================================== */
-function setLoading(btn, state){
-  if(!btn) return;
-  btn.disabled = state;
-  btn.classList.toggle("loading", state);
-}
 
 /* ======================================================
-   RECARGAR TABLA – EFECTO VISUAL
+   RECARGAR
 ====================================================== */
+
 btnReload.onclick = async ()=>{
+
   setLoading(btnReload, true);
 
   tbody.innerHTML = `
@@ -634,15 +651,19 @@ btnReload.onclick = async ()=>{
   setLoading(btnReload, false);
 };
 
+
 /* ======================================================
    EVENTOS FILTROS
 ====================================================== */
+
 search.oninput = applyFilters;
 fStatus.onchange = applyFilters;
 fDesde.onchange = applyFilters;
 fHasta.onchange = applyFilters;
 
+
 /* ======================================================
    INIT
 ====================================================== */
+
 load();
