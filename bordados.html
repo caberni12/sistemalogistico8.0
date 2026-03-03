@@ -8,10 +8,9 @@
 <style>
 
 :root{
- --bg:#f1f5f9;
+ --bg:#0f172a;
  --card:#ffffff;
  --border:#e2e8f0;
- --text:#0f172a;
  --turq:#14b8a6;
  --turq-dark:#0d9488;
 }
@@ -23,17 +22,44 @@ body{
  font-family:Inter,Arial;
  background:var(--bg);
  padding:20px;
- color:var(--text);
+ color:#fff;
 }
 
 /* HEADER */
 .header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
  margin-bottom:25px;
+ flex-wrap:wrap;
+ gap:10px;
 }
 
 .header h2{
  margin:0;
  font-size:22px;
+}
+
+.counter{
+ font-weight:600;
+ font-size:14px;
+}
+
+/* BOTONES */
+button{
+ border:0;
+ border-radius:12px;
+ padding:10px 14px;
+ font-size:13px;
+ font-weight:600;
+ cursor:pointer;
+ background:var(--turq);
+ color:#fff;
+ transition:.2s;
+}
+
+button:hover{
+ background:var(--turq-dark);
 }
 
 /* FILTROS */
@@ -47,44 +73,37 @@ body{
 input,select{
  padding:10px 12px;
  border-radius:12px;
- border:1px solid var(--border);
+ border:1px solid #1e293b;
  font-size:14px;
+ background:#1e293b;
+ color:#fff;
 }
 
 /* GRID TARJETAS */
 .cards-grid{
  display:grid;
- grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
- gap:20px;
+ grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+ gap:22px;
 }
 
 /* TARJETA */
 .card{
  background:var(--card);
- border-radius:18px;
- padding:18px;
- box-shadow:0 10px 24px rgba(0,0,0,.08);
- transition:.25s;
+ border-radius:20px;
+ padding:20px;
+ box-shadow:0 12px 28px rgba(0,0,0,.3);
  display:flex;
  flex-direction:column;
- justify-content:space-between;
+ color:#0f172a;
+ border-left:6px solid #ccc;
+ transition:.3s;
 }
 
-.card:hover{
- transform:translateY(-5px);
-}
-
-/* CABECERA TARJETA */
-.card-header{
- display:flex;
- justify-content:space-between;
- align-items:center;
- margin-bottom:12px;
-}
-
-.card-header strong{
- font-size:16px;
-}
+.card.PENDIENTE{border-left-color:#3b82f6}
+.card.EN\ RUTA{border-left-color:#f97316}
+.card.RECIBIDO{border-left-color:#ef4444}
+.card.ENTREGADO{border-left-color:#22c55e}
+.card.CANCELADO{border-left-color:#9ca3af}
 
 /* STATUS */
 .status{
@@ -101,37 +120,45 @@ input,select{
 .status.ENTREGADO{color:#22c55e}
 .status.CANCELADO{color:#9ca3af}
 
-/* CUERPO */
-.card-body{
- font-size:14px;
- line-height:1.5;
- margin-bottom:14px;
+/* FOTO */
+.photo-wrap{
+ display:flex;
+ gap:8px;
+ flex-wrap:wrap;
+ margin-bottom:10px;
+}
+
+.photo-wrap img{
+ width:70px;
+ height:70px;
+ object-fit:cover;
+ border-radius:12px;
+ cursor:pointer;
+}
+
+/* PDF */
+.pdf-wrap{
+ margin-bottom:10px;
+}
+
+.pdf-wrap a{
+ font-size:13px;
+ font-weight:600;
+ color:var(--turq-dark);
+ text-decoration:none;
 }
 
 /* ACCIONES */
 .card-actions{
  display:flex;
  gap:10px;
+ margin-top:auto;
 }
 
 .card-actions button{
  flex:1;
- border:0;
- border-radius:12px;
- padding:10px;
- font-size:13px;
- font-weight:600;
- cursor:pointer;
- background:var(--turq);
- color:#fff;
- transition:.2s;
 }
 
-.card-actions button:hover{
- background:var(--turq-dark);
-}
-
-/* RESPONSIVE */
 @media(max-width:768px){
  .cards-grid{
   grid-template-columns:1fr;
@@ -144,13 +171,17 @@ input,select{
 
 <div class="header">
   <h2>📋 PEDIDOS EN CURSO</h2>
+  <div class="counter" id="counter">Total: 0</div>
+  <div style="display:flex;gap:10px">
+    <button onclick="load()">🔄 Recargar</button>
+    <button onclick="toggleFullScreen()">🖥 Pantalla</button>
+  </div>
 </div>
 
 <div class="filters">
   <input id="search" placeholder="Buscar pedido o cliente">
   <input type="date" id="fDesde">
   <input type="date" id="fHasta">
-
   <select id="fStatus">
     <option value="">Todos</option>
     <option>PENDIENTE</option>
@@ -163,17 +194,31 @@ input,select{
 
 <div class="cards-grid" id="cardsGrid"></div>
 
+<audio id="notifSound">
+  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
+</audio>
+
 <script>
 
 const API = "https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
 
 let RAW = [];
 let FILT = [];
+let lastCount = 0;
+
+/* AUTO REFRESH */
+setInterval(load,15000);
 
 /* LOAD */
 async function load(){
   const r = await fetch(API);
   RAW = await r.json();
+
+  if(RAW.length > lastCount){
+    document.getElementById("notifSound").play();
+  }
+
+  lastCount = RAW.length;
   applyFilters();
 }
 
@@ -182,12 +227,10 @@ function applyFilters(){
 
   const q = search.value.toLowerCase().trim();
   const s = fStatus.value;
-
   const d1 = fDesde.value ? new Date(fDesde.value+"T00:00:00") : null;
   const d2 = fHasta.value ? new Date(fHasta.value+"T23:59:59") : null;
 
   FILT = RAW.filter(r=>{
-
     const pedido = String(r.pedido||"").toLowerCase();
     const cliente = String(r.cliente||"").toLowerCase();
     const status = String(r.status||"");
@@ -215,36 +258,44 @@ function parseFecha(str){
   return new Date(y,m-1,d,hh,mm);
 }
 
-/* RENDER TARJETAS */
+/* RENDER */
 function render(){
 
-  cardsGrid.innerHTML = "";
+  cardsGrid.innerHTML="";
+  counter.textContent="Total: "+FILT.length;
 
   FILT.forEach(r=>{
 
-    const card = document.createElement("div");
-    card.className = "card";
+    const card=document.createElement("div");
+    card.className="card "+r.status;
 
-    card.innerHTML = `
-      <div class="card-header">
-        <strong>${r.pedido || ""}</strong>
-        <span class="status ${r.status}">
-          ${r.status || ""}
-        </span>
+    const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
+    const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
+
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <strong>${r.pedido||""}</strong>
+        <span class="status ${r.status}">${r.status||""}</span>
       </div>
 
-      <div class="card-body">
-        👤 ${r.cliente || ""}<br>
-        📍 ${r.direccion || ""} (${r.comuna || ""})<br>
-        🚚 ${r.transporte || ""}<br>
-        📦 Cajas: ${r.etiquetas || 0}<br>
-        ⏱ ${r.horaEntrega || ""}
+      👤 ${r.cliente||""}<br>
+      📍 ${r.direccion||""} (${r.comuna||""})<br>
+      🚚 ${r.transporte||""}<br>
+      📦 ${r.etiquetas||0} cajas<br>
+      ⏱ ${r.horaEntrega||""}<br><br>
+
+      <div class="photo-wrap">
+        ${fotos.map(f=>`<img src="${f.replace(/=s\d+$/,'=s200')}" onclick="window.open('${f}','_blank')">`).join("")}
+      </div>
+
+      <div class="pdf-wrap">
+        ${pdfs.map(p=>`<a href="${p}" target="_blank">📄 Ver PDF</a>`).join("")}
       </div>
 
       <div class="card-actions">
-        <button onclick="openMap('${r.direccion}','${r.comuna}')">📍 Mapa</button>
-        <button onclick="editPedido(${r._row})">✏️ Editar</button>
-        <button onclick="deletePedido(${r._row})">🗑 Eliminar</button>
+        <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
+        <button onclick="editPedido(${r._row})">✏️</button>
+        <button onclick="deletePedido(${r._row})">🗑</button>
       </div>
     `;
 
@@ -262,29 +313,33 @@ function openMap(d,c){
 
 /* EDITAR */
 function editPedido(row){
-  window.location.href = "index.html#edit="+row;
+  window.location.href="index.html#edit="+row;
 }
 
 /* DELETE */
 async function deletePedido(row){
   if(!confirm("¿Eliminar pedido?")) return;
-
   await fetch(API,{
     method:"POST",
-    body:JSON.stringify({
-      action:"delete",
-      row
-    })
+    body:JSON.stringify({action:"delete",row})
   });
-
   load();
 }
 
+/* FULL SCREEN */
+function toggleFullScreen(){
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+
 /* EVENTOS */
-search.oninput = applyFilters;
-fStatus.onchange = applyFilters;
-fDesde.onchange = applyFilters;
-fHasta.onchange = applyFilters;
+search.oninput=applyFilters;
+fStatus.onchange=applyFilters;
+fDesde.onchange=applyFilters;
+fHasta.onchange=applyFilters;
 
 /* INIT */
 load();
