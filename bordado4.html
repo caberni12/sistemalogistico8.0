@@ -302,174 +302,256 @@ input,select,textarea{
 <audio id="notifSound">
  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
 </audio>
-
 <script>
-const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
-
-let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0, EDIT_ROW=null;
-const CHUNK=20;
-
-function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
-
-function setLoading(btn,state){
- btn.disabled=state;
- btn.classList.toggle("loading",state);
-}
-
-async function load(){
- setLoading(btnReload,true);
- const r=await fetch(API);
- const data=await r.json();
-
- const ids=data.map(x=>x._row);
- if(PREVIOUS_IDS.length && ids.some(id=>!PREVIOUS_IDS.includes(id))){
-   notifSound.play();
- }
- PREVIOUS_IDS=ids;
-
- RAW=data.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
- applyFilter();
- setLoading(btnReload,false);
-}
-
-function applyFilter(){
- const texto=fBuscar.value.toLowerCase();
- const status=fStatus.value;
- const desde=fDesde.value?new Date(fDesde.value):null;
- const hasta=fHasta.value?new Date(fHasta.value):null;
-
- FILT=RAW.filter(r=>{
-  const combo=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
-  if(texto && !combo.includes(texto)) return false;
-  if(status && r.status!==status) return false;
-  if(r.fecha){
-   const f=new Date(r.fecha);
-   if(desde && f<desde) return false;
-   if(hasta && f>hasta) return false;
+  const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
+  
+  let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0, EDIT_ROW=null;
+  const CHUNK=20;
+  
+  /* ================= CREAR MODAL DINÁMICAMENTE ================= */
+  let modalOverlay = document.createElement("div");
+  modalOverlay.style.position="fixed";
+  modalOverlay.style.inset="0";
+  modalOverlay.style.background="rgba(0,0,0,.8)";
+  modalOverlay.style.display="none";
+  modalOverlay.style.alignItems="center";
+  modalOverlay.style.justifyContent="center";
+  modalOverlay.style.zIndex="99999";
+  
+  let modalImg = document.createElement("img");
+  modalImg.style.maxWidth="95vw";
+  modalImg.style.maxHeight="90vh";
+  modalImg.style.borderRadius="16px";
+  modalImg.style.boxShadow="0 20px 60px rgba(0,0,0,.6)";
+  modalImg.style.transition="transform .3s ease";
+  
+  modalOverlay.appendChild(modalImg);
+  document.body.appendChild(modalOverlay);
+  
+  modalOverlay.addEventListener("click",()=>modalOverlay.style.display="none");
+  document.addEventListener("keydown",(e)=>{
+   if(e.key==="Escape") modalOverlay.style.display="none";
+  });
+  
+  function openImageModal(url){
+   modalImg.src=url.replace(/=s\d+$/, "=s1600");
+   modalOverlay.style.display="flex";
   }
-  return true;
- });
-
- totalPedidos.textContent=FILT.length;
- totalCajas.textContent=FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
-
- visibleCount=0;
- cardsGrid.innerHTML="";
- renderMore();
-}
-
-function renderMore(){
- const fragment=document.createDocumentFragment();
- const slice=FILT.slice(visibleCount,visibleCount+CHUNK);
-
- slice.forEach(r=>{
-  const st=cleanStatus(r.status);
-  const mapId="map_"+r._row;
-  const fotos=(r.foto||"").split("|").filter(u=>u.startsWith("http"));
-  const pdfs=(r.pdf||"").split("|").filter(u=>u.startsWith("http"));
-
-  const card=document.createElement("div");
-  card.className="card card-"+st;
-
-  card.innerHTML=`
-   <div class="pedido-numero">#${r.pedido||""}</div>
-   <div class="cliente-destacado">${r.cliente||""}</div>
-   <div class="status status-${st}">${r.status||""}</div>
-   <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
-   <div>👨‍💼 ${r.responsable||""}</div>
-   <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
-   ${r.observaciones?`<div style="margin-top:10px;background:#f1f5f9;padding:8px;border-radius:8px">${r.observaciones}</div>`:""}
-   <div class="photo-wrap">
-     ${fotos.map(f=>`<img src="${f}" onclick="verImagen('${f}')">`).join("")}
-   </div>
-   <div class="pdf-wrap">
-     ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a><a href="${p}" download>Descargar</a>`).join("")}
-   </div>
-   <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
-   <div class="map-container" id="${mapId}">
-    <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed"></iframe>
-    <div class="map-buttons">
-     <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.direccion+" "+r.comuna)}" target="_blank">Google Maps</a>
-     <a href="https://waze.com/ul?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&navigate=yes" target="_blank">Waze</a>
-    </div>
-   </div>
-   <button onclick="openEdit(${r._row})" style="margin-top:10px">Editar</button>
-  `;
-  fragment.appendChild(card);
- });
-
- cardsGrid.appendChild(fragment);
- visibleCount+=CHUNK;
-}
-
-function openEdit(row){
- const r=RAW.find(x=>x._row==row);
- EDIT_ROW=row;
- mPedido.value=r.pedido||"";
- mCliente.value=r.cliente||"";
- mDireccion.value=r.direccion||"";
- mComuna.value=r.comuna||"";
- mResponsable.value=r.responsable||"";
- mCajas.value=r.etiquetas||1;
- mObservaciones.value=r.observaciones||"";
- mStatus.value=r.status||"";
- editModal.style.display="flex";
-}
-
-async function guardar(){
- setLoading(btnGuardar,true);
- await fetch(API,{
-  method:"POST",
-  body:JSON.stringify({
-   action:"update",
-   row:EDIT_ROW,
-   PEDIDO:mPedido.value,
-   CLIENTE:mCliente.value,
-   DIRECCION:mDireccion.value,
-   COMUNA:mComuna.value,
-   RESPONSABLE:mResponsable.value,
-   ETIQUETAS:mCajas.value,
-   OBSERVACIONES:mObservaciones.value,
-   STATUS:mStatus.value
-  })
- });
- closeEdit();
- load();
- setLoading(btnGuardar,false);
-}
-
-function closeEdit(){ editModal.style.display="none"; }
-function verImagen(url){ imgGrande.src=url; imgModal.style.display="flex"; }
-function toggleMap(id,btn){
- const el=document.getElementById(id);
- if(!el.style.display||el.style.display==="none"){
-  el.style.display="block"; btn.textContent="➖ Ocultar mapa";
- }else{
-  el.style.display="none"; btn.textContent="➕ Mostrar mapa";
- }
-}
-function toggleFullscreen(){
- if(!document.fullscreenElement){ document.documentElement.requestFullscreen();}
- else{ document.exitFullscreen();}
-}
-
-window.addEventListener("scroll",()=>{
- if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200){
-  if(visibleCount<FILT.length) renderMore();
- }
-});
-
-fBuscar.oninput=()=>setTimeout(applyFilter,300);
-fStatus.onchange=applyFilter;
-fDesde.onchange=applyFilter;
-fHasta.onchange=applyFilter;
-
-btnReload.onclick=load;
-btnGuardar.onclick=guardar;
-
-setInterval(load,15000);
-load();
-</script>
+  
+  /* ================= PARSE FECHA (solo día) ================= */
+  function parseFechaSoloDia(str){
+   if(!str) return null;
+   const partes = String(str).split(" ");
+   const fechaPart = partes[0];
+   const [d,m,y] = fechaPart.split("-").map(Number);
+   return new Date(y, m-1, d);
+  }
+  
+  function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
+  
+  function setLoading(btn,state){
+   btn.disabled=state;
+   btn.classList.toggle("loading",state);
+  }
+  
+  /* ================= LOAD ================= */
+  async function load(){
+   setLoading(btnReload,true);
+  
+   const r=await fetch(API);
+   const data=await r.json();
+  
+   const ids=data.map(x=>x._row);
+   if(PREVIOUS_IDS.length && ids.some(id=>!PREVIOUS_IDS.includes(id))){
+     notifSound.play();
+   }
+   PREVIOUS_IDS=ids;
+  
+   RAW=data.map(x=>({
+     ...x,
+     _fechaObj: parseFechaSoloDia(x.fechaIngreso)
+   }));
+  
+   RAW.sort((a,b)=> b._fechaObj - a._fechaObj);
+  
+   applyFilter();
+   setLoading(btnReload,false);
+  }
+  
+  /* ================= FILTRO ================= */
+  function applyFilter(){
+  
+   const texto=fBuscar.value.toLowerCase().trim();
+   const status=fStatus.value;
+  
+   const d1=fDesde.value ? new Date(fDesde.value) : null;
+   const d2=fHasta.value ? new Date(fHasta.value) : null;
+  
+   FILT=RAW.filter(r=>{
+  
+    const combo=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
+  
+    if(texto && !combo.includes(texto)) return false;
+    if(status && r.status!==status) return false;
+  
+    if(d1 || d2){
+     const fr=r._fechaObj;
+     if(!fr) return false;
+     if(d1 && fr < d1) return false;
+     if(d2 && fr > d2) return false;
+    }
+  
+    return true;
+   });
+  
+   totalPedidos.textContent=FILT.length;
+   totalCajas.textContent=FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
+  
+   visibleCount=0;
+   cardsGrid.innerHTML="";
+   renderMore();
+  }
+  
+  /* ================= RENDER ================= */
+  function renderMore(){
+   const fragment=document.createDocumentFragment();
+   const slice=FILT.slice(visibleCount,visibleCount+CHUNK);
+  
+   slice.forEach(r=>{
+    const st=cleanStatus(r.status);
+    const mapId="map_"+r._row;
+  
+    const fotos=(r.foto||"")
+      .split("|")
+      .filter(u=>u.startsWith("http"));
+  
+    const pdfs=(r.pdf||"")
+      .split("|")
+      .filter(u=>u.startsWith("http"));
+  
+    const card=document.createElement("div");
+    card.className="card card-"+st;
+  
+    card.innerHTML=`
+     <div class="pedido-numero">#${r.pedido||""}</div>
+     <div class="cliente-destacado">${r.cliente||""}</div>
+     <div class="status status-${st}">${r.status||""}</div>
+     <div>📅 ${r.fechaIngreso||""}</div>
+     <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
+     <div>👨‍💼 ${r.responsable||""}</div>
+     <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
+     ${r.observaciones?`<div style="margin-top:10px;background:#f1f5f9;padding:8px;border-radius:8px">${r.observaciones}</div>`:""}
+     <div class="photo-wrap">
+       ${fotos.map(f=>`
+         <img 
+           src="${f}"
+           onclick="openImageModal('${f}')"
+           style="
+             width:80px;
+             height:80px;
+             object-fit:cover;
+             border-radius:10px;
+             cursor:pointer;
+             transition:transform .2s ease;
+           "
+           onmouseover="this.style.transform='scale(1.05)'"
+           onmouseout="this.style.transform='scale(1)'"
+         >
+       `).join("")}
+     </div>
+     <div class="pdf-wrap">
+       ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a>`).join("")}
+     </div>
+     <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
+     <div class="map-container" id="${mapId}">
+      <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed"></iframe>
+      <div class="map-buttons">
+       <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.direccion+" "+r.comuna)}" target="_blank">Google Maps</a>
+       <a href="https://waze.com/ul?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&navigate=yes" target="_blank">Waze</a>
+      </div>
+     </div>
+     <button onclick="openEdit(${r._row})" style="margin-top:10px">Editar</button>
+    `;
+  
+    fragment.appendChild(card);
+   });
+  
+   cardsGrid.appendChild(fragment);
+   visibleCount+=CHUNK;
+  }
+  
+  /* ================= RESTO ================= */
+  function openEdit(row){
+   const r=RAW.find(x=>x._row==row);
+   EDIT_ROW=row;
+   mPedido.value=r.pedido||"";
+   mCliente.value=r.cliente||"";
+   mDireccion.value=r.direccion||"";
+   mComuna.value=r.comuna||"";
+   mResponsable.value=r.responsable||"";
+   mCajas.value=r.etiquetas||1;
+   mObservaciones.value=r.observaciones||"";
+   mStatus.value=r.status||"";
+   editModal.style.display="flex";
+  }
+  
+  async function guardar(){
+   setLoading(btnGuardar,true);
+   await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+     action:"update",
+     row:EDIT_ROW,
+     PEDIDO:mPedido.value,
+     CLIENTE:mCliente.value,
+     DIRECCION:mDireccion.value,
+     COMUNA:mComuna.value,
+     RESPONSABLE:mResponsable.value,
+     ETIQUETAS:mCajas.value,
+     OBSERVACIONES:mObservaciones.value,
+     STATUS:mStatus.value
+    })
+   });
+   closeEdit();
+   load();
+   setLoading(btnGuardar,false);
+  }
+  
+  function closeEdit(){ editModal.style.display="none"; }
+  
+  function toggleMap(id,btn){
+   const el=document.getElementById(id);
+   if(!el.style.display||el.style.display==="none"){
+    el.style.display="block";
+    btn.textContent="➖ Ocultar mapa";
+   }else{
+    el.style.display="none";
+    btn.textContent="➕ Mostrar mapa";
+   }
+  }
+  
+  function toggleFullscreen(){
+   if(!document.fullscreenElement){ document.documentElement.requestFullscreen();}
+   else{ document.exitFullscreen();}
+  }
+  
+  window.addEventListener("scroll",()=>{
+   if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200){
+    if(visibleCount<FILT.length) renderMore();
+   }
+  });
+  
+  fBuscar.oninput=()=>setTimeout(applyFilter,300);
+  fStatus.onchange=applyFilter;
+  fDesde.onchange=applyFilter;
+  fHasta.onchange=applyFilter;
+  
+  btnReload.onclick=load;
+  btnGuardar.onclick=guardar;
+  
+  setInterval(load,15000);
+  load();
+  </script>
 
 </body>
 </html>
