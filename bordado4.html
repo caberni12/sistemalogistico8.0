@@ -1,557 +1,305 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>SISTEMA DE GESTION</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html lang="es">
+<head><meta charset="UTF-8">
+<title>Sistema Logístico</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><style>
 
-<style>
 :root{
- --primary:#14b8a6;
- --primary-dark:#0d9488;
- --danger:#dc2626;
+--primary:#14b8a6;
+--primary-dark:#0d9488;
+--bg:#f8fafc;
+--card:#ffffff;
+--shadow:0 10px 25px rgba(0,0,0,.08);
 }
 
 body{
- margin:0;
- font-family:Arial, sans-serif;
- background:#f8fafc;
- padding:20px;
+margin:0;
+font-family:Arial, sans-serif;
+background:var(--bg);
+padding:20px;
 }
 
 /* HEADER */
+
 .header{
- display:flex;
- justify-content:space-between;
- align-items:center;
- flex-wrap:wrap;
- gap:10px;
- margin-bottom:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+flex-wrap:wrap;
+margin-bottom:20px;
 }
 
 /* BOTONES */
+
 button{
- border:0;
- border-radius:12px;
- padding:8px 14px;
- font-weight:600;
- cursor:pointer;
- background:var(--primary);
- color:#fff;
- display:flex;
- align-items:center;
- gap:6px;
+border:0;
+border-radius:12px;
+padding:9px 16px;
+font-weight:700;
+cursor:pointer;
+background:var(--primary);
+color:#fff;
+display:flex;
+align-items:center;
+gap:6px;
+transition:.2s;
 }
 
-button:hover{background:var(--primary-dark)}
+button:hover{
+background:var(--primary-dark);
+}
 
 button.loading .btn-text{display:none}
 button.loading .btn-loader{display:inline-block}
 
 .btn-loader{
- display:none;
- width:16px;
- height:16px;
- border:3px solid rgba(255,255,255,.4);
- border-top:3px solid #fff;
- border-radius:50%;
- animation:spin .8s linear infinite;
+display:none;
+width:16px;
+height:16px;
+border:3px solid rgba(255,255,255,.4);
+border-top:3px solid #fff;
+border-radius:50%;
+animation:spin .8s linear infinite;
 }
 
-@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spin{
+to{transform:rotate(360deg)}
+}
 
 /* FILTROS */
+
 .filters{
- display:flex;
- flex-wrap:wrap;
- gap:10px;
- margin-bottom:15px;
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-bottom:20px;
 }
 
 input,select,textarea{
- padding:8px 12px;
- border-radius:10px;
- border:1px solid #e2e8f0;
+padding:10px 12px;
+border-radius:10px;
+border:1px solid #e2e8f0;
+width:100%;
+font-size:14px;
+box-sizing:border-box;
+}
+
+/* LABEL */
+
+label{
+display:block;
+font-size:12px;
+font-weight:700;
+margin-bottom:4px;
+color:#374151;
 }
 
 /* CONTADORES */
+
 .stats{
- display:flex;
- gap:20px;
- margin-bottom:20px;
- font-weight:bold;
+display:flex;
+gap:30px;
+margin-bottom:20px;
+font-weight:bold;
+font-size:18px;
 }
 
-/* GRID */
+/* TARJETAS */
+
 .cards-grid{
- display:grid;
- grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
- gap:22px;
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+gap:20px;
 }
 
-/* TARJETA */
 .card{
- background:#fff;
- border-radius:18px;
- padding:20px;
- box-shadow:0 8px 22px rgba(0,0,0,.08);
- border-left:8px solid #ccc;
-}
-
-/* BORDE POR ESTADO */
-.card-EN_RUTA{border-left-color:#dc2626}
-.card-PENDIENTE{border-left-color:#2563eb}
-.card-RECIBIDO{border-left-color:#7c3aed}
-.card-ENTREGADO{border-left-color:#16a34a}
-.card-CANCELADO{border-left-color:#6b7280}
-
-/* PEDIDO GRANDE */
-.pedido-numero{
- font-size:32px;
- font-weight:900;
- color:#0f172a;
- margin-bottom:4px;
-}
-
-/* CLIENTE GRANDE */
-.cliente-destacado{
- font-size:22px;
- font-weight:800;
- margin-bottom:8px;
- color:#111827;
-}
-
-/* STATUS BADGE */
-.status{
- display:inline-block;
- padding:6px 12px;
- border-radius:20px;
- font-weight:700;
- color:#fff;
- margin-bottom:10px;
-}
-
-.status-EN_RUTA{background:#dc2626}
-.status-PENDIENTE{background:#2563eb}
-.status-RECIBIDO{background:#7c3aed}
-.status-ENTREGADO{background:#16a34a}
-.status-CANCELADO{background:#6b7280}
-
-/* CAJAS */
-.cajas-box{
- background:#111827;
- color:#fff;
- text-align:center;
- padding:12px;
- border-radius:14px;
- margin-top:10px;
-}
-
-.cajas-box span{
- font-size:36px;
- font-weight:900;
- display:block;
-}
-
-/* FOTOS */
-.photo-wrap{
- display:flex;
- gap:8px;
- flex-wrap:wrap;
- margin-top:10px;
-}
-
-.photo-wrap img{
- width:80px;
- height:80px;
- object-fit:cover;
- border-radius:10px;
- cursor:pointer;
-}
-
-/* PDF */
-.pdf-wrap{
- margin-top:10px;
- display:flex;
- gap:6px;
- flex-wrap:wrap;
-}
-
-.pdf-wrap a{
- background:#0f172a;
- color:#fff;
- padding:6px 10px;
- border-radius:8px;
- font-size:12px;
- text-decoration:none;
-}
-
-/* MAPA */
-.map-container{
- display:none;
- margin-top:10px;
-}
-
-.map-container iframe{
- width:100%;
- height:220px;
- border-radius:12px;
- border:0;
-}
-
-.map-buttons{
- display:flex;
- gap:6px;
- margin-top:6px;
-}
-
-.map-buttons a{
- flex:1;
- text-align:center;
- background:#0f172a;
- color:#fff;
- padding:8px;
- border-radius:10px;
- text-decoration:none;
- font-size:13px;
+background:var(--card);
+border-radius:18px;
+padding:20px;
+box-shadow:var(--shadow);
+border-left:8px solid #ccc;
 }
 
 /* MODAL */
+
 .modal{
- position:fixed;
- inset:0;
- background:rgba(0,0,0,.7);
- display:none;
- align-items:center;
- justify-content:center;
- z-index:9999;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.7);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+padding:20px;
 }
 
 .modal-box{
- background:#fff;
- padding:20px;
- border-radius:16px;
- width:420px;
- max-width:95%;
+background:#fff;
+padding:30px;
+border-radius:18px;
+width:1200px;
+max-width:96%;
+max-height:92vh;
+overflow:auto;
+box-shadow:0 20px 40px rgba(0,0,0,.2);
 }
-</style>
-</head>
-<body>
 
-<div class="header">
- <h2>📋 SISTEMA DE GESTION</h2>
- <div style="display:flex;gap:10px">
-   <button onclick="toggleFullscreen()">Modo TV</button>
-   <button id="btnReload">
-     <span class="btn-text">Recargar</span>
-     <span class="btn-loader"></span>
-   </button>
- </div>
-</div>
+/* SECCIONES */
 
-<div class="filters">
- <input type="text" id="fBuscar" placeholder="Buscar pedido, cliente, comuna, responsable">
- <select id="fStatus">
-   <option value="">Todos</option>
-   <option>PENDIENTE</option>
-   <option>EN RUTA</option>
-   <option>RECIBIDO</option>
-   <option>ENTREGADO</option>
-   <option>CANCELADO</option>
- </select>
- <input type="date" id="fDesde">
- <input type="date" id="fHasta">
-</div>
+.section-title{
+font-size:18px;
+font-weight:800;
+margin-top:25px;
+margin-bottom:10px;
+color:#111827;
+border-bottom:2px solid #e5e7eb;
+padding-bottom:4px;
+}
 
-<div class="stats">
- <div>Pedidos: <span id="totalPedidos">0</span></div>
- <div>Cajas: <span id="totalCajas">0</span></div>
-</div>
+/* GRID FORM */
 
-<div class="cards-grid" id="cardsGrid"></div>
+.form-grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:16px;
+margin-top:10px;
+}
 
-<div class="modal" id="imgModal" onclick="this.style.display='none'">
- <img id="imgGrande" style="max-width:90vw;max-height:85vh;border-radius:12px;">
-</div>
+.full{
+grid-column:1 / -1;
+}
 
-<div class="modal" id="editModal">
- <div class="modal-box">
-  <h3>Editar Pedido</h3>
-  <input id="mPedido"><br><br>
-  <input id="mCliente"><br><br>
-  <input id="mDireccion"><br><br>
-  <input id="mComuna"><br><br>
-  <input id="mResponsable"><br><br>
-  <input id="mCajas" type="number"><br><br>
-  <textarea id="mObservaciones" rows="3"></textarea><br><br>
-  <select id="mStatus">
-   <option>PENDIENTE</option>
-   <option>EN RUTA</option>
-   <option>RECIBIDO</option>
-   <option>ENTREGADO</option>
-   <option>CANCELADO</option>
-  </select><br><br>
-  <button id="btnGuardar">
-   <span class="btn-text">Guardar</span>
-   <span class="btn-loader"></span>
-  </button>
-  <button onclick="closeEdit()">Cerrar</button>
- </div>
-</div>
+/* BOTONES MODAL */
 
-<audio id="notifSound">
- <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
-</audio>
-<script>
-  const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
-  
-  let RAW=[], FILT=[], PREVIOUS_IDS=[], visibleCount=0, EDIT_ROW=null;
-  const CHUNK=20;
-  
-  /* ================= CREAR MODAL DINÁMICAMENTE ================= */
-  let modalOverlay = document.createElement("div");
-  modalOverlay.style.position="fixed";
-  modalOverlay.style.inset="0";
-  modalOverlay.style.background="rgba(0,0,0,.8)";
-  modalOverlay.style.display="none";
-  modalOverlay.style.alignItems="center";
-  modalOverlay.style.justifyContent="center";
-  modalOverlay.style.zIndex="99999";
-  
-  let modalImg = document.createElement("img");
-  modalImg.style.maxWidth="95vw";
-  modalImg.style.maxHeight="90vh";
-  modalImg.style.borderRadius="16px";
-  modalImg.style.boxShadow="0 20px 60px rgba(0,0,0,.6)";
-  modalImg.style.transition="transform .3s ease";
-  
-  modalOverlay.appendChild(modalImg);
-  document.body.appendChild(modalOverlay);
-  
-  modalOverlay.addEventListener("click",()=>modalOverlay.style.display="none");
-  document.addEventListener("keydown",(e)=>{
-   if(e.key==="Escape") modalOverlay.style.display="none";
-  });
-  
-  function openImageModal(url){
-   modalImg.src=url.replace(/=s\d+$/, "=s1600");
-   modalOverlay.style.display="flex";
-  }
-  
-  /* ================= PARSE FECHA (solo día) ================= */
-  function parseFechaSoloDia(str){
-   if(!str) return null;
-   const partes = String(str).split(" ");
-   const fechaPart = partes[0];
-   const [d,m,y] = fechaPart.split("-").map(Number);
-   return new Date(y, m-1, d);
-  }
-  
-  function cleanStatus(s){ return (s||"").replace(/\s+/g,"_"); }
-  
-  function setLoading(btn,state){
-   btn.disabled=state;
-   btn.classList.toggle("loading",state);
-  }
-  
-  /* ================= LOAD ================= */
-  async function load(){
-   setLoading(btnReload,true);
-  
-   const r=await fetch(API);
-   const data=await r.json();
-  
-   const ids=data.map(x=>x._row);
-   if(PREVIOUS_IDS.length && ids.some(id=>!PREVIOUS_IDS.includes(id))){
-     notifSound.play();
-   }
-   PREVIOUS_IDS=ids;
-  
-   RAW=data.map(x=>({
-     ...x,
-     _fechaObj: parseFechaSoloDia(x.fechaIngreso)
-   }));
-  
-   RAW.sort((a,b)=> b._fechaObj - a._fechaObj);
-  
-   applyFilter();
-   setLoading(btnReload,false);
-  }
-  
-  /* ================= FILTRO ================= */
-  function applyFilter(){
-  
-   const texto=fBuscar.value.toLowerCase().trim();
-   const status=fStatus.value;
-  
-   const d1=fDesde.value ? new Date(fDesde.value) : null;
-   const d2=fHasta.value ? new Date(fHasta.value) : null;
-  
-   FILT=RAW.filter(r=>{
-  
-    const combo=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
-  
-    if(texto && !combo.includes(texto)) return false;
-    if(status && r.status!==status) return false;
-  
-    if(d1 || d2){
-     const fr=r._fechaObj;
-     if(!fr) return false;
-     if(d1 && fr < d1) return false;
-     if(d2 && fr > d2) return false;
-    }
-  
-    return true;
-   });
-  
-   totalPedidos.textContent=FILT.length;
-   totalCajas.textContent=FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
-  
-   visibleCount=0;
-   cardsGrid.innerHTML="";
-   renderMore();
-  }
-  
-  /* ================= RENDER ================= */
-  function renderMore(){
-   const fragment=document.createDocumentFragment();
-   const slice=FILT.slice(visibleCount,visibleCount+CHUNK);
-  
-   slice.forEach(r=>{
-    const st=cleanStatus(r.status);
-    const mapId="map_"+r._row;
-  
-    const fotos=(r.foto||"")
-      .split("|")
-      .filter(u=>u.startsWith("http"));
-  
-    const pdfs=(r.pdf||"")
-      .split("|")
-      .filter(u=>u.startsWith("http"));
-  
-    const card=document.createElement("div");
-    card.className="card card-"+st;
-  
-    card.innerHTML=`
-     <div class="pedido-numero">#${r.pedido||""}</div>
-     <div class="cliente-destacado">${r.cliente||""}</div>
-     <div class="status status-${st}">${r.status||""}</div>
-     <div>📅 ${r.fechaIngreso||""}</div>
-     <div>📍 ${r.direccion||""} (${r.comuna||""})</div>
-     <div>👨‍💼 ${r.responsable||""}</div>
-     <div class="cajas-box">CAJAS<span>${r.etiquetas||0}</span></div>
-     ${r.observaciones?`<div style="margin-top:10px;background:#f1f5f9;padding:8px;border-radius:8px">${r.observaciones}</div>`:""}
-     <div class="photo-wrap">
-       ${fotos.map(f=>`
-         <img 
-           src="${f}"
-           onclick="openImageModal('${f}')"
-           style="
-             width:100px;
-             height:100px;
-             object-fit:cover;
-             border-radius:10px;
-             cursor:pointer;
-             transition:transform .2s ease;
-           "
-           onmouseover="this.style.transform='scale(1.05)'"
-           onmouseout="this.style.transform='scale(1)'"
-         >
-       `).join("")}
-     </div>
-     <div class="pdf-wrap">
-       ${pdfs.map(p=>`<a href="${p}" target="_blank">Ver</a>`).join("")}
-     </div>
-     <button onclick="toggleMap('${mapId}',this)">➕ Mostrar mapa</button>
-     <div class="map-container" id="${mapId}">
-      <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed"></iframe>
-      <div class="map-buttons">
-       <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.direccion+" "+r.comuna)}" target="_blank">Google Maps</a>
-       <a href="https://waze.com/ul?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&navigate=yes" target="_blank">Waze</a>
-      </div>
-     </div>
-     <button onclick="openEdit(${r._row})" style="margin-top:10px">Editar</button>
-    `;
-  
-    fragment.appendChild(card);
-   });
-  
-   cardsGrid.appendChild(fragment);
-   visibleCount+=CHUNK;
-  }
-  
-  /* ================= RESTO ================= */
-  function openEdit(row){
-   const r=RAW.find(x=>x._row==row);
-   EDIT_ROW=row;
-   mPedido.value=r.pedido||"";
-   mCliente.value=r.cliente||"";
-   mDireccion.value=r.direccion||"";
-   mComuna.value=r.comuna||"";
-   mResponsable.value=r.responsable||"";
-   mCajas.value=r.etiquetas||1;
-   mObservaciones.value=r.observaciones||"";
-   mStatus.value=r.status||"";
-   editModal.style.display="flex";
-  }
-  
-  async function guardar(){
-   setLoading(btnGuardar,true);
-   await fetch(API,{
-    method:"POST",
-    body:JSON.stringify({
-     action:"update",
-     row:EDIT_ROW,
-     PEDIDO:mPedido.value,
-     CLIENTE:mCliente.value,
-     DIRECCION:mDireccion.value,
-     COMUNA:mComuna.value,
-     RESPONSABLE:mResponsable.value,
-     ETIQUETAS:mCajas.value,
-     OBSERVACIONES:mObservaciones.value,
-     STATUS:mStatus.value
-    })
-   });
-   closeEdit();
-   load();
-   setLoading(btnGuardar,false);
-  }
-  
-  function closeEdit(){ editModal.style.display="none"; }
-  
-  function toggleMap(id,btn){
-   const el=document.getElementById(id);
-   if(!el.style.display||el.style.display==="none"){
-    el.style.display="block";
-    btn.textContent="➖ Ocultar mapa";
-   }else{
-    el.style.display="none";
-    btn.textContent="➕ Mostrar mapa";
-   }
-  }
-  
-  function toggleFullscreen(){
-   if(!document.fullscreenElement){ document.documentElement.requestFullscreen();}
-   else{ document.exitFullscreen();}
-  }
-  
-  window.addEventListener("scroll",()=>{
-   if(window.innerHeight+window.scrollY>=document.body.offsetHeight-200){
-    if(visibleCount<FILT.length) renderMore();
-   }
-  });
-  
-  fBuscar.oninput=()=>setTimeout(applyFilter,300);
-  fStatus.onchange=applyFilter;
-  fDesde.onchange=applyFilter;
-  fHasta.onchange=applyFilter;
-  
-  btnReload.onclick=load;
-  btnGuardar.onclick=guardar;
-  
-  setInterval(load,15000);
-  load();
-  </script>
-<script src="segurity.js"></script>
-</body>
+.modal-actions{
+display:flex;
+justify-content:flex-end;
+gap:12px;
+margin-top:25px;
+flex-wrap:wrap;
+}
+
+.modal-actions button{
+min-width:120px;
+justify-content:center;
+}
+
+.btn-close{
+background:#6b7280;
+}
+
+.btn-close:hover{
+background:#4b5563;
+}
+
+/* RESPONSIVE */
+
+@media (max-width:1000px){
+.form-grid{grid-template-columns:repeat(2,1fr);}
+.modal-box{width:95%;}
+}
+
+@media (max-width:600px){
+.form-grid{grid-template-columns:1fr;}
+.cards-grid{grid-template-columns:1fr;}
+}
+
+</style></head><body><div class="header"><h2>🚚 Sistema Logístico</h2><div style="display:flex;gap:10px"><button onclick="toggleFullscreen()">Modo TV</button>
+
+<button id="btnReload">
+<span class="btn-text">Recargar</span>
+<span class="btn-loader"></span>
+</button></div></div><!-- FILTROS --><div class="filters"><input id="fBuscar" placeholder="Buscar pedido, cliente, comuna"><select id="fStatus">
+<option value="">Todos</option>
+<option>PENDIENTE</option>
+<option>EN RUTA</option>
+<option>RECIBIDO</option>
+<option>ENTREGADO</option>
+<option>CANCELADO</option>
+</select><input type="date" id="fDesde">
+<input type="date" id="fHasta"></div><!-- CONTADORES --><div class="stats">
+<div>Pedidos: <span id="totalPedidos">0</span></div>
+<div>Cajas: <span id="totalCajas">0</span></div>
+</div><!-- TARJETAS --><div class="cards-grid" id="cardsGrid"></div><!-- MODAL --><div class="modal" id="editModal"><div class="modal-box"><h2>Gestión de Pedido</h2><!-- DATOS PEDIDO --><div class="section-title">Datos del Pedido</div><div class="form-grid"><div>
+<label>Fecha Ingreso</label>
+<input id="mFechaIngreso" type="date">
+</div><div>
+<label>Número Pedido</label>
+<input id="mPedido">
+</div><div>
+<label>Tipo Documento</label>
+<input id="mTipoDocumento">
+</div><div>
+<label>Número Documento</label>
+<input id="mNumeroDocumento">
+</div></div><!-- CLIENTE --><div class="section-title">Datos del Cliente</div><div class="form-grid"><div>
+<label>Cliente</label>
+<input id="mCliente">
+</div><div>
+<label>Dirección</label>
+<input id="mDireccion">
+</div><div>
+<label>Comuna</label>
+<input id="mComuna">
+</div></div><!-- ENTREGA --><div class="section-title">Información de Entrega</div><div class="form-grid"><div>
+<label>Transporte</label>
+<input id="mTransporte">
+</div><div>
+<label>Cantidad de Cajas</label>
+<input id="mCajas" type="number">
+</div><div>
+<label>Responsable</label>
+<input id="mResponsable">
+</div><div>
+<label>Fecha Entrega</label>
+<input id="mFechaEntrega" type="date">
+</div><div>
+<label>Status Pedido</label>
+<select id="mStatus">
+<option>PENDIENTE</option>
+<option>EN RUTA</option>
+<option>RECIBIDO</option>
+<option>ENTREGADO</option>
+<option>CANCELADO</option>
+</select>
+</div><div>
+<label>Status Entrega</label>
+<input id="mStatusEntrega">
+</div><div>
+<label>Semáforo</label>
+<input id="mSemaforo">
+</div><div>
+<label>Días Atraso</label>
+<input id="mDiasAtraso">
+</div></div><!-- OBSERVACIONES --><div class="section-title">Observaciones</div><div class="form-grid"><div class="full">
+<label>Observaciones del Pedido</label>
+<textarea id="mObservaciones" rows="3"></textarea>
+</div></div><!-- DOCUMENTOS --><div class="section-title">Documentos y Evidencias</div><div class="form-grid"><div>
+<label>URL Foto</label>
+<input id="mFoto">
+</div><div>
+<label>PDF Documento</label>
+<input id="mPDF">
+</div><div>
+<label>PDF Traslado</label>
+<input id="mPDFTraslado">
+</div></div><div class="modal-actions"><button id="btnGuardar">
+<span class="btn-text">Guardar</span>
+<span class="btn-loader"></span>
+</button><button class="btn-close" onclick="closeEdit()">Cerrar</button>
+
+</div></div></div><audio id="alertSound">
+<source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg">
+</audio><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script><script>
+
+function toggleFullscreen(){
+
+if(!document.fullscreenElement){
+document.documentElement.requestFullscreen();
+}else{
+document.exitFullscreen();
+}
+
+}
+
+</script><script src="envio2.js"></script></body>
 </html>
