@@ -6,6 +6,8 @@
 :root{
 --primary:#14b8a6;
 --primary-dark:#0d9488;
+--danger:#dc2626;
+--warning:#facc15;
 --bg:#f8fafc;
 --card:#ffffff;
 --shadow:0 10px 25px rgba(0,0,0,.08);
@@ -46,6 +48,7 @@ transition:.2s;
 
 button:hover{
 background:var(--primary-dark);
+transform:scale(1.04);
 }
 
 button.loading .btn-text{display:none}
@@ -85,7 +88,7 @@ box-sizing:border-box;
 
 /* LABEL */
 
-label{
+.form-grid label{
 display:block;
 font-size:12px;
 font-weight:700;
@@ -117,6 +120,93 @@ border-radius:18px;
 padding:20px;
 box-shadow:var(--shadow);
 border-left:8px solid #ccc;
+transition:.25s;
+}
+
+.card:hover{
+transform:translateY(-4px);
+box-shadow:0 16px 35px rgba(0,0,0,.12);
+}
+
+.card-alerta{background:#fef9c3;}
+.card-atraso{background:#fee2e2;border-left-color:#dc2626;}
+
+.pedido-numero{
+font-size:32px;
+font-weight:900;
+margin-bottom:6px;
+}
+
+.cliente-destacado{
+font-size:22px;
+font-weight:800;
+margin-bottom:10px;
+}
+
+/* CAJAS */
+
+.cajas-box{
+background:#111827;
+color:#fff;
+text-align:center;
+padding:12px;
+border-radius:14px;
+margin-top:10px;
+}
+
+.cajas-box span{
+font-size:36px;
+font-weight:900;
+display:block;
+}
+
+/* FOTOS */
+
+.photo-wrap{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+margin-top:10px;
+}
+
+.photo-wrap img{
+width:80px;
+height:80px;
+object-fit:cover;
+border-radius:10px;
+cursor:pointer;
+}
+
+/* PDF */
+
+.pdf-wrap{
+margin-top:10px;
+display:flex;
+gap:6px;
+flex-wrap:wrap;
+}
+
+.pdf-wrap a{
+background:#0f172a;
+color:#fff;
+padding:6px 10px;
+border-radius:8px;
+font-size:12px;
+text-decoration:none;
+}
+
+/* MAPA */
+
+.map-container{
+display:none;
+margin-top:10px;
+}
+
+.map-container iframe{
+width:100%;
+height:220px;
+border-radius:12px;
+border:0;
 }
 
 /* MODAL */
@@ -143,25 +233,13 @@ overflow:auto;
 box-shadow:0 20px 40px rgba(0,0,0,.2);
 }
 
-/* SECCIONES */
-
-.section-title{
-font-size:18px;
-font-weight:800;
-margin-top:25px;
-margin-bottom:10px;
-color:#111827;
-border-bottom:2px solid #e5e7eb;
-padding-bottom:4px;
-}
-
 /* GRID FORM */
 
 .form-grid{
 display:grid;
 grid-template-columns:repeat(3,1fr);
 gap:16px;
-margin-top:10px;
+margin-top:15px;
 }
 
 .full{
@@ -174,7 +252,7 @@ grid-column:1 / -1;
 display:flex;
 justify-content:flex-end;
 gap:12px;
-margin-top:25px;
+margin-top:20px;
 flex-wrap:wrap;
 }
 
@@ -194,13 +272,27 @@ background:#4b5563;
 /* RESPONSIVE */
 
 @media (max-width:1000px){
-.form-grid{grid-template-columns:repeat(2,1fr);}
-.modal-box{width:95%;}
+
+.form-grid{
+grid-template-columns:repeat(2,1fr);
+}
+
+.modal-box{
+width:95%;
+}
+
 }
 
 @media (max-width:600px){
-.form-grid{grid-template-columns:1fr;}
-.cards-grid{grid-template-columns:1fr;}
+
+.form-grid{
+grid-template-columns:1fr;
+}
+
+.cards-grid{
+grid-template-columns:1fr;
+}
+
 }
 
 </style></head><body><div class="header"><h2>🚚 Sistema Logístico</h2><div style="display:flex;gap:10px"><button onclick="toggleFullscreen()">Modo TV</button>
@@ -216,10 +308,8 @@ background:#4b5563;
 <option>ENTREGADO</option>
 <option>CANCELADO</option>
 </select><input type="date" id="fDesde">
-<input type="date" id="fHasta"></div><!-- CONTADORES --><div class="stats">
-<div>Pedidos: <span id="totalPedidos">0</span></div>
-<div>Cajas: <span id="totalCajas">0</span></div>
-</div><!-- TARJETAS --><div class="cards-grid" id="cardsGrid"></div><!-- MODAL --><div class="modal" id="editModal"><div class="modal-box"><h2>Gestión de Pedido</h2><!-- DATOS PEDIDO --><div class="section-title">Datos del Pedido</div><div class="form-grid"><div>
+<input type="date" id="fHasta"></div><!-- CONTADORES --><div class="stats"><div>Pedidos: <span id="totalPedidos">0</span></div>
+<div>Cajas: <span id="totalCajas">0</span></div></div><!-- TARJETAS --><div class="cards-grid" id="cardsGrid"></div><!-- MODAL EDICION --><div class="modal" id="editModal"><div class="modal-box"><h3>Editar Pedido</h3><div class="form-grid"><div>
 <label>Fecha Ingreso</label>
 <input id="mFechaIngreso" type="date">
 </div><div>
@@ -231,7 +321,7 @@ background:#4b5563;
 </div><div>
 <label>Número Documento</label>
 <input id="mNumeroDocumento">
-</div></div><!-- CLIENTE --><div class="section-title">Datos del Cliente</div><div class="form-grid"><div>
+</div><div>
 <label>Cliente</label>
 <input id="mCliente">
 </div><div>
@@ -240,11 +330,11 @@ background:#4b5563;
 </div><div>
 <label>Comuna</label>
 <input id="mComuna">
-</div></div><!-- ENTREGA --><div class="section-title">Información de Entrega</div><div class="form-grid"><div>
+</div><div>
 <label>Transporte</label>
 <input id="mTransporte">
 </div><div>
-<label>Cantidad de Cajas</label>
+<label>Cajas</label>
 <input id="mCajas" type="number">
 </div><div>
 <label>Responsable</label>
@@ -270,10 +360,10 @@ background:#4b5563;
 </div><div>
 <label>Días Atraso</label>
 <input id="mDiasAtraso">
-</div></div><!-- OBSERVACIONES --><div class="section-title">Observaciones</div><div class="form-grid"><div class="full">
-<label>Observaciones del Pedido</label>
+</div><div class="full">
+<label>Observaciones</label>
 <textarea id="mObservaciones" rows="3"></textarea>
-</div></div><!-- DOCUMENTOS --><div class="section-title">Documentos y Evidencias</div><div class="form-grid"><div>
+</div><div>
 <label>URL Foto</label>
 <input id="mFoto">
 </div><div>
@@ -292,13 +382,11 @@ background:#4b5563;
 </audio><script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script><script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script><script>
 
 function toggleFullscreen(){
-
 if(!document.fullscreenElement){
 document.documentElement.requestFullscreen();
 }else{
 document.exitFullscreen();
 }
-
 }
 
 </script><script src="envio2.js"></script></body>
