@@ -10,6 +10,7 @@ let EDIT=null;
 /* ======================================================
    DOM
 ====================================================== */
+
 const cardsGrid=document.getElementById("cardsGrid");
 
 const fBuscar=document.getElementById("fBuscar");
@@ -20,12 +21,13 @@ const fHasta=document.getElementById("fHasta");
 const totalPedidos=document.getElementById("totalPedidos");
 const totalCajas=document.getElementById("totalCajas");
 
-const editModal=document.getElementById("editModal");
-
 const btnReload=document.getElementById("btnReload");
 const btnGuardar=document.getElementById("btnGuardar");
 
+const editModal=document.getElementById("editModal");
+
 /* FORM */
+
 const mFechaIngreso=document.getElementById("mFechaIngreso");
 const mPedido=document.getElementById("mPedido");
 const mTipoDocumento=document.getElementById("mTipoDocumento");
@@ -38,45 +40,15 @@ const mCajas=document.getElementById("mCajas");
 const mResponsable=document.getElementById("mResponsable");
 const mFechaEntrega=document.getElementById("mFechaEntrega");
 const mStatus=document.getElementById("mStatus");
-const mStatusEntrega=document.getElementById("mStatusEntrega");
-const mSemaforo=document.getElementById("mSemaforo");
-const mDiasAtraso=document.getElementById("mDiasAtraso");
 const mObservaciones=document.getElementById("mObservaciones");
-const mFoto=document.getElementById("mFoto");
-const mPDF=document.getElementById("mPDF");
-const mPDFTraslado=document.getElementById("mPDFTraslado");
-
-/* ======================================================
-   HELPERS
-====================================================== */
-function setLoading(btn,state){
- if(!btn) return;
- btn.disabled=state;
- btn.classList.toggle("loading",state);
-}
-
-function getStatusColor(status){
-
- const map={
-  "PENDIENTE":"#3b82f6",
-  "EN RUTA":"#f97316",
-  "RECIBIDO":"#fb923c",
-  "ENTREGADO":"#22c55e",
-  "CANCELADO":"#9ca3af"
- };
-
- return map[status]||"#ccc";
-
-}
 
 /* ======================================================
    LOAD
 ====================================================== */
+
 async function load(){
 
  try{
-
-  setLoading(btnReload,true);
 
   const r=await fetch(API);
 
@@ -88,17 +60,16 @@ async function load(){
 
  }catch(e){
 
-  console.error("Error cargando:",e);
+  console.error("Error cargando datos",e);
 
  }
-
- setLoading(btnReload,false);
 
 }
 
 /* ======================================================
    FILTROS
 ====================================================== */
+
 function applyFilters(){
 
  const q=(fBuscar.value||"").toLowerCase();
@@ -108,20 +79,31 @@ function applyFilters(){
   let ok=true;
 
   if(q){
-   const txt=(r.cliente||"").toLowerCase()+(r.pedido||"")+(r.comuna||"").toLowerCase();
-   ok=txt.includes(q);
+
+   const txt=(r.pedido||"")+
+             (r.cliente||"")+
+             (r.comuna||"");
+
+   ok=txt.toLowerCase().includes(q);
+
   }
 
   if(ok && fStatus.value){
+
    ok=r.status===fStatus.value;
+
   }
 
   if(ok && fDesde.value){
+
    ok=new Date(r.fechaIngreso)>=new Date(fDesde.value);
+
   }
 
   if(ok && fHasta.value){
+
    ok=new Date(r.fechaIngreso)<=new Date(fHasta.value);
+
   }
 
   return ok;
@@ -138,23 +120,21 @@ fDesde.onchange=applyFilters;
 fHasta.onchange=applyFilters;
 
 /* ======================================================
-   RENDER
+   RENDER TARJETAS
 ====================================================== */
+
 function render(){
 
  cardsGrid.innerHTML="";
 
- let cajasTotal=0;
+ let cajas=0;
 
  FILT.forEach(r=>{
 
-  cajasTotal+=Number(r.etiquetas||0);
-
-  const color=getStatusColor(r.status);
+  cajas+=Number(r.etiquetas||0);
 
   const card=document.createElement("div");
   card.className="card";
-  card.style.borderLeftColor=color;
 
   card.innerHTML=`
 
@@ -171,25 +151,23 @@ CAJAS
 <span>${r.etiquetas||0}</span>
 </div>
 
-<div style="margin-top:10px"><b>Status:</b> ${r.status||""}</div>
-<div><b>Responsable:</b> ${r.responsable||""}</div>
-<div><b>Entrega:</b> ${r.fechaEntrega||""}</div>
-
-${renderFotos(r.foto)}
-${renderPDF(r.pdf)}
-
-<div style="margin-top:10px;display:flex;gap:6px">
-
-<button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
-
-<button onclick="openEdit(${r._row})">✏️</button>
-
-<button onclick="delRow(${r._row})">🗑️</button>
-
+<div style="margin-top:10px">
+<b>Status:</b> ${r.status||""}
 </div>
 
-<div class="map-container" id="map${r._row}">
-<iframe></iframe>
+<div><b>Responsable:</b> ${r.responsable||""}</div>
+
+<div><b>Entrega:</b> ${r.fechaEntrega||""}</div>
+
+${renderFoto(r.foto)}
+${renderPDF(r.pdf)}
+
+<div style="margin-top:12px;display:flex;gap:8px">
+
+<button onclick="openEdit(${r._row})">✏️ Editar</button>
+
+<button onclick="deleteRow(${r._row})" style="background:#dc2626">🗑️</button>
+
 </div>
 
 `;
@@ -199,20 +177,21 @@ ${renderPDF(r.pdf)}
  });
 
  totalPedidos.textContent=FILT.length;
- totalCajas.textContent=cajasTotal;
+ totalCajas.textContent=cajas;
 
 }
 
 /* ======================================================
-   FOTOS
+   FOTO
 ====================================================== */
-function renderFotos(url){
+
+function renderFoto(url){
 
  if(!url) return "";
 
  return `
  <div class="photo-wrap">
- <img src="${url}" onclick="window.open('${url}')">
+   <img src="${url}" onclick="window.open('${url}')">
  </div>
  `;
 
@@ -221,84 +200,60 @@ function renderFotos(url){
 /* ======================================================
    PDF
 ====================================================== */
+
 function renderPDF(url){
 
  if(!url) return "";
 
  return `
  <div class="pdf-wrap">
- <a href="${url}" target="_blank">PDF</a>
+   <a href="${url}" target="_blank">PDF</a>
  </div>
  `;
 
 }
 
 /* ======================================================
-   MAPA
+   EDITAR
 ====================================================== */
-function openMap(dir,comuna){
 
- const map=`https://www.google.com/maps?q=${encodeURIComponent(dir+", "+comuna+", Chile")}&output=embed`;
-
- const maps=document.querySelectorAll(".map-container");
-
- maps.forEach(m=>m.style.display="none");
-
- const card=event.target.closest(".card");
-
- const mapBox=card.querySelector(".map-container");
-
- mapBox.style.display="block";
-
- mapBox.querySelector("iframe").src=map;
-
-}
-
-/* ======================================================
-   MODAL EDIT
-====================================================== */
 function openEdit(row){
 
  EDIT=row;
 
- const data=RAW.find(r=>Number(r._row)===Number(row));
+ const r=RAW.find(x=>Number(x._row)===Number(row));
 
- if(!data) return;
+ if(!r) return;
 
  editModal.style.display="flex";
 
- mFechaIngreso.value=data.fechaIngreso||"";
- mPedido.value=data.pedido||"";
- mTipoDocumento.value=data.tipoDocumento||"";
- mNumeroDocumento.value=data.numeroDocumento||"";
- mCliente.value=data.cliente||"";
- mDireccion.value=data.direccion||"";
- mComuna.value=data.comuna||"";
- mTransporte.value=data.transporte||"";
- mCajas.value=data.etiquetas||"";
- mResponsable.value=data.responsable||"";
- mFechaEntrega.value=data.fechaEntrega||"";
- mStatus.value=data.status||"";
- mStatusEntrega.value=data.statusEntrega||"";
- mSemaforo.value=data.semaforo||"";
- mDiasAtraso.value=data.diasAtraso||"";
- mObservaciones.value=data.observaciones||"";
- mFoto.value=data.foto||"";
- mPDF.value=data.pdf||"";
- mPDFTraslado.value=data.pdfTraslado||"";
+ mFechaIngreso.value=r.fechaIngreso||"";
+ mPedido.value=r.pedido||"";
+ mTipoDocumento.value=r.tipoDocumento||"";
+ mNumeroDocumento.value=r.numeroDocumento||"";
+ mCliente.value=r.cliente||"";
+ mDireccion.value=r.direccion||"";
+ mComuna.value=r.comuna||"";
+ mTransporte.value=r.transporte||"";
+ mCajas.value=r.etiquetas||"";
+ mResponsable.value=r.responsable||"";
+ mFechaEntrega.value=r.fechaEntrega||"";
+ mStatus.value=r.status||"";
+ mObservaciones.value=r.observaciones||"";
 
 }
 
 function closeEdit(){
+
  editModal.style.display="none";
+
 }
 
 /* ======================================================
    GUARDAR
 ====================================================== */
-btnGuardar.onclick=async()=>{
 
- setLoading(btnGuardar,true);
+btnGuardar.onclick=async()=>{
 
  const data={
 
@@ -327,8 +282,6 @@ btnGuardar.onclick=async()=>{
 
  editModal.style.display="none";
 
- setLoading(btnGuardar,false);
-
  load();
 
 };
@@ -336,9 +289,10 @@ btnGuardar.onclick=async()=>{
 /* ======================================================
    DELETE
 ====================================================== */
-async function delRow(row){
 
- if(!confirm("Eliminar pedido?")) return;
+async function deleteRow(row){
+
+ if(!confirm("Eliminar registro?")) return;
 
  await fetch(API,{
   method:"POST",
@@ -355,9 +309,11 @@ async function delRow(row){
 /* ======================================================
    RELOAD
 ====================================================== */
+
 btnReload.onclick=load;
 
 /* ======================================================
    INIT
 ====================================================== */
+
 load();
