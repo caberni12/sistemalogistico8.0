@@ -377,7 +377,7 @@ function renderCards(data){
     <div style="
         margin-top:12px;
         display:flex;
-        gap:12px;
+        gap:14px;
         align-items:center;
         flex-wrap:wrap;
     ">
@@ -391,8 +391,29 @@ function renderCards(data){
 
       ${r.pdf
         ? `<a href="${r.pdf}" target="_blank"
-            style="font-size:18px;text-decoration:none">
-            📄 Ver PDF
+            title="Ver PDF"
+            style="
+            font-size:30px;
+            text-decoration:none;
+            background:#f1f5f9;
+            padding:10px;
+            border-radius:8px;
+            ">
+            📄
+           </a>`
+        : ""}
+
+      ${r.pdfTraslado
+        ? `<a href="${r.pdfTraslado}" target="_blank"
+            title="Ver PDF Traslado"
+            style="
+            font-size:30px;
+            text-decoration:none;
+            background:#f1f5f9;
+            padding:10px;
+            border-radius:8px;
+            ">
+            📄
            </a>`
         : ""}
 
@@ -405,13 +426,6 @@ function renderCards(data){
         gap:8px;
         flex-wrap:wrap;
     ">
-
-      ${r.pdfTraslado
-        ? `<a href="${r.pdfTraslado}" target="_blank"
-             style="background:#0ea5e9;color:white;padding:6px 10px;border-radius:6px;text-decoration:none">
-             📦 Traslado
-           </a>`
-        : ""}
 
       <button onclick="openModal(${r._row})"
         style="padding:6px 10px">✏️ Editar</button>
@@ -429,8 +443,6 @@ function renderCards(data){
   });
 
 }
-
-
 
 
 function renderKPIs(){
