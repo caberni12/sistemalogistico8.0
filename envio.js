@@ -342,65 +342,97 @@ function renderTable(data){
  
  }
 
-/***************************************************
-CARDS MOBILE
-***************************************************/
 function renderCards(data){
 
   mobileList.innerHTML="";
- 
+
   data.forEach(r=>{
- 
+
    const semaforo = calcularSemaforo(r.fechaEntrega);
- 
+
    const card = `
    <div class="card">
- 
+
     <div class="card-title">
-     Pedido #${r.pedido||""}
-     ${renderEstado(r.status)}
+      Pedido #${r.pedido||""}
+      ${renderEstado(r.status)}
     </div>
- 
-    <div><b>Cliente:</b> ${r.cliente||""}</div>
- 
-    <div onclick="verMapa(\`${r.direccion||""}\`)">
-     <b>Dirección:</b> ${r.direccion||""}
+
+    <div style="margin-top:6px"><b>Cliente:</b> ${r.cliente||""}</div>
+
+    <div style="margin-top:6px;padding:6px 0"
+         onclick="verMapa(\`${r.direccion||""}\`)">
+      📍 <b>Dirección:</b> ${r.direccion||""}
     </div>
- 
-    <div><b>Comuna:</b> ${r.comuna||""}</div>
-    <div><b>Transporte:</b> ${r.transporte||""}</div>
-    <div><b>Cajas:</b> ${r.etiquetas||""}</div>
- 
-    <div><b>Semáforo:</b> ${semaforo}</div>
- 
-    <div style="margin-top:10px;display:flex;gap:10px">
-     ${r.foto?`<img src="${r.foto}" class="foto-thumb" onclick="verFoto('${r.foto}')">`:""}
-     ${renderPDF(r.pdf)}
+
+    <div style="margin-top:6px"><b>Comuna:</b> ${r.comuna||""}</div>
+    <div style="margin-top:6px"><b>Transporte:</b> ${r.transporte||""}</div>
+    <div style="margin-top:6px"><b>Cajas:</b> ${r.etiquetas||""}</div>
+
+    <div style="margin-top:6px">
+      <b>Semáforo:</b> ${semaforo}
     </div>
- 
-    <div style="margin-top:10px;display:flex;gap:6px">
- 
- 
-     ${r.pdfTraslado ? 
-       `<a href="${r.pdfTraslado}" target="_blank">📄 Ver Traslado</a>` 
-       : ""}
- 
-     <button onclick="openModal(${r._row})">Editar</button>
-     <button onclick="deleteRow(${r._row})">Eliminar</button>
- 
+
+    <!-- MEDIA -->
+    <div style="
+        margin-top:12px;
+        display:flex;
+        gap:12px;
+        align-items:center;
+        flex-wrap:wrap;
+    ">
+
+      ${r.foto
+        ? `<img src="${r.foto}" 
+             class="foto-thumb" 
+             style="width:60px;height:60px;border-radius:8px"
+             onclick="verFoto('${r.foto}')">`
+        : ""}
+
+      ${r.pdf
+        ? `<a href="${r.pdf}" target="_blank"
+            style="font-size:18px;text-decoration:none">
+            📄 Ver PDF
+           </a>`
+        : ""}
+
     </div>
- 
+
+    <!-- ACCIONES -->
+    <div style="
+        margin-top:14px;
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+    ">
+
+      ${r.pdfTraslado
+        ? `<a href="${r.pdfTraslado}" target="_blank"
+             style="background:#0ea5e9;color:white;padding:6px 10px;border-radius:6px;text-decoration:none">
+             📦 Traslado
+           </a>`
+        : ""}
+
+      <button onclick="openModal(${r._row})"
+        style="padding:6px 10px">✏️ Editar</button>
+
+      <button onclick="deleteRow(${r._row})"
+        style="padding:6px 10px">🗑️ Eliminar</button>
+
+    </div>
+
    </div>
    `;
- 
+
    mobileList.insertAdjacentHTML("beforeend",card);
- 
+
   });
- 
- }
-/***************************************************
-KPIS
-***************************************************/
+
+}
+
+
+
+
 function renderKPIs(){
 
  const total=RAW.length;
