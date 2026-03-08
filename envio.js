@@ -351,6 +351,18 @@ function renderCards(data){
 
    const semaforo = calcularSemaforo(r.fechaEntrega);
 
+   /* FECHA ENTREGA SOLO SI ESTA ENTREGADO */
+   let entregaHTML = "";
+
+   if(r.status === "ENTREGADO" && r.fechaEntrega){
+     const fecha = new Date(r.fechaEntrega).toLocaleString("es-CL");
+     entregaHTML = `
+     <div style="margin-top:6px">
+       <span style="color:#22c55e">✅</span>
+       <b> Entregado:</b> ${fecha}
+     </div>`;
+   }
+
    const card = `
    <div class="card">
 
@@ -389,6 +401,8 @@ function renderCards(data){
       <span style="color:#eab308">⏱️</span>
       <b> Semáforo:</b> ${semaforo}
     </div>
+
+    ${entregaHTML}
 
     <!-- DOCUMENTOS Y FOTO -->
     <div style="
