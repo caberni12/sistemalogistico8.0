@@ -342,6 +342,7 @@ function renderTable(data){
  
  }
 
+
 function renderCards(data){
 
   mobileList.innerHTML="";
@@ -354,26 +355,42 @@ function renderCards(data){
    <div class="card">
 
     <div class="card-title">
-      Pedido #${r.pedido||""}
+      📦 Pedido #${r.pedido||""}
       ${renderEstado(r.status)}
     </div>
 
-    <div style="margin-top:6px"><b>Cliente:</b> ${r.cliente||""}</div>
+    <div style="margin-top:6px">
+      <span style="color:#3b82f6">👤</span>
+      <b> Cliente:</b> ${r.cliente||""}
+    </div>
 
     <div style="margin-top:6px;padding:6px 0"
          onclick="verMapa(\`${r.direccion||""}\`)">
-      📍 <b>Dirección:</b> ${r.direccion||""}
+      <span style="color:#ef4444">📍</span>
+      <b> Dirección:</b> ${r.direccion||""}
     </div>
-
-    <div style="margin-top:6px"><b>Comuna:</b> ${r.comuna||""}</div>
-    <div style="margin-top:6px"><b>Transporte:</b> ${r.transporte||""}</div>
-    <div style="margin-top:6px"><b>Cajas:</b> ${r.etiquetas||""}</div>
 
     <div style="margin-top:6px">
-      <b>Semáforo:</b> ${semaforo}
+      <span style="color:#14b8a6">🏙️</span>
+      <b> Comuna:</b> ${r.comuna||""}
     </div>
 
-    <!-- MEDIA -->
+    <div style="margin-top:6px">
+      <span style="color:#f97316">🚚</span>
+      <b> Transporte:</b> ${r.transporte||""}
+    </div>
+
+    <div style="margin-top:6px">
+      <span style="color:#8b5cf6">📦</span>
+      <b> Cajas:</b> ${r.etiquetas||""}
+    </div>
+
+    <div style="margin-top:6px">
+      <span style="color:#eab308">⏱️</span>
+      <b> Semáforo:</b> ${semaforo}
+    </div>
+
+    <!-- DOCUMENTOS Y FOTO -->
     <div style="
         margin-top:12px;
         display:flex;
@@ -391,12 +408,12 @@ function renderCards(data){
 
       ${r.pdf
         ? `<a href="${r.pdf}" target="_blank"
-            title="Ver PDF"
+            title="PDF Documento"
             style="
-            font-size:30px;
+            font-size:28px;
             text-decoration:none;
-            background:#f1f5f9;
-            padding:10px;
+            background:#fee2e2;
+            padding:8px 10px;
             border-radius:8px;
             ">
             📄
@@ -405,12 +422,12 @@ function renderCards(data){
 
       ${r.pdfTraslado
         ? `<a href="${r.pdfTraslado}" target="_blank"
-            title="Ver PDF Traslado"
+            title="PDF Traslado"
             style="
-            font-size:30px;
+            font-size:28px;
             text-decoration:none;
-            background:#f1f5f9;
-            padding:10px;
+            background:#fee2e2;
+            padding:8px 10px;
             border-radius:8px;
             ">
             📄
@@ -443,7 +460,6 @@ function renderCards(data){
   });
 
 }
-
 
 function renderKPIs(){
 
