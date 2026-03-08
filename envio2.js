@@ -1,15 +1,14 @@
-/* ======================================================
-   CONFIG
-====================================================== */
-const API="https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
+const API="https://script.google.com/macros/s/AKfycbybTDy6gfzqI54OIN-BP6YP-9GsYzCxAAEQSVGN8KH3q7yHG_RWUKNIiYRcYAuiCq9VmA/exec";
 
 let RAW=[];
 let FILT=[];
-let EDIT=null;
+let visibleCount=0;
+let EDIT_ROW=null;
+let TRASLADO_ROW=null;
 
-/* ======================================================
-   DOM
-====================================================== */
+const CHUNK=20;
+
+/* ELEMENTOS */
 
 const cardsGrid=document.getElementById("cardsGrid");
 
@@ -26,7 +25,7 @@ const btnGuardar=document.getElementById("btnGuardar");
 
 const editModal=document.getElementById("editModal");
 
-/* FORM */
+/* CAMPOS MODAL */
 
 const mFechaIngreso=document.getElementById("mFechaIngreso");
 const mPedido=document.getElementById("mPedido");
@@ -40,280 +39,703 @@ const mCajas=document.getElementById("mCajas");
 const mResponsable=document.getElementById("mResponsable");
 const mFechaEntrega=document.getElementById("mFechaEntrega");
 const mStatus=document.getElementById("mStatus");
+const mStatusEntrega=document.getElementById("mStatusEntrega");
+const mSemaforo=document.getElementById("mSemaforo");
+const mDiasAtraso=document.getElementById("mDiasAtraso");
 const mObservaciones=document.getElementById("mObservaciones");
 
-/* ======================================================
-   LOAD
-====================================================== */
+const mFoto=document.getElementById("mFoto");
+const mPDF=document.getElementById("mPDF");
+const mPDFTraslado=document.getElementById("mPDFTraslado");
+
+const boxFoto=document.getElementById("boxFoto");
+const boxPDF=document.getElementById("boxPDF");
+const boxTraslado=document.getElementById("boxTraslado");
+
+const previewFoto=document.getElementById("previewFoto");
+const previewPDF=document.getElementById("previewPDF");
+const previewTraslado=document.getElementById("previewTraslado");
+
+/* LOADER */
+
+function setLoading(btn,state){
+btn.disabled=state;
+btn.classList.toggle("loading",state);
+}
+
+/* FECHA */
+
+function parseFechaSoloDia(str){
+if(!str) return null;
+const p=str.split("-");
+if(p.length!==3) return null;
+return new Date(p[0],p[1]-1,p[2]);
+}
+
+/* ALERTAS */
+
+
+
+
+function calcularAlertas(r){
+
+if(!r.fechaEntrega) return r;
+
+const ahora=new Date();
+const entrega=new Date(r.fechaEntrega);
+
+const diffHoras=(entrega-ahora)/(1000*60*60);
+const diffDias=Math.floor((ahora-entrega)/(1000*60*60*24));
+
+if(ahora>entrega && r.status!=="ENTREGADO"){
+r.alerta="PEDIDO ATRASADO";
+r.semaforo="ROJO";
+r.diasAtraso=Math.max(diffDias,1);
+r.statusEntrega="ATRASADO";
+}
+
+else if(diffHoras<=48 && r.status!=="ENTREGADO"){
+r.alerta="ENTREGA EN MENOS DE 48H";
+r.semaforo="AMARILLO";
+r.diasAtraso=0;
+r.statusEntrega="POR VENCER";
+}
+
+else{
+r.alerta="";
+r.semaforo="VERDE";
+r.diasAtraso=0;
+r.statusEntrega="EN TIEMPO";
+}
+
+return r;
+}
+/* LOAD */
+/* LOAD */
 
 async function load(){
 
- try{
+    try{
+    
+    setLoading(btnReload,true);
+    
+    const r = await fetch(API);
+    const data = await r.json();
+    
+    RAW = data.map(row=>{
+    
+    let obj={
+    
+    _row:row._row,
+    fechaIngreso:row.fechaIngreso,
+    pedido:row.pedido,
+    tipoDocumento:row.tipoDocumento,
+    numeroDocumento:row.numeroDocumento,
+    cliente:row.cliente,
+    direccion:row.direccion,
+    comuna:row.comuna,
+    transporte:row.transporte,
+    etiquetas:row.etiquetas,
+    observaciones:row.observaciones,
+    status:String(row.status||"").trim().toUpperCase(),
+    fechaEntrega:row.fechaEntrega,
+    alerta:row.alerta,
+    statusEntrega:row.statusEntrega,
+    diasAtraso:row.diasAtraso,
+    semaforo:row.semaforo,
+    responsable:row.responsable,
+    foto:row.foto,
+    pdf:row.pdf,
+    pdfTraslado:row.pdfTraslado,
+    solicitudTraslado:row.solicitudTraslado,
+    
+    _fechaObj:parseFechaSoloDia(row.fechaIngreso)
+    
+    };
+    
+    return calcularAlertas(obj);
+    
+    });
+    
+    /* ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
+    
+    RAW.sort((a,b)=> b._row - a._row);
+    
+    applyFilter();
+    
+    }catch(e){
+    
+    console.error("ERROR API",e);
+    
+    }
+    
+    setLoading(btnReload,false);
+    
+    }
+/* FILTROS */
 
-  const r=await fetch(API);
+function applyFilter(){
 
-  RAW=await r.json();
+    const texto = fBuscar.value.toLowerCase().trim();
+    const status = fStatus.value;
+    
+    const d1 = fDesde.value ? new Date(fDesde.value) : null;
+    const d2 = fHasta.value ? new Date(fHasta.value) : null;
+    
+    FILT = RAW.filter(r=>{
+    
+    const combo=(r.pedido+" "+r.cliente+" "+r.comuna+" "+r.responsable).toLowerCase();
+    
+    if(texto && !combo.includes(texto)) return false;
+    
+    /* FILTRO ATRASO */
+    
+    if(status==="ATRASO" && r.semaforo!=="ROJO") return false;
+    
+    /* FILTRO NORMAL STATUS */
+    
+    if(status && status!=="ATRASO" && r.status!==status) return false;
+    
+    if(d1 || d2){
+    
+    const fr=r._fechaObj;
+    
+    if(!fr) return false;
+    
+    if(d1 && fr < d1) return false;
+    
+    if(d2 && fr > d2) return false;
+    
+    }
+    
+    return true;
+    
+    });
+    
+    /* ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
+    
+    FILT.sort((a,b)=> b._row - a._row);
+    
+    totalPedidos.textContent = FILT.length;
+    
+    totalCajas.textContent = FILT.reduce((s,r)=>s+Number(r.etiquetas||0),0);
+    
+    visibleCount = 0;
+    cardsGrid.innerHTML = "";
+    
+    renderMore();
+    
+    }
 
-  if(!Array.isArray(RAW)) RAW=[];
+/* STATUS COLOR */
 
-  applyFilters();
+function statusClass(s){
 
- }catch(e){
+if(s==="PENDIENTE") return "estado estado-pendiente";
+if(s==="EN RUTA") return "estado estado-ruta";
+if(s==="RECIBIDO") return "estado estado-recibido";
+if(s==="ENTREGADO") return "estado estado-entregado";
+if(s==="CANCELADO") return "estado estado-cancelado";
 
-  console.error("Error cargando datos",e);
-
- }
+return "estado";
 
 }
 
-/* ======================================================
-   FILTROS
-====================================================== */
+/* TARJETAS */
 
-function applyFilters(){
+function renderMore(){
 
- const q=(fBuscar.value||"").toLowerCase();
+const fragment=document.createDocumentFragment();
 
- FILT=RAW.filter(r=>{
+const slice=FILT.slice(visibleCount,visibleCount+CHUNK);
 
-  let ok=true;
+slice.forEach(r=>{
 
-  if(q){
+let clase="card";
 
-   const txt=(r.pedido||"")+
-             (r.cliente||"")+
-             (r.comuna||"");
+if(r.semaforo==="ROJO") clase+=" card-atraso";
+if(r.semaforo==="AMARILLO") clase+=" card-alerta";
 
-   ok=txt.toLowerCase().includes(q);
+const mapId="map_"+r._row;
 
-  }
+const card=document.createElement("div");
+card.className=clase;
 
-  if(ok && fStatus.value){
+card.innerHTML=`
 
-   ok=r.status===fStatus.value;
+<div class="card-header">
 
-  }
+<div class="pedido-numero">#${r.pedido}</div>
 
-  if(ok && fDesde.value){
+<div class="${statusClass(r.status)}">${r.status}</div>
 
-   ok=new Date(r.fechaIngreso)>=new Date(fDesde.value);
+</div>
 
-  }
+<div class="section">
+<div class="section-title">Cliente</div>
+<div class="section-value">${r.cliente}</div>
+</div>
 
-  if(ok && fHasta.value){
+<div class="section">
+<div class="section-title">Dirección</div>
+<div class="section-value">${r.direccion} (${r.comuna})</div>
+</div>
 
-   ok=new Date(r.fechaIngreso)<=new Date(fHasta.value);
-
-  }
-
-  return ok;
-
- });
-
- render();
-
-}
-
-fBuscar.oninput=applyFilters;
-fStatus.onchange=applyFilters;
-fDesde.onchange=applyFilters;
-fHasta.onchange=applyFilters;
-
-/* ======================================================
-   RENDER TARJETAS
-====================================================== */
-
-function render(){
-
- cardsGrid.innerHTML="";
-
- let cajas=0;
-
- FILT.forEach(r=>{
-
-  cajas+=Number(r.etiquetas||0);
-
-  const card=document.createElement("div");
-  card.className="card";
-
-  card.innerHTML=`
-
-<div class="pedido-numero">${r.pedido||""}</div>
-
-<div class="cliente-destacado">${r.cliente||""}</div>
-
-<div><b>Dirección:</b> ${r.direccion||""}</div>
-<div><b>Comuna:</b> ${r.comuna||""}</div>
-<div><b>Transporte:</b> ${r.transporte||""}</div>
+<div class="section">
+<div class="section-title">Responsable</div>
+<div class="section-value">${r.responsable||""}</div>
+</div>
 
 <div class="cajas-box">
 CAJAS
 <span>${r.etiquetas||0}</span>
 </div>
 
-<div style="margin-top:10px">
-<b>Status:</b> ${r.status||""}
+${r.solicitudTraslado ? `
+<div class="traslado-ref">
+📦 Traslado: <b>${r.solicitudTraslado}</b>
 </div>
+` : ""}
 
-<div><b>Responsable:</b> ${r.responsable||""}</div>
+${r.alerta?`
+    <div style="color:#dc2626;font-weight:800">
+    ${r.alerta}
+    
+    ${r.diasAtraso>0 ? `<br>Días atraso: ${r.diasAtraso}` : ""}
+    
+    </div>
+    `:""}
 
-<div><b>Entrega:</b> ${r.fechaEntrega||""}</div>
+<div class="card-actions">
+${r.pdfTraslado ? 
+    `<a href="${r.pdfTraslado}" target="_blank" class="btn-pdf">📄 Documento Generado</a>` : ""}
+<button onclick="toggleMap('${mapId}',this)">🗺 Mapa</button>
 
-${renderFoto(r.foto)}
-${renderPDF(r.pdf)}
+${r.status==="ENTREGADO" && !r.solicitudTraslado ? 
+`<button onclick="openTraslado(${r._row})">📦 Traslado</button>` : ""}
 
-<div style="margin-top:12px;display:flex;gap:8px">
+
 
 <button onclick="openEdit(${r._row})">✏️ Editar</button>
 
-<button onclick="deleteRow(${r._row})" style="background:#dc2626">🗑️</button>
+</div>
 
+<div class="map-container" id="${mapId}">
+<iframe src="https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed"></iframe>
 </div>
 
 `;
 
-  cardsGrid.appendChild(card);
+fragment.appendChild(card);
 
- });
+});
 
- totalPedidos.textContent=FILT.length;
- totalCajas.textContent=cajas;
+cardsGrid.appendChild(fragment);
 
-}
-
-/* ======================================================
-   FOTO
-====================================================== */
-
-function renderFoto(url){
-
- if(!url) return "";
-
- return `
- <div class="photo-wrap">
-   <img src="${url}" onclick="window.open('${url}')">
- </div>
- `;
+visibleCount+=CHUNK;
 
 }
 
-/* ======================================================
-   PDF
-====================================================== */
+/* SCROLL INFINITO */
 
-function renderPDF(url){
-
- if(!url) return "";
-
- return `
- <div class="pdf-wrap">
-   <a href="${url}" target="_blank">PDF</a>
- </div>
- `;
-
+window.addEventListener("scroll",()=>{
+if(window.innerHeight+window.scrollY>=document.body.offsetHeight-400){
+renderMore();
 }
+});
 
-/* ======================================================
-   EDITAR
-====================================================== */
+/* EDITAR */
+
+/* EDITAR */
 
 function openEdit(row){
 
- EDIT=row;
+    const r=RAW.find(x=>x._row==row);
+    if(!r) return;
+    
+    if(r.status==="ENTREGADO" || r.status==="CANCELADO"){
+    alert("Este pedido está cerrado y no puede ser editado.");
+    return;
+    }
+    
+    EDIT_ROW=row;
+    
+    /* CARGAR DATOS */
+    
+    mFechaIngreso.value=r.fechaIngreso||"";
+    mPedido.value=r.pedido||"";
+    mTipoDocumento.value=r.tipoDocumento||"";
+    mNumeroDocumento.value=r.numeroDocumento||"";
+    mCliente.value=r.cliente||"";
+    mDireccion.value=r.direccion||"";
+    mComuna.value=r.comuna||"";
+    mTransporte.value=r.transporte||"";
+    mCajas.value=r.etiquetas||1;
+    mResponsable.value=r.responsable||"";
+    mFechaEntrega.value=r.fechaEntrega||"";
+    mStatus.value=r.status||"";
+    
+    mStatusEntrega.value=r.statusEntrega||"";
+    mSemaforo.value=r.semaforo||"";
+    mDiasAtraso.value=r.diasAtraso||0;
+    
+    mObservaciones.value=r.observaciones||"";
+    
+    mFoto.value=r.foto||"";
+    mPDF.value=r.pdf||"";
+    mPDFTraslado.value=r.pdfTraslado||"";
+    
+    /* MOSTRAR DOCUMENTOS */
+    
+    boxFoto.classList.toggle("hidden",!r.foto);
+    boxPDF.classList.toggle("hidden",!r.pdf);
+    boxTraslado.classList.toggle("hidden",!r.pdfTraslado);
+    
+    /* BLOQUEAR CAMPOS */
+    
+    mFechaIngreso.disabled=true;
+    mPedido.disabled=true;
+    mTipoDocumento.disabled=true;
+    mNumeroDocumento.disabled=true;
+    mCliente.disabled=true;
+    mDireccion.disabled=true;
+    mComuna.disabled=true;
+    mTransporte.disabled=true;
+    mCajas.disabled=true;
+    mResponsable.disabled=true;
+    
+    mStatusEntrega.disabled=true;
+    mSemaforo.disabled=true;
+    mDiasAtraso.disabled=true;
+    
+    /* CAMPOS EDITABLES */
+    
+    mObservaciones.disabled=false;
+    mStatus.disabled=false;
+    mFechaEntrega.disabled=false;
+    
+    /* ABRIR MODAL */
+    
+    editModal.style.display="flex";
+    
+    }
 
- const r=RAW.find(x=>Number(x._row)===Number(row));
+/* PREVIEW */
 
- if(!r) return;
+previewFoto.onclick=()=>{ if(mFoto.value) window.open(mFoto.value); };
+previewPDF.onclick=()=>{ if(mPDF.value) window.open(mPDF.value); };
+previewTraslado.onclick=()=>{ if(mPDFTraslado.value) window.open(mPDFTraslado.value); };
 
- editModal.style.display="flex";
+/* GUARDAR */
 
- mFechaIngreso.value=r.fechaIngreso||"";
- mPedido.value=r.pedido||"";
- mTipoDocumento.value=r.tipoDocumento||"";
- mNumeroDocumento.value=r.numeroDocumento||"";
- mCliente.value=r.cliente||"";
- mDireccion.value=r.direccion||"";
- mComuna.value=r.comuna||"";
- mTransporte.value=r.transporte||"";
- mCajas.value=r.etiquetas||"";
- mResponsable.value=r.responsable||"";
- mFechaEntrega.value=r.fechaEntrega||"";
- mStatus.value=r.status||"";
- mObservaciones.value=r.observaciones||"";
+async function guardar(){
+
+    setLoading(btnGuardar,true);
+    
+    /* OBTENER REGISTRO ORIGINAL */
+    
+    const r = RAW.find(x=>x._row==EDIT_ROW);
+    
+    await fetch(API,{
+    method:"POST",
+    body:JSON.stringify({
+    
+    action:"update",
+    row:EDIT_ROW,
+    
+    FECHAINGRESO:r.fechaIngreso,
+    PEDIDO:r.pedido,
+    TIPODOCUMENTO:r.tipoDocumento,
+    NUMERODOCUMENTO:r.numeroDocumento,
+    CLIENTE:r.cliente,
+    DIRECCION:r.direccion,
+    COMUNA:r.comuna,
+    TRANSPORTE:r.transporte,
+    ETIQUETAS:r.etiquetas,
+    RESPONSABLE:r.responsable,
+    
+    STATUS:mStatus.value,
+    OBSERVACIONES:mObservaciones.value,
+    "FECHA ENTREGA":mFechaEntrega.value
+    
+    })
+    });
+    
+    closeEdit();
+    await load();
+    
+    setLoading(btnGuardar,false);
+    
+    }
+
+/* MAPA */
+
+function toggleMap(id,btn){
+
+const el=document.getElementById(id);
+
+if(!el.style.display||el.style.display==="none"){
+el.style.display="block";
+btn.textContent="➖ Ocultar mapa";
+}else{
+el.style.display="none";
+btn.textContent="🗺 Mostrar mapa";
+}
 
 }
+
+/* TRASLADO */
+
+/* ================= TRASLADO ================= */
+
+function openTraslado(row){
+
+    /* BUSCAR REGISTRO */
+    
+    const r = RAW.find(x => Number(x._row) === Number(row));
+    if(!r){
+    console.warn("Pedido no encontrado",row);
+    return;
+    }
+    
+    TRASLADO_ROW = row;
+    
+    /* OBTENER MODAL */
+    
+    const modal = document.getElementById("trasladoModal");
+    if(!modal){
+    console.error("No existe el modal trasladoModal");
+    return;
+    }
+    
+    /* ABRIR MODAL */
+    
+    modal.style.display = "flex";
+    
+    /* CARGAR DATOS */
+    
+    const tPedido = document.getElementById("tPedido");
+    const tCliente = document.getElementById("tCliente");
+    const tDireccion = document.getElementById("tDireccion");
+    const tComuna = document.getElementById("tComuna");
+    const tTransporte = document.getElementById("tTransporte");
+    
+    if(tPedido) tPedido.value = r.pedido || "";
+    if(tCliente) tCliente.value = r.cliente || "";
+    if(tDireccion) tDireccion.value = r.direccion || "";
+    if(tComuna) tComuna.value = r.comuna || "";
+    if(tTransporte) tTransporte.value = r.transporte || "";
+    
+    /* LIMPIAR TABLA PRODUCTOS */
+    
+    const tabla = document.getElementById("detalleTable");
+    if(tabla) tabla.innerHTML="";
+    
+    /* CREAR PRIMERA FILA */
+    
+    addProducto();
+    
+    }
+    
+    
+    /* ================= AGREGAR PRODUCTO ================= */
+    
+    function addProducto(){
+    
+    const tabla = document.getElementById("detalleTable");
+    if(!tabla) return;
+    
+    const fila = document.createElement("tr");
+    
+    fila.innerHTML = `
+    <td>
+    <input class="prod" placeholder="Producto">
+    </td>
+    
+    <td>
+    <input class="det" placeholder="Detalle">
+    </td>
+    
+    <td>
+    <input type="number" class="cant" value="1" min="1" oninput="calcTotal()">
+    </td>
+    
+    <td>
+    <button type="button" onclick="this.closest('tr').remove();calcTotal()">✖</button>
+    </td>
+    `;
+    
+    tabla.appendChild(fila);
+    
+    calcTotal();
+    
+    }
+    
+    
+    /* ================= CALCULAR TOTAL ================= */
+    
+    function calcTotal(){
+    
+    let total = 0;
+    
+    document.querySelectorAll(".cant").forEach(input=>{
+    total += Number(input.value || 0);
+    });
+    
+    const campoTotal = document.getElementById("tTotal");
+    
+    if(campoTotal){
+    campoTotal.value = total;
+    }
+    
+    }
+    
+    
+    /* ================= GUARDAR TRASLADO ================= */
+    
+    async function guardarTraslado(){
+
+        const btn=document.getElementById("btnGuardarTraslado");
+        setLoading(btn,true);
+        
+        const r = RAW.find(x => Number(x._row) === Number(TRASLADO_ROW));
+        if(!r){
+        setLoading(btn,false);
+        return;
+        }
+        
+        /* OBTENER PRODUCTOS */
+        
+        const productos=[];
+        
+        document.querySelectorAll("#detalleTable tr").forEach(tr=>{
+        
+        const prod=tr.querySelector(".prod")?.value || "";
+        const det=tr.querySelector(".det")?.value || "";
+        const cant=Number(tr.querySelector(".cant")?.value || 0);
+        
+        if(prod || det || cant){
+        
+        productos.push({
+        producto:prod,
+        detalle:det,
+        cantidad:cant
+        });
+        
+        }
+        
+        });
+        
+        /* VALIDAR PRODUCTOS */
+        
+        if(productos.length===0){
+        alert("Debe agregar al menos un producto");
+        setLoading(btn,false);
+        return;
+        }
+        
+        /* PAYLOAD */
+        
+        const payload={
+        
+        action:"crearTraslado",
+        
+        row:TRASLADO_ROW,
+        
+        pedido:r.pedido,
+        cliente:r.cliente,
+        direccion:r.direccion,
+        comuna:r.comuna,
+        transporte:r.transporte,
+        
+        observaciones:document.getElementById("tObs")?.value || "",
+        total:document.getElementById("tTotal")?.value || 0,
+        
+        productos:productos
+        
+        };
+        
+        try{
+        
+        const resp = await fetch(API,{
+        method:"POST",
+        body:JSON.stringify(payload)
+        });
+        
+        const data = await resp.json();
+        
+        /* ACTUALIZAR OBJETO LOCAL */
+        
+        if(data.traslado){
+        
+        r.solicitudTraslado=data.traslado;
+        r.pdfTraslado=data.pdf;
+        
+        }
+        
+        /* RECARGAR TARJETAS DESDE API */
+        
+        await load();
+        
+        /* ABRIR PDF */
+        
+        if(data.pdf){
+        window.open(data.pdf,"_blank");
+        }
+        
+        alert("Traslado generado: "+data.traslado);
+        
+        closeTraslado();
+        
+        }catch(e){
+        
+        console.error(e);
+        alert("Error generando traslado");
+        
+        }
+        
+        setLoading(btn,false);
+        
+        }
+    /* ================= CERRAR MODAL ================= */
+    
+    function closeTraslado(){
+    
+    const modal = document.getElementById("trasladoModal");
+    if(modal) modal.style.display="none";
+    
+    }
+
+/* MODAL */
 
 function closeEdit(){
-
- editModal.style.display="none";
-
+editModal.style.display="none";
 }
 
-/* ======================================================
-   GUARDAR
-====================================================== */
-
-btnGuardar.onclick=async()=>{
-
- const data={
-
-  action:"update",
-
-  row:EDIT,
-
-  "TIPO DOCUMENTO":mTipoDocumento.value,
-  "NUMERO DOCUMENTO":mNumeroDocumento.value,
-  "CLIENTE":mCliente.value,
-  "DIRECCION":mDireccion.value,
-  "COMUNA":mComuna.value,
-  "TRANSPORTE":mTransporte.value,
-  "ETIQUETAS":mCajas.value,
-  "STATUS":mStatus.value,
-  "FECHA ENTREGA":mFechaEntrega.value,
-  "RESPONSABLE":mResponsable.value,
-  "OBSERVACIONES":mObservaciones.value
-
- };
-
- await fetch(API,{
-  method:"POST",
-  body:JSON.stringify(data)
- });
-
- editModal.style.display="none";
-
- load();
-
-};
-
-/* ======================================================
-   DELETE
-====================================================== */
-
-async function deleteRow(row){
-
- if(!confirm("Eliminar registro?")) return;
-
- await fetch(API,{
-  method:"POST",
-  body:JSON.stringify({
-   action:"delete",
-   row:row
-  })
- });
-
- load();
-
-}
-
-/* ======================================================
-   RELOAD
-====================================================== */
+/* EVENTOS */
 
 btnReload.onclick=load;
+btnGuardar.onclick=guardar;
 
-/* ======================================================
-   INIT
-====================================================== */
+fBuscar.oninput=applyFilter;
+fStatus.onchange=applyFilter;
+fDesde.onchange=applyFilter;
+fHasta.onchange=applyFilter;
+
+
+
+
+
+
+
+
+/* AUTO REFRESH */
+
+setInterval(load,15000);
+
+setInterval(()=>{
+RAW=RAW.map(r=>calcularAlertas(r));
+applyFilter();
+},60000);
 
 load();

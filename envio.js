@@ -1,518 +1,641 @@
-/* ======================================================
-   CONFIGURACIÓN
-====================================================== */
-const API = "https://script.google.com/macros/s/AKfycbxWQTDZK4Cc3abLR4ec2hoL1YGTquPmH1ucXm6WAIXuWJX3X9HJD1FiJpAaUtpm0pwFtQ/exec";
+/***************************************************
+API
+***************************************************/
+const API="https://script.google.com/macros/s/AKfycbw9Kq7dLqwvRBbgcptn7BQpWz9p-R0Va0awPCW5Noy0uo0gSvO8-LbMfInwvnC9-NPyvA/exec";
 
-let RAW = [];
-let FILT = [];
-let EDIT = null;
-let charts = {};
-let currentFoto = "";
-let cursorIndex = -1;
+/***************************************************
+DOM
+***************************************************/
+const tbody=document.getElementById("tbody");
+const mobileList=document.getElementById("mobileList");
 
-/* ======================================================
-   HELPERS
-====================================================== */
-const isMobile = () => window.matchMedia("(max-width:768px)").matches;
+const search=document.getElementById("search");
+const fStatus=document.getElementById("fStatus");
+const fDesde=document.getElementById("fDesde");
+const fHasta=document.getElementById("fHasta");
 
-function setLoading(btn, state){
-  if(!btn) return;
-  btn.disabled = state;
-  btn.classList.toggle("loading", state);
+const btnReload=document.getElementById("btnReload");
+const btnNuevo=document.getElementById("btnNuevo");
+const btnGuardar=document.getElementById("btnGuardar");
+const btnCancelar=document.getElementById("btnCancelar");
+
+const btnPDF=document.getElementById("btnPDF");
+const btnExcel=document.getElementById("btnExcel");
+
+const modalForm=document.getElementById("modalForm");
+
+const mPedido=document.getElementById("mPedido");
+const mTipoDoc=document.getElementById("mTipoDoc");
+const mNumeroDoc=document.getElementById("mNumeroDoc");
+const mCliente=document.getElementById("mCliente");
+const mDireccion=document.getElementById("mDireccion");
+const mComuna=document.getElementById("mComuna");
+const mTransporte=document.getElementById("mTransporte");
+const mCajas=document.getElementById("mCajas");
+const mStatus=document.getElementById("mStatus");
+const mHoraEntrega=document.getElementById("mHoraEntrega");
+const mResponsable=document.getElementById("mResponsable");
+const mObs=document.getElementById("mObs");
+
+const mFotos=document.getElementById("mFotos");
+const mPdf=document.getElementById("mPdf");
+
+const kpis=document.getElementById("kpis");
+
+const fotoModal=document.getElementById("fotoModal");
+const fotoGrande=document.getElementById("fotoGrande");
+const btnCerrarFoto=document.getElementById("btnCerrarFoto");
+const btnDescargarFoto=document.getElementById("btnDescargarFoto");
+
+const mapModal=document.getElementById("mapModal");
+const mapFrame=document.getElementById("mapFrame");
+const btnCerrarMapa=document.getElementById("btnCerrarMapa");
+
+/***************************************************
+VARIABLES
+***************************************************/
+let RAW=[];
+let FILT=[];
+let EDIT=null;
+let KPI_CHARTS={};
+/***************************************************
+PAGINACION
+***************************************************/
+let PAGE = 1;
+let PAGE_SIZE = 20;
+let TOTAL_PAGES = 1;
+
+/***************************************************
+UTIL
+***************************************************/
+function setLoading(btn,state){
+ if(!btn) return;
+ btn.disabled=state;
+ btn.classList.toggle("loading",state);
 }
 
-/* ======================================================
-   BASE64
-====================================================== */
-function toBase64(file){
-  return new Promise(resolve=>{
-    const reader = new FileReader();
-    reader.onload = ()=> resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
+function formatDate(d){
+ if(!d) return "";
+ return new Date(d).toLocaleDateString("es-CL");
 }
 
-/* ======================================================
-   FECHA
-====================================================== */
-function parseFechaCL(str){
-  if(!str) return null;
-  const [f,h] = str.split(" ");
-  const [d,m,y] = f.split("-").map(Number);
-  const [hh=0,mm=0] = (h||"0:0").split(":").map(Number);
-  return new Date(y, m-1, d, hh, mm);
+/***************************************************
+BASE64
+***************************************************/
+function fileToBase64(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(reader.result);
+  reader.onerror=e=>reject(e);
+  reader.readAsDataURL(file);
+ });
 }
 
-/* ======================================================
-   STATUS HTML (COLOR INTEGRADO)
-====================================================== */
-function getStatusHTML(status){
+/***************************************************
+SEMAFORO
+***************************************************/
+function calcularSemaforo(fechaEntrega){
 
-  const map = {
-    "RECIBIDO":   { color:"#ff4d4f" },
-    "ENTREGADO":  { color:"#22c55e" },
-    "EN RUTA":    { color:"#f97316" },
-    "PENDIENTE":  { color:"#3b82f6" },
-    "CANCELADO":  { color:"#9ca3af" }
-  };
+ if(!fechaEntrega) return "";
 
-  const s = String(status || "").toUpperCase();
-  const style = map[s];
+ const hoy=new Date();
+ const entrega=new Date(fechaEntrega);
 
-  if(!style) return status || "";
+ const diff=Math.floor((entrega-hoy)/(1000*60*60*24));
 
-  return `
-    <span style="
-      background:#000;
-      color:${style.color};
-      font-weight:700;
-      padding:4px 10px;
-      border-radius:8px;
-      font-size:12px;
-      letter-spacing:.5px;
-      display:inline-block;
-    ">
-      ${status}
-    </span>
-  `;
+ if(diff>1) return `<span class="sem-verde">OK</span>`;
+ if(diff===1) return `<span class="sem-amarillo">HOY</span>`;
+ if(diff<0) return `<span class="sem-rojo">ATRASO</span>`;
+ return `<span class="sem-azul">PROX</span>`;
 }
-/* ======================================================
-   LOAD
-====================================================== */
-async function load(){
-  try{
-    const r = await fetch(API);
-    RAW = await r.json();
-    applyFilters();
-  }catch(err){
-    console.error("Error cargando datos:", err);
+
+/***************************************************
+ALERTA
+***************************************************/
+function renderAlerta(alerta){
+
+ if(!alerta) return `<span class="alerta alerta-verde">OK</span>`;
+
+ alerta=alerta.toUpperCase();
+
+ if(alerta.includes("ATRASO")) return `<span class="alerta alerta-rojo">ATRASADO</span>`;
+ if(alerta.includes("48")) return `<span class="alerta alerta-amarillo">POR VENCER</span>`;
+
+ return `<span class="alerta alerta-azul">${alerta}</span>`;
+}
+
+/***************************************************
+PDF ICON
+***************************************************/
+function renderPDF(url){
+ if(!url) return "";
+ return `<a href="${url}" target="_blank" class="icon-pdf">📄</a>`;
+}
+
+/***************************************************
+ESTADO
+***************************************************/
+function renderEstado(status){
+
+ let color="#fff";
+
+ if(status==="PENDIENTE") color="#facc15";
+ if(status==="EN RUTA") color="#ef4444";
+ if(status==="ENTREGADO") color="#22c55e";
+ if(status==="RECIBIDO") color="#fb923c";
+ if(status==="CANCELADO") color="#3b82f6";
+
+ return `<span style="background:#000;color:${color};padding:3px 8px;border-radius:6px">${status||""}</span>`;
+}
+
+/***************************************************
+KPI CHART
+***************************************************/
+function crearKPI(id,valor,total,color){
+
+ const canvas=document.getElementById(id);
+ if(!canvas) return;
+
+ const ctx=canvas.getContext("2d");
+
+ if(KPI_CHARTS[id]) KPI_CHARTS[id].destroy();
+
+ KPI_CHARTS[id]=new Chart(ctx,{
+  type:"doughnut",
+  data:{
+   datasets:[{
+    data:[valor,total-valor],
+    backgroundColor:[color,"#e5e7eb"],
+    borderWidth:0
+   }]
+  },
+  options:{
+   responsive:true,
+   maintainAspectRatio:false,
+   cutout:"70%",
+   plugins:{
+    legend:{display:false}
+   }
   }
+ });
+
 }
 
-/* ======================================================
-   FILTROS
-====================================================== */
+/***************************************************
+LOAD
+***************************************************/
+async function load(){
+
+  try{
+ 
+   setLoading(btnReload,true);
+ 
+   const r = await fetch(API);
+ 
+   RAW = await r.json();
+ 
+   if(!Array.isArray(RAW)) RAW=[];
+ 
+   /* ORDENAR DEL MAS NUEVO AL MAS ANTIGUO */
+ 
+   RAW.sort((a,b)=> b._row - a._row);
+ 
+   applyFilters();
+ 
+  }catch(e){
+ 
+   alert("Error cargando datos");
+ 
+  }
+ 
+  setLoading(btnReload,false);
+ 
+ }
+
+/***************************************************
+FILTROS
+***************************************************/
 function applyFilters(){
 
-  const q = search.value.toLowerCase().trim();
-  const s = fStatus.value;
-
-  const d1 = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
-  const d2 = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
-
-  FILT = RAW.filter(r => {
-
-    const pedido   = String(r.pedido ?? '').toLowerCase();
-    const cliente  = String(r.cliente ?? '').toLowerCase();
-    const obs      = String(r.observaciones ?? '').toLowerCase();
-    const status   = String(r.status ?? '');
-    const fechaStr = r.fechaIngreso ?? null;
-
-    const textOK = !q || (
-      pedido.includes(q) ||
-      cliente.includes(q) ||
-      obs.includes(q)
-    );
-
-    const statusOK = !s || status === s;
-
-    let fechaOK = true;
-    if(d1 || d2){
-      const fr = parseFechaCL(fechaStr);
-      if(!fr) return false;
-      if(d1 && fr < d1) fechaOK = false;
-      if(d2 && fr > d2) fechaOK = false;
-    }
-
-    return textOK && statusOK && fechaOK;
+  const q=(search.value||"").toLowerCase();
+ 
+  FILT=RAW.filter(r=>{
+ 
+   let ok=true;
+ 
+   if(q){
+ 
+    const txt = (
+      (r.cliente || "") +
+      (r.pedido || "") +
+      (r.numeroDocumento || "")
+    ).toLowerCase();
+ 
+    ok = txt.includes(q);
+ 
+   }
+ 
+   if(ok && fStatus.value) ok = r.status === fStatus.value;
+ 
+   if(ok && fDesde.value) ok = new Date(r.fechaIngreso) >= new Date(fDesde.value);
+ 
+   if(ok && fHasta.value) ok = new Date(r.fechaIngreso) <= new Date(fHasta.value);
+ 
+   return ok;
+ 
   });
-
-  cursorIndex = -1;
+ 
   render();
-}
+ 
+ }
+ 
+ search.oninput=applyFilters;
+ fStatus.onchange=applyFilters;
+ fDesde.onchange=applyFilters;
+ fHasta.onchange=applyFilters;
 
-/* ======================================================
-   RENDER
-====================================================== */
+/***************************************************
+RENDER
+***************************************************/
 function render(){
-  cursorIndex = -1;
+
+  TOTAL_PAGES = Math.ceil(FILT.length / PAGE_SIZE);
+ 
+  const start = (PAGE - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+ 
+  const data = FILT.slice(start,end);
+ 
+  renderTable(data);
+  renderCards(data);
   renderKPIs();
+ 
+  renderPagination();
+ 
+ }
 
-  tbody.innerHTML = "";
-  mobileList.innerHTML = "";
+/***************************************************
+TABLA
+***************************************************/
+function renderTable(data){
 
-  /* ================= DESKTOP ================= */
-  if(!isMobile()){
-    FILT.forEach(r=>{
-
-      tbody.insertAdjacentHTML("beforeend", `
-        <tr>
-          <td class="fecha">${r.fechaIngreso || ""}</td>
-          <td>${r.pedido || ""}</td>
-          <td>${r.cliente || ""}</td>
-          <td>${r.direccion || ""}</td>
-          <td>${r.comuna || ""}</td>
-          <td>${r.transporte || ""}</td>
-          <td>${r.etiquetas || 0}</td>
-          <td>${r.observaciones || ""}</td>
-          <td>${getStatusHTML(r.status)}</td>
-          <td>${r.responsable || ""}</td>
-          <td>${r.horaEntrega || ""}</td>
-          <td>${renderFotos(r.foto)}</td>
-          <td>${renderPDF(r.pdf)}</td>
-          <td>
-            <div class="actions">
-              <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
-              <button onclick="openModal(RAW.find(x=>x._row==${r._row}))">✏️</button>
-              <button onclick="delRow(${r._row})">🗑️</button>
-            </div>
-          </td>
-        </tr>
-      `);
-
-    });
+  tbody.innerHTML="";
+ 
+  if(!data.length){
+   tbody.innerHTML="<tr><td colspan='19'>Sin datos</td></tr>";
+   return;
   }
-
-  /* ================= MOBILE ================= */
-  else{
-    FILT.forEach(r=>{
-
-      mobileList.insertAdjacentHTML("beforeend", `
-        <div class="row-card">
-          <b>${r.pedido || ""}</b> · ${getStatusHTML(r.status)}<br>
-          ${r.cliente || ""}<br>
-          ${r.direccion || ""} (${r.comuna || ""})<br>
-          🚚 ${r.transporte || ""}<br>
-          📦 ${r.etiquetas || 0}<br>
-          👤 ${r.responsable || ""}<br>
-          ⏱ ${r.horaEntrega || ""}<br><br>
-
-          ${renderFotos(r.foto)}
-          ${renderPDF(r.pdf)}
-
-          <div class="row-actions">
-            <button onclick="openMap('${r.direccion}','${r.comuna}')">📍</button>
-            <button onclick="openModal(RAW.find(x=>x._row==${r._row}))">✏️</button>
-            <button onclick="delRow(${r._row})">🗑️</button>
-          </div>
-        </div>
-      `);
-
-    });
-  }
-}
-
-/* ======================================================
-   FOTOS
-====================================================== */
-function renderFotos(f){
-  if(!f) return "";
-
-  const fotos = String(f)
-    .split("|")
-    .map(u => u.trim())
-    .filter(u => u && u.startsWith("http"));
-
-  if(!fotos.length) return "";
-
-  return `
-    <div class="foto-wrap">
-      ${fotos.map(u => {
-        const thumb = u.replace(/=s\d+$/, '=s120');
-        return `
-          <img
-            src="${thumb}"
-            data-full="${u}"
-            class="foto-thumb"
-            loading="lazy"
-            decoding="async"
-            onclick="openFoto(this.dataset.full)"
-          >
-        `;
-      }).join("")}
-    </div>
-  `;
-}
-
-function openFoto(url){
-  currentFoto = url;
-
-  const full = url.replace(/=s\d+$/, '=s1600');
-
-  fotoGrande.src = "";
-  fotoModal.style.display = "flex";
-  fotoGrande.src = full;
-}
-
-btnCerrarFoto.onclick = ()=>{
-  fotoModal.style.display = "none";
-  fotoGrande.src = "";
-};
-
-btnDescargarFoto.onclick = ()=>{
-  const a = document.createElement("a");
-  a.href = currentFoto.replace(/=s\d+$/, '=s2000');
-  a.download = "foto_pedido.jpg";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-};
-
-
-/* ======================================================
-   PDF
-====================================================== */
-function renderPDF(p){
-  if(!p) return "";
-
-  const pdfs = String(p)
-    .split("|")
-    .map(u => u.trim())
-    .filter(u => u && u.startsWith("http"));
-
-  if(!pdfs.length) return "";
-
-  return `
-    <div class="pdf-wrap">
-      ${pdfs.map(u => `
-        <a href="${u}" target="_blank" class="pdf-btn">
-          📄 Ver PDF
-        </a>
-      `).join("")}
-    </div>
-  `;
-}
-
-
-/* ======================================================
-   MAPA
-====================================================== */
-function openMap(d,c){
-  mapFrame.src =
-    `https://www.google.com/maps?q=${encodeURIComponent(d+', '+c+', Chile')}&output=embed`;
-
-  mapModal.style.display="flex";
-}
-
-btnCerrarMapa.onclick = ()=>{
-  mapModal.style.display="none";
-  mapFrame.src="";
-};
-
-
-/* ======================================================
-   KPIS
-====================================================== */
-function drawKPI(id,val,total,color){
-  if(charts[id]) charts[id].destroy();
-
-  charts[id] = new Chart(document.getElementById(id),{
-    type:"doughnut",
-    data:{
-      datasets:[{
-        data:[val,total-val],
-        backgroundColor:[color,"#e5e7eb"]
-      }]
-    },
-    options:{
-      cutout:"70%",
-      plugins:{ legend:{ display:false } }
-    }
+ 
+  data.forEach(r=>{
+ 
+  const semaforo=calcularSemaforo(r.fechaEntrega);
+ 
+  const tr=`
+ <tr>
+ <td>${formatDate(r.fechaIngreso)}</td>
+ <td>${r.pedido||""}</td>
+ <td>${r.tipoDocumento||""}</td>
+ <td>${r.numeroDocumento||""}</td>
+ <td>${r.cliente||""}</td>
+ 
+ <td>
+ <a href="#" onclick="verMapa(\`${r.direccion||""}\`)">
+ ${r.direccion||""}
+ </a>
+ </td>
+ 
+ <td>${r.comuna||""}</td>
+ <td>${r.transporte||""}</td>
+ <td>${r.etiquetas||""}</td>
+ 
+ <td>${renderEstado(r.status)}</td>
+ 
+ <td>${r.fechaEntrega||""}</td>
+ 
+ <td>${renderAlerta(r.alerta)}</td>
+ 
+ <td>${r.diasAtraso||""}</td>
+ 
+ <td>${semaforo}</td>
+ 
+ <td>${r.responsable||""}</td>
+ 
+ <td>
+ ${r.foto?`<img src="${r.foto}" class="foto-thumb" onclick="verFoto('${r.foto}')">`:""}
+ </td>
+ 
+ <td>${renderPDF(r.pdf)}</td>
+ 
+ <td>${renderPDF(r.pdfTraslado)}</td>
+ 
+ <td class="actions">
+ <button onclick="openModal(${r._row})">✏️</button>
+ <button onclick="deleteRow(${r._row})">🗑️</button>
+ </td>
+ 
+ </tr>
+ `;
+ 
+  tbody.insertAdjacentHTML("beforeend",tr);
+ 
   });
-}
+ 
+ }
 
-function kpiFilter(status){
-  document.querySelectorAll('.kpi')
-    .forEach(k=>k.classList.remove('active'));
+/***************************************************
+CARDS MOBILE
+***************************************************/
+function renderCards(data){
 
-  const active = [...document.querySelectorAll('.kpi')]
-    .find(k=>k.dataset.status===status);
-
-  if(active) active.classList.add('active');
-
-  fStatus.value = status;
-  applyFilters();
-}
-
-const btnToggleKPI = document.getElementById('btnToggleKPI');
-
-btnToggleKPI.onclick = ()=>{
-  kpis.classList.toggle('hidden');
-
-  const hidden = kpis.classList.contains('hidden');
-
-  btnToggleKPI.textContent = hidden
-    ? '📊 Mostrar dashboard'
-    : '📊 Ocultar dashboard';
-
-  localStorage.setItem('kpiHidden', hidden ? '1' : '0');
-};
-
-if(localStorage.getItem('kpiHidden') === '1'){
-  kpis.classList.add('hidden');
-  btnToggleKPI.textContent = '📊 Mostrar dashboard';
-}
-
+  mobileList.innerHTML="";
+ 
+  data.forEach(r=>{
+ 
+   const semaforo = calcularSemaforo(r.fechaEntrega);
+ 
+   const card = `
+   <div class="card">
+ 
+    <div class="card-title">
+     Pedido #${r.pedido||""}
+     ${renderEstado(r.status)}
+    </div>
+ 
+    <div><b>Cliente:</b> ${r.cliente||""}</div>
+ 
+    <div onclick="verMapa(\`${r.direccion||""}\`)">
+     <b>Dirección:</b> ${r.direccion||""}
+    </div>
+ 
+    <div><b>Comuna:</b> ${r.comuna||""}</div>
+    <div><b>Transporte:</b> ${r.transporte||""}</div>
+    <div><b>Cajas:</b> ${r.etiquetas||""}</div>
+ 
+    <div><b>Semáforo:</b> ${semaforo}</div>
+ 
+    <div style="margin-top:10px;display:flex;gap:10px">
+     ${r.foto?`<img src="${r.foto}" class="foto-thumb" onclick="verFoto('${r.foto}')">`:""}
+     ${renderPDF(r.pdf)}
+    </div>
+ 
+    <div style="margin-top:10px;display:flex;gap:6px">
+ 
+ 
+     ${r.pdfTraslado ? 
+       `<a href="${r.pdfTraslado}" target="_blank">📄 Ver Traslado</a>` 
+       : ""}
+ 
+     <button onclick="openModal(${r._row})">Editar</button>
+     <button onclick="deleteRow(${r._row})">Eliminar</button>
+ 
+    </div>
+ 
+   </div>
+   `;
+ 
+   mobileList.insertAdjacentHTML("beforeend",card);
+ 
+  });
+ 
+ }
+/***************************************************
+KPIS
+***************************************************/
 function renderKPIs(){
 
-  const t = FILT.length || 1;
-  const c = s => FILT.filter(r=>r.status===s).length;
+ const total=RAW.length;
+ const pendientes=RAW.filter(x=>x.status==="PENDIENTE").length;
+ const ruta=RAW.filter(x=>x.status==="EN RUTA").length;
+ const entregado=RAW.filter(x=>x.status==="ENTREGADO").length;
 
-  kpis.innerHTML = `
-    <div class="kpi" onclick="kpiFilter('')" data-status="">
-      <canvas id="k1"></canvas><b>${t}</b>Total
-    </div>
+ kpis.innerHTML=`
 
-    <div class="kpi" onclick="kpiFilter('PENDIENTE')" data-status="PENDIENTE">
-      <canvas id="k2"></canvas><b>${c("PENDIENTE")}</b>Pendiente
-    </div>
+<div class="kpi"><div style="height:80px"><canvas id="k1"></canvas></div><b>${total}</b><div>Total</div></div>
+<div class="kpi"><div style="height:80px"><canvas id="k2"></canvas></div><b>${pendientes}</b><div>Pendiente</div></div>
+<div class="kpi"><div style="height:80px"><canvas id="k3"></canvas></div><b>${ruta}</b><div>En Ruta</div></div>
+<div class="kpi"><div style="height:80px"><canvas id="k4"></canvas></div><b>${entregado}</b><div>Entregado</div></div>
 
-    <div class="kpi" onclick="kpiFilter('EN RUTA')" data-status="EN RUTA">
-      <canvas id="k3"></canvas><b>${c("EN RUTA")}</b>Ruta
-    </div>
+`;
 
-    <div class="kpi" onclick="kpiFilter('ENTREGADO')" data-status="ENTREGADO">
-      <canvas id="k4"></canvas><b>${c("ENTREGADO")}</b>Entregado
-    </div>
+ crearKPI("k1",total,total,"#14b8a6");
+ crearKPI("k2",pendientes,total,"#facc15");
+ crearKPI("k3",ruta,total,"#ef4444");
+ crearKPI("k4",entregado,total,"#22c55e");
 
-    <div class="kpi" onclick="kpiFilter('RECIBIDO')" data-status="RECIBIDO">
-      <canvas id="k5"></canvas><b>${c("RECIBIDO")}</b>Recibido
-    </div>
-
-    <div class="kpi" onclick="kpiFilter('CANCELADO')" data-status="CANCELADO">
-      <canvas id="k6"></canvas><b>${c("CANCELADO")}</b>Cancelado
-    </div>
-  `;
-
-  drawKPI("k1",t,t,"#14b8a6");
-  drawKPI("k2",c("PENDIENTE"),t,"#facc15");
-  drawKPI("k3",c("EN RUTA"),t,"#38bdf8");
-  drawKPI("k4",c("ENTREGADO"),t,"#4ade80");
-  drawKPI("k5",c("RECIBIDO"),t,"#a78bfa");
-  drawKPI("k6",c("CANCELADO"),t,"#ef4444");
 }
 
-/* ======================================================
-   CRUD
-====================================================== */
+/***************************************************
+FOTO
+***************************************************/
+function verFoto(src){
+ fotoGrande.src=src;
+ btnDescargarFoto.onclick=()=>window.open(src);
+ fotoModal.style.display="flex";
+}
 
-btnNuevo.onclick = ()=> openModal();
-btnCancelar.onclick = ()=> modalForm.style.display="none";
+btnCerrarFoto.onclick=()=>fotoModal.style.display="none";
 
-function openModal(r=null){
+/***************************************************
+MAPA
+***************************************************/
+function verMapa(dir){
+ mapFrame.src="https://maps.google.com/maps?q="+encodeURIComponent(dir)+"&output=embed";
+ mapModal.style.display="flex";
+}
 
+btnCerrarMapa.onclick=()=>mapModal.style.display="none";
+
+/***************************************************
+MODAL
+***************************************************/
+function openModal(row){
+
+  EDIT=row;
+ 
+  const data=RAW.find(r=>Number(r._row)===Number(row));
+  if(!data) return;
+ 
+  mPedido.value=data.pedido||"";
+  mTipoDoc.value=data.tipoDocumento||"";
+  mNumeroDoc.value=data.numeroDocumento||"";
+  mCliente.value=data.cliente||"";
+  mDireccion.value=data.direccion||"";
+  mComuna.value=data.comuna||"";
+  mTransporte.value=data.transporte||"";
+  mCajas.value=data.etiquetas||"";
+  mStatus.value=data.status||"PENDIENTE";
+  mResponsable.value=data.responsable||"";
+  mObs.value=data.observaciones||"";
+ 
+  if(data.fechaEntrega){
+   mHoraEntrega.value=new Date(data.fechaEntrega).toISOString().slice(0,16);
+  }
+ 
+  /* ===== FOTO EXISTENTE ===== */
+ 
+  const fotoPreview=document.getElementById("fotoPreview");
+ 
+  if(fotoPreview){
+ 
+   if(data.foto){
+    fotoPreview.innerHTML=`
+    <div class="preview-box">
+    <a href="${data.foto}" target="_blank">
+    <img src="${data.foto}">
+    </a>
+    <div class="preview-label">Imagen actual</div>
+    </div>
+    `;
+   }else{
+    fotoPreview.innerHTML="";
+   }
+ 
+  }
+ 
+  /* ===== PDF EXISTENTE ===== */
+ 
+  const pdfPreview=document.getElementById("pdfPreview");
+ 
+  if(pdfPreview){
+ 
+   if(data.pdf){
+    pdfPreview.innerHTML=`
+    <div class="preview-box">
+    <a href="${data.pdf}" target="_blank">
+    📄 Ver documento actual
+    </a>
+    </div>
+    `;
+   }else{
+    pdfPreview.innerHTML="";
+   }
+ 
+  }
+ 
   modalForm.style.display="flex";
-  EDIT = r;
+ 
+ }
 
-  if(r){
-    mtitle.textContent="Editar Pedido";
-    mPedido.value=r.pedido;
-    mCliente.value=r.cliente;
-    mDireccion.value=r.direccion;
-    mComuna.value=r.comuna;
-    mTransporte.value=r.transporte||"";
-    mCajas.value=r.etiquetas||1;
-    mObs.value=r.observaciones||"";
-    mStatus.value=r.status;
-    mResponsable.value=r.responsable||"";
-    mHoraEntrega.value=r.horaEntrega||"";
-  } else {
-    mtitle.textContent="Nuevo Pedido";
-    mPedido.value="";
-    mCliente.value="";
-    mDireccion.value="";
-    mComuna.value="";
-    mTransporte.value="";
-    mObs.value="";
-    mCajas.value=1;
-    mStatus.value="PENDIENTE";
-    mResponsable.value="";
-    mHoraEntrega.value="";
-  }
+/***************************************************
+NUEVO
+***************************************************/
+btnNuevo.onclick = () => {
 
-  if(typeof mFotos !== "undefined") mFotos.value="";
-  if(typeof mPdf !== "undefined") mPdf.value="";
-}
+  EDIT = null;
+ 
+  /* LIMPIAR TODOS LOS CAMPOS */
+ 
+  modalForm.querySelectorAll("input,select,textarea").forEach(el => {
+   el.value = "";
+  });
+ 
+  /* LIMPIAR INPUT FILE */
+ 
+  if (mFotos) mFotos.value = "";
+  if (mPdf) mPdf.value = "";
+ 
+  /* LIMPIAR VISTAS PREVIAS */
+ 
+  const fotoPreview = document.getElementById("fotoPreview");
+  const pdfPreview = document.getElementById("pdfPreview");
+ 
+  if (fotoPreview) fotoPreview.innerHTML = "";
+  if (pdfPreview) pdfPreview.innerHTML = "";
+ 
+  /* VALOR POR DEFECTO */
+ 
+  if (mStatus) mStatus.value = "PENDIENTE";
+ 
+  /* ABRIR MODAL */
+ 
+  modalForm.style.display = "flex";
+ 
+ };
 
+/***************************************************
+CANCELAR
+***************************************************/
+btnCancelar.onclick=()=>modalForm.style.display="none";
 
-/* ======================================================
-   GUARDAR
-====================================================== */
+/***************************************************
+GUARDAR
+***************************************************/
+btnGuardar.onclick=async()=>{
 
-btnGuardar.onclick = async ()=>{
+ try{
 
-  setLoading(btnGuardar, true);
+ setLoading(btnGuardar,true);
 
-  try{
+ let foto="";
+ let pdf="";
 
-    /* IMÁGENES */
-    let fotos64 = [];
-    if(mFotos && mFotos.files.length){
-      for(const file of mFotos.files){
-        fotos64.push(await toBase64(file));
-      }
-    }
+ if(mFotos && mFotos.files.length){
+  foto=await fileToBase64(mFotos.files[0]);
+ }
 
-    /* PDF */
-    let pdf64 = [];
-    if(mPdf && mPdf.files.length){
-      for(const file of mPdf.files){
-        pdf64.push(await toBase64(file));
-      }
-    }
+ if(mPdf && mPdf.files.length){
+  pdf=await fileToBase64(mPdf.files[0]);
+ }
 
-    const payload = {
-      action: EDIT ? "update" : "add",
-      row: EDIT ? EDIT._row : null,
+ const data={
+  action:EDIT?"update":"add",
+  row:EDIT,
+  "TIPO DOCUMENTO":mTipoDoc.value,
+  "NUMERO DOCUMENTO":mNumeroDoc.value,
+  "CLIENTE":mCliente.value,
+  "DIRECCION":mDireccion.value,
+  "COMUNA":mComuna.value,
+  "TRANSPORTE":mTransporte.value,
+  "ETIQUETAS":mCajas.value,
+  "STATUS":mStatus.value,
+  "FECHA ENTREGA":mHoraEntrega.value,
+  "RESPONSABLE":mResponsable.value,
+  "OBSERVACIONES":mObs.value,
+  FOTO:foto,
+  PDF:pdf
+ };
 
-      "PEDIDO": mPedido.value,
-      "CLIENTE": mCliente.value,
-      "DIRECCION": mDireccion.value,
-      "COMUNA": mComuna.value,
-      "TRANSPORTE": mTransporte.value,
-      "ETIQUETAS": mCajas.value,
-      "OBSERVACIONES": mObs.value,
-      "STATUS": mStatus.value,
-      "RESPONSABLE ENTREGA": mResponsable.value,
-      "HORA ENTREGA": mHoraEntrega.value,
+ const params=new URLSearchParams();
+ params.append("data",JSON.stringify(data));
 
-      "FOTO": fotos64,
-      "PDF": pdf64
-    };
+ await fetch(API,{
+  method:"POST",
+  body:params
+ });
 
-    await fetch(API,{
-      method:"POST",
-      body:JSON.stringify(payload)
-    });
+ modalForm.style.display="none";
 
-    modalForm.style.display="none";
-    load();
+ load();
 
-  }catch(err){
-    console.error("Error guardando:", err);
-  }
+ }catch(e){
 
-  setLoading(btnGuardar, false);
+  alert("Error guardando");
+
+ }
+
+ setLoading(btnGuardar,false);
+
 };
 
+/***************************************************
+DELETE
+***************************************************/
+async function deleteRow(row){
 
-/* ======================================================
-   ELIMINAR
-====================================================== */
+ if(!confirm("Eliminar registro?")) return;
 
-async function delRow(row){
+ const params=new URLSearchParams();
+ params.append("data",JSON.stringify({
+  action:"delete",
+  row:row
+ }));
 
-  if(!confirm("¿Eliminar pedido?")) return;
+ await fetch(API,{
+  method:"POST",
+  body:params
+ });
 
-  await fetch(API,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"delete",
-      row
-    })
-  });
-
-  load();
+ load();
 }
 
 
@@ -523,7 +646,10 @@ async function delRow(row){
 btnPDF.onclick = ()=> exportPDF(btnPDF);
 btnExcel.onclick = ()=> exportExcel(btnExcel);
 
-/* ---------- EXPORT PDF ---------- */
+
+/* ======================================================
+   EXPORT PDF CON ENCABEZADO
+====================================================== */
 function exportPDF(btn){
 
   setLoading(btn,true);
@@ -538,8 +664,26 @@ function exportPDF(btn){
       (sum,r)=> sum + Number(r.etiquetas || 0), 0
     );
 
+    /* -------- ENCABEZADO -------- */
+
+    doc.setFontSize(18);
+    doc.text("REPORTE LOGÍSTICO DE PEDIDOS",14,15);
+
+    doc.setFontSize(10);
+    doc.text("Sistema Logístico",14,22);
+    doc.text("Fecha de generación: " + new Date().toLocaleString(),14,28);
+
+    doc.setFontSize(11);
+    doc.text(`Total Pedidos: ${totalPedidos}`,250,20);
+    doc.text(`Total Cajas: ${totalBultos}`,250,26);
+
+    /* -------- TABLA -------- */
+
     doc.autoTable({
+      startY:35,
+
       head:[[
+
         'Fecha',
         'Pedido',
         'Cliente',
@@ -548,11 +692,14 @@ function exportPDF(btn){
         'Transporte',
         'Cajas',
         'Responsable',
-        'Hora',
+        'Hora Entrega',
         'Estado',
-        'Obs'
+        'Observaciones'
+
       ]],
+
       body: FILT.map(r=>[
+
         r.fechaIngreso || '',
         r.pedido || '',
         r.cliente || '',
@@ -564,8 +711,11 @@ function exportPDF(btn){
         r.horaEntrega || '',
         r.status || '',
         r.observaciones || ''
+
       ]),
+
       foot:[[
+
         '',
         '',
         '',
@@ -577,12 +727,20 @@ function exportPDF(btn){
         '',
         `PEDIDOS: ${totalPedidos}`,
         ''
+
       ]],
-      styles:{ fontSize:9 },
-      margin:{ top:20 }
+
+      styles:{
+        fontSize:9
+      },
+
+      headStyles:{
+        fillColor:[20,184,166]
+      }
+
     });
 
-    doc.save("Pedidos_Logisticos.pdf");
+    doc.save("Reporte_Pedidos_Logisticos.pdf");
 
     setLoading(btn,false);
 
@@ -590,14 +748,23 @@ function exportPDF(btn){
 }
 
 
-/* ---------- EXPORT EXCEL ---------- */
+/* ======================================================
+   EXPORT EXCEL CON ENCABEZADO
+====================================================== */
+
 function exportExcel(btn){
 
   setLoading(btn,true);
 
   setTimeout(()=>{
 
+    const totalPedidos = FILT.length;
+    const totalBultos = FILT.reduce(
+      (sum,r)=> sum + Number(r.etiquetas || 0),0
+    );
+
     const data = FILT.map(r=>({
+
       "Fecha": r.fechaIngreso || '',
       "Pedido": r.pedido || '',
       "Cliente": r.cliente || '',
@@ -606,64 +773,105 @@ function exportExcel(btn){
       "Transporte": r.transporte || '',
       "Cajas": r.etiquetas || 0,
       "Responsable": r.responsable || '',
-      "Hora": r.horaEntrega || '',
+      "Hora Entrega": r.horaEntrega || '',
       "Estado": r.status || '',
       "Observaciones": r.observaciones || ''
+
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, ws, "Pedidos");
-    XLSX.writeFile(wb, "Pedidos_Logisticos.xlsx");
+
+    /* -------- HOJA RESUMEN -------- */
+
+    const resumen = [
+
+      ["REPORTE LOGÍSTICO"],
+      [""],
+      ["Fecha generación", new Date().toLocaleString()],
+      ["Total Pedidos", totalPedidos],
+      ["Total Cajas", totalBultos]
+
+    ];
+
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumen);
+
+    XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+    XLSX.writeFile(wb,"Reporte_Pedidos_Logisticos.xlsx");
 
     setLoading(btn,false);
 
   },300);
+
 }
 
 
-/* ======================================================
-   RECARGAR
-====================================================== */
+function renderPagination(){
 
-btnReload.onclick = async ()=>{
+  const pag = document.getElementById("pagination");
+ 
+  if(!pag) return;
+ 
+  pag.innerHTML=`
+ 
+ <button onclick="prevPage()">◀</button>
+ 
+ <span style="padding:0 10px">
+ Página ${PAGE} de ${TOTAL_PAGES}
+ </span>
+ 
+ <button onclick="nextPage()">▶</button>
+ 
+ `;
+ 
+ }
+ 
+ function nextPage(){
+ 
+  if(PAGE < TOTAL_PAGES){
+   PAGE++;
+   render();
+  }
+ 
+ }
+ 
+ function prevPage(){
+ 
+  if(PAGE > 1){
+   PAGE--;
+   render();
+  }
+ 
+ }
 
-  setLoading(btnReload, true);
 
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="14" style="text-align:center;padding:20px;font-weight:600;">
-        🔄 Recargando tabla...
-      </td>
-    </tr>
-  `;
+ /* ===============================
+   OCULTAR / MOSTRAR DASHBOARD
+================================ */
 
-  mobileList.innerHTML = `
-    <div style="padding:20px;text-align:center;font-weight:600;">
-      🔄 Recargando lista...
-    </div>
-  `;
+const btnTogglePanel = document.getElementById("btnTogglePanel");
+const panelDashboard = document.getElementById("panelDashboard");
 
-  await new Promise(r => setTimeout(r, 200));
-  await load();
+if(btnTogglePanel && panelDashboard){
 
-  setLoading(btnReload, false);
+btnTogglePanel.onclick = () => {
+
+const hidden = panelDashboard.classList.toggle("panel-hidden");
+
+btnTogglePanel.textContent = hidden
+? "📊 Mostrar Panel"
+: "📊 Ocultar Panel";
+
 };
 
+}
 
-/* ======================================================
-   EVENTOS FILTROS
-====================================================== */
-
-search.oninput = applyFilters;
-fStatus.onchange = applyFilters;
-fDesde.onchange = applyFilters;
-fHasta.onchange = applyFilters;
-
-
-/* ======================================================
-   INIT
-====================================================== */
+/***************************************************
+INIT
+***************************************************/
+btnReload.onclick=load;
 
 load();
