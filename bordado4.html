@@ -663,6 +663,46 @@ font-size:15px;
 
 }
 
+.producto-add{
+display:grid;
+grid-template-columns:1fr 1fr 120px auto;
+gap:10px;
+margin-bottom:15px;
+align-items:center;
+}
+
+#btnAddProducto{
+padding:12px;
+border-radius:10px;
+font-weight:700;
+}
+
+/* MOVIL */
+
+@media (max-width:768px){
+
+.producto-add{
+grid-template-columns:1fr;
+position:sticky;
+top:0;
+background:#fff;
+padding-bottom:10px;
+z-index:20;
+}
+
+.producto-add input{
+padding:12px;
+font-size:15px;
+}
+
+#btnAddProducto{
+width:100%;
+padding:14px;
+font-size:15px;
+}
+
+}
+
 </style>
 
 </head>
@@ -886,22 +926,34 @@ font-size:15px;
     
     <label for="tTransporte">Transporte</label>
     <input id="tTransporte" readonly>
-    
-    <table class="detalle">
-    <thead>
-    <tr>
-    <th>Producto</th>
-    <th>Detalle</th>
-    <th>Cantidad</th>
-    <th></th>
-    </tr>
-    </thead>
-    <tbody id="detalleTable"></tbody>
-    </table>
+
+
     
     <label>Agregar Producto</label>
-    <button onclick="addProducto()">+ Agregar Producto</button>
-    
+
+<div class="producto-add">
+
+<input id="pProducto" placeholder="Producto">
+<input id="pDetalle" placeholder="Detalle">
+<input id="pCantidad" type="number" placeholder="Cantidad">
+
+<button onclick="addProducto()" id="btnAddProducto">
++ Agregar Producto
+</button>
+
+</div>
+
+<table class="detalle">
+<thead>
+<tr>
+<th>Producto</th>
+<th>Detalle</th>
+<th>Cantidad</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="detalleTable"></tbody>
+</table>
     <label for="tObs">Observaciones</label>
     <textarea id="tObs" placeholder="Observaciones"></textarea>
     
