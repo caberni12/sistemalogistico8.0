@@ -481,6 +481,44 @@ min-width:50px;
 }
 
 }
+
+
+/* ================= FIX KPI MOVIL ================= */
+
+@media (max-width:768px){
+
+#kpis{
+display:grid;
+grid-template-columns:1fr 1fr; /* 2 por fila */
+gap:10px;
+width:100%;
+}
+
+.kpi{
+width:100%;
+min-width:0; /* evita que se desborde */
+padding:12px;
+}
+
+.kpi-title{
+font-size:11px;
+}
+
+.kpi-value{
+font-size:20px;
+}
+
+}
+
+/* pantallas muy pequeñas */
+
+@media (max-width:420px){
+
+#kpis{
+grid-template-columns:1fr; /* 1 por fila */
+}
+
+}
 </style>
 
 </head>
