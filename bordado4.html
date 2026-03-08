@@ -587,53 +587,77 @@ min-width:50px;
 }
 
 }
-/* ================= MODAL PRODUCTOS MOVIL ================= */
+/* ================= PRODUCTOS VERTICAL MOVIL ================= */
 
 @media (max-width:768px){
 
-/* permitir scroll horizontal en la tabla */
+/* eliminar tabla horizontal */
 
 .detalle{
+width:100%;
+border-collapse:separate;
+border-spacing:0;
+}
+
+/* ocultar encabezado */
+
+.detalle thead{
+display:none;
+}
+
+/* cada fila será una tarjeta */
+
+.detalle tr{
 display:block;
-overflow-x:auto;
-white-space:nowrap;
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:12px;
+padding:12px;
+margin-bottom:12px;
 }
 
-/* tamaño columnas */
+/* celdas verticales */
 
-.detalle th,
 .detalle td{
-min-width:120px;
+display:block;
+border:none;
+padding:6px 0;
 }
 
-/* inputs más grandes */
+/* inputs grandes */
 
 .detalle input{
 width:100%;
-min-width:110px;
-padding:10px;
+padding:12px;
 font-size:15px;
+border-radius:8px;
 }
 
 /* botón eliminar */
 
 .detalle button{
+width:100%;
+margin-top:6px;
 padding:10px;
-border-radius:10px;
+border-radius:8px;
+background:#ef4444;
+color:#fff;
 }
 
 /* botón agregar producto */
 
 #trasladoModal button{
-margin-top:8px;
-padding:12px;
-font-size:14px;
+width:100%;
+margin-top:10px;
+padding:14px;
+font-size:15px;
+border-radius:10px;
 }
 
 /* observaciones */
 
 #tObs{
-min-height:100px;
+min-height:110px;
 font-size:15px;
 }
 
