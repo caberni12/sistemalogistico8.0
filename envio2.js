@@ -1,4 +1,4 @@
-const API="https://script.google.com/macros/s/AKfycbybTDy6gfzqI54OIN-BP6YP-9GsYzCxAAEQSVGN8KH3q7yHG_RWUKNIiYRcYAuiCq9VmA/exec";
+const API="https://script.google.com/macros/s/AKfycbxV0h2drEsN8OJ1QSoWpR0rFaliAKwYRlOqpKt16smK4Oyq6eumN7YGuSNQl13GIfrbrQ/exec";
 
 let RAW=[];
 let FILT=[];
@@ -111,7 +111,7 @@ r.statusEntrega="EN TIEMPO";
 return r;
 }
 /* LOAD */
-/* LOAD */
+
 
 async function load(){
 
@@ -346,7 +346,7 @@ renderMore();
 
 /* EDITAR */
 
-/* EDITAR */
+
 
 function openEdit(row){
 
@@ -537,41 +537,54 @@ function openTraslado(row){
     
     }
     
-    
-    /* ================= AGREGAR PRODUCTO ================= */
-    
     function addProducto(){
-    
-    const tabla = document.getElementById("detalleTable");
-    if(!tabla) return;
-    
-    const fila = document.createElement("tr");
-    
-    fila.innerHTML = `
-    <td>
-    <input class="prod" placeholder="Producto">
-    </td>
-    
-    <td>
-    <input class="det" placeholder="Detalle">
-    </td>
-    
-    <td>
-    <input type="number" class="cant" value="1" min="1" oninput="calcTotal()">
-    </td>
-    
-    <td>
-    <button type="button" onclick="this.closest('tr').remove();calcTotal()">✖</button>
-    </td>
-    `;
-    
-    tabla.appendChild(fila);
-    
-    calcTotal();
-    
-    }
-    
-    
+
+        const tabla = document.getElementById("detalleTable");
+        if(!tabla) return;
+        
+        const prod = document.getElementById("pProducto").value.trim();
+        const det = document.getElementById("pDetalle").value.trim();
+        const cant = document.getElementById("pCantidad").value || 1;
+        
+        if(prod === ""){
+        alert("Favor Informe los Productos a Trasladar y Genere Numero de Traslado");
+        return;
+        }
+        
+        const fila = document.createElement("tr");
+        
+        fila.innerHTML = `
+        <td>
+        <input class="prod" value="${prod}" placeholder="Producto">
+        </td>
+        
+        <td>
+        <input class="det" value="${det}" placeholder="Detalle">
+        </td>
+        
+        <td>
+        <input type="number" class="cant" value="${cant}" min="1" oninput="calcTotal()">
+        </td>
+        
+        <td>
+        <button type="button" onclick="this.closest('tr').remove();calcTotal()">✖</button>
+        </td>
+        `;
+        
+        tabla.appendChild(fila);
+        
+        /* limpiar inputs superiores */
+        
+        document.getElementById("pProducto").value="";
+        document.getElementById("pDetalle").value="";
+        document.getElementById("pCantidad").value="1";
+        
+        /* volver al primer campo */
+        
+        document.getElementById("pProducto").focus();
+        
+        calcTotal();
+        }
     /* ================= CALCULAR TOTAL ================= */
     
     function calcTotal(){
@@ -590,122 +603,101 @@ function openTraslado(row){
     
     }
     
+ 
     
-    /* ================= GUARDAR TRASLADO ================= */
-    
-    async function guardarTraslado(){
 
-        const btn=document.getElementById("btnGuardarTraslado");
-        setLoading(btn,true);
-        
-        const r = RAW.find(x => Number(x._row) === Number(TRASLADO_ROW));
-        if(!r){
+ /* ================= GUARDAR TRASLADO ================= */
+async function guardarTraslado(){
+
+    const btn = document.getElementById("btnGuardarTraslado");
+    setLoading(btn,true);
+
+    const r = RAW.find(x => Number(x._row) === Number(TRASLADO_ROW));
+    if(!r){
         setLoading(btn,false);
         return;
-        }
-        
-        /* OBTENER PRODUCTOS */
-        
-        const productos=[];
-        
-        document.querySelectorAll("#detalleTable tr").forEach(tr=>{
-        
-        const prod=tr.querySelector(".prod")?.value || "";
-        const det=tr.querySelector(".det")?.value || "";
-        const cant=Number(tr.querySelector(".cant")?.value || 0);
-        
+    }
+
+    /* OBTENER PRODUCTOS */
+    const productos = [];
+    document.querySelectorAll("#detalleTable tr").forEach(tr=>{
+        const prod = tr.querySelector(".prod")?.value || "";
+        const det  = tr.querySelector(".det")?.value || "";
+        const cant = Number(tr.querySelector(".cant")?.value || 0);
         if(prod || det || cant){
-        
-        productos.push({
-        producto:prod,
-        detalle:det,
-        cantidad:cant
-        });
-        
+            productos.push({
+                producto: prod,
+                detalle: det,
+                cantidad: cant
+            });
         }
-        
-        });
-        
-        /* VALIDAR PRODUCTOS */
-        
-        if(productos.length===0){
+    });
+
+    /* VALIDAR PRODUCTOS */
+    if(productos.length===0){
         alert("Debe agregar al menos un producto");
         setLoading(btn,false);
         return;
-        }
-        
-        /* PAYLOAD */
-        
-        const payload={
-        
-        action:"crearTraslado",
-        
-        row:TRASLADO_ROW,
-        
-        pedido:r.pedido,
-        cliente:r.cliente,
-        direccion:r.direccion,
-        comuna:r.comuna,
-        transporte:r.transporte,
-        
-        observaciones:document.getElementById("tObs")?.value || "",
-        total:document.getElementById("tTotal")?.value || 0,
-        
-        productos:productos
-        
-        };
-        
-        try{
-        
-        const resp = await fetch(API,{
-        method:"POST",
-        body:JSON.stringify(payload)
-        });
-        
-        const data = await resp.json();
-        
-        /* ACTUALIZAR OBJETO LOCAL */
-        
-        if(data.traslado){
-        
-        r.solicitudTraslado=data.traslado;
-        r.pdfTraslado=data.pdf;
-        
-        }
-        
-        /* RECARGAR TARJETAS DESDE API */
-        
-        await load();
-        
-        /* ABRIR PDF */
-        
-        if(data.pdf){
-        window.open(data.pdf,"_blank");
-        }
-        
-        alert("Traslado generado: "+data.traslado);
-        
-        closeTraslado();
-        
-        }catch(e){
-        
-        console.error(e);
-        alert("Error generando traslado");
-        
-        }
-        
-        setLoading(btn,false);
-        
-        }
-    /* ================= CERRAR MODAL ================= */
-    
-    function closeTraslado(){
-    
-    const modal = document.getElementById("trasladoModal");
-    if(modal) modal.style.display="none";
-    
     }
 
+    /* URL LOGO EMPRESA MANUAL */
+    const logoEmpresa = "https://lh3.googleusercontent.com/d/11T8x616pxgYq0QYV51JpTulsF2s4szkk"; // aquí pones la URL que quieras
+
+    /* PAYLOAD */
+    const payload = {
+        action: "crearTraslado",
+        row: TRASLADO_ROW,
+        pedido: r.pedido,
+        cliente: r.cliente,
+        direccion: r.direccion,
+        comuna: r.comuna,
+        transporte: r.transporte,
+        observaciones: document.getElementById("tObs")?.value || "",
+        total: document.getElementById("tTotal")?.value || 0,
+        productos: productos,
+        logo: logoEmpresa // ✅ aquí agregamos el logo manual
+    };
+
+    try{
+        const resp = await fetch(API, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+
+        /* ACTUALIZAR OBJETO LOCAL */
+        if(data.traslado){
+            r.solicitudTraslado = data.traslado;
+            r.pdfTraslado      = data.pdf;
+        }
+
+        /* RECARGAR TARJETAS DESDE API */
+        await load();
+
+        /* ABRIR PDF */
+        if(data.pdf){
+            window.open(data.pdf,"_blank");
+        }
+
+        alert("Traslado generado: "+data.traslado);
+        closeTraslado();
+
+    }catch(e){
+        console.error(e);
+        alert("Error generando traslado");
+    }
+
+    setLoading(btn,false);
+}
+/************************************************
+ * CERRAR MODAL
+ ************************************************/
+function closeTraslado() {
+    const modal = document.getElementById("trasladoModal");
+    if (modal) modal.style.display = "none";
+}
+  
 /* MODAL */
 
 function closeEdit(){
@@ -723,19 +715,87 @@ fDesde.onchange=applyFilter;
 fHasta.onchange=applyFilter;
 
 
+/* ================= AUTO-RELOAD ================= */
+let autoLoad = setInterval(() => {
+    if ((editModal.style.display === "none" || !editModal.style.display) &&
+        (document.getElementById("trasladoModal").style.display === "none" || !document.getElementById("trasladoModal").style.display)) {
+        load();
+    }
+}, 15000); // cada 15 segundos
 
+let autoAlertas = setInterval(() => {
+    if ((editModal.style.display === "none" || !editModal.style.display) &&
+        (document.getElementById("trasladoModal").style.display === "none" || !document.getElementById("trasladoModal").style.display)) {
+        RAW = RAW.map(r => calcularAlertas(r));
+        applyFilter();
+    }
+}, 60000); // cada 1 minuto
 
+/* ================= GUARDAR ESTADO DEL MODAL TRASLADO ================= */
+function guardarEstadoTraslado(row) {
+    localStorage.setItem("trasladoModalRow", row);
+}
 
+function restaurarModalTraslado() {
+    const row = localStorage.getItem("trasladoModalRow");
+    if (row) {
+        openTraslado(Number(row));
+    }
+}
 
+/* MODIFICAR openTraslado PARA GUARDAR ESTADO */
+function openTraslado(row){
+    TRASLADO_ROW = row;
+    guardarEstadoTraslado(row); // ✅ Guardar fila en localStorage
 
+    /* BUSCAR REGISTRO */
+    const r = RAW.find(x => Number(x._row) === Number(row));
+    if(!r){
+        console.warn("Pedido no encontrado",row);
+        return;
+    }
 
-/* AUTO REFRESH */
+    /* OBTENER MODAL */
+    const modal = document.getElementById("trasladoModal");
+    if(!modal){
+        console.error("No existe el modal trasladoModal");
+        return;
+    }
 
-setInterval(load,15000);
+    /* ABRIR MODAL */
+    modal.style.display = "flex";
 
-setInterval(()=>{
-RAW=RAW.map(r=>calcularAlertas(r));
-applyFilter();
-},60000);
+    /* CARGAR DATOS */
+    const tPedido = document.getElementById("tPedido");
+    const tCliente = document.getElementById("tCliente");
+    const tDireccion = document.getElementById("tDireccion");
+    const tComuna = document.getElementById("tComuna");
+    const tTransporte = document.getElementById("tTransporte");
+
+    if(tPedido) tPedido.value = r.pedido || "";
+    if(tCliente) tCliente.value = r.cliente || "";
+    if(tDireccion) tDireccion.value = r.direccion || "";
+    if(tComuna) tComuna.value = r.comuna || "";
+    if(tTransporte) tTransporte.value = r.transporte || "";
+
+    /* LIMPIAR TABLA PRODUCTOS */
+    const tabla = document.getElementById("detalleTable");
+    if(tabla) tabla.innerHTML="";
+
+    /* CREAR PRIMERA FILA */
+    addProducto();
+}
+
+/* LIMPIAR localStorage AL CERRAR MODAL */
+function closeTraslado() {
+    const modal = document.getElementById("trasladoModal");
+    if (modal) modal.style.display = "none";
+    localStorage.removeItem("trasladoModalRow");
+}
+
+/* RESTAURAR MODAL AL RECARGAR */
+window.addEventListener("load", () => {
+    restaurarModalTraslado();
+});
 
 load();
