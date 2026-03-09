@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prueba PDF desde Apps Script</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<h1>Prueba PDF con Logo desde Apps Script</h1>
+<button id="btnGenerarPDF">Generar PDF</button>
+
+<script>
+  const API_EMPRESA = "https://script.google.com/macros/s/AKfycbykKpB2xH6vw7p8lXNrLjN2Wk4ze3KDZVl-1Pds04_vPpsdMVV027sR3caGMD-huzYR/exec";
+
+  async function obtenerEmpresaActiva(){
+      try{
+          const resp = await fetch(API_EMPRESA + "?action=empresaActiva", { cache:"no-store" });
+          const data = await resp.json();
+          if(data.ok && data.data){
+              return data.data; // { nombre, logo }
+          }
+          throw "No se obtuvo empresa activa";
+      }catch(e){
+          console.error(e);
+          return { nombre: "Empresa demo", logo: "" };
+      }
+  }
+
+  document.getElementById("btnGenerarPDF").onclick = async function(){
+      const empresa = await obtenerEmpresaActiva();
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      if(empresa.logo){
+          const img = new Image();
+          img.src = empresa.logo + "?v=" + Date.now();
+          img.crossOrigin = "anonymous";
+          img.onload = function(){
+              doc.addImage(img, 'PNG', 10, 10, 50, 20);
+
+              doc.setFontSize(16);
+              doc.text("Reporte de Pedidos - " + empresa.nombre, 70, 20);
+
+              doc.setFontSize(12);
+              doc.text("Cliente: Juan Pérez", 10, 50);
+              doc.text("Pedido: 12345", 10, 60);
+              doc.text("Fecha: 08/03/2026", 10, 70);
+
+              doc.text("Productos:", 10, 90);
+              doc.text("1. Producto A - 2 unidades", 10, 100);
+              doc.text("2. Producto B - 1 unidad", 10, 110);
+
+              doc.output('dataurlnewwindow');
+          };
+      } else {
+          doc.text("Logo no disponible", 10, 20);
+          doc.save("reporte.pdf");
+      }
+  };
+</script>
+
+</body>
+</html>

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Sistema Logístico</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
 :root{
@@ -90,6 +92,8 @@ margin-bottom:25px;
 .filters.hidden{
 display:none;
 }
+
+/* INPUTS */
 
 input,select,textarea{
 padding:10px 12px;
@@ -184,27 +188,11 @@ font-weight:800;
 color:#fff;
 }
 
-/* SEMAFORO STATUS */
-
-.estado-pendiente{
-background:#f59e0b;
-}
-
-.estado-ruta{
-background:#3b82f6;
-}
-
-.estado-recibido{
-background:#7c3aed;
-}
-
-.estado-entregado{
-background:#22c55e;
-}
-
-.estado-cancelado{
-background:#ef4444;
-}
+.estado-pendiente{background:#f59e0b;}
+.estado-ruta{background:#3b82f6;}
+.estado-recibido{background:#7c3aed;}
+.estado-entregado{background:#22c55e;}
+.estado-cancelado{background:#ef4444;}
 
 /* SECCIONES */
 
@@ -243,26 +231,26 @@ font-weight:900;
 display:block;
 }
 
-/* IMAGEN */
-
-.photo-wrap img{
-width:100%;
-max-height:140px;
-object-fit:cover;
-border-radius:10px;
-}
-
 /* PDF */
 
-.pdf-wrap a{
+.btn-pdf{
 background:#111827;
 color:#fff;
-padding:6px 10px;
-border-radius:8px;
-font-size:12px;
+padding:10px 16px;
+border-radius:10px;
+font-size:13px;
 text-decoration:none;
-display:inline-block;
-margin-right:6px;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:6px;
+font-weight:700;
+width:100%;
+box-sizing:border-box;
+}
+
+.btn-pdf:hover{
+background:#dc2626;
 }
 
 /* BOTONES TARJETA */
@@ -272,6 +260,12 @@ display:flex;
 flex-direction:column;
 gap:8px;
 margin-top:8px;
+}
+
+.card-actions button,
+.card-actions .btn-pdf{
+width:100%;
+justify-content:center;
 }
 
 /* MAPA */
@@ -313,99 +307,7 @@ overflow:auto;
 box-shadow:0 25px 60px rgba(0,0,0,.25);
 }
 
-.modal-box h3{
-margin:0 0 20px 0;
-font-size:20px;
-font-weight:800;
-}
-
-/* GRID FORM */
-
-.form-grid{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:18px 24px;
-align-items:end;
-}
-
-.full{
-grid-column:1 / -1;
-}
-
-/* DOCUMENTOS */
-
-.docs-area{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:20px;
-margin-top:10px;
-}
-
-.doc-item{
-display:flex;
-flex-direction:column;
-align-items:center;
-gap:8px;
-}
-
-.doc-title{
-font-size:12px;
-font-weight:800;
-text-transform:uppercase;
-}
-
-.hidden{
-display:none;
-}
-
-.doc-btn{
-border:0;
-border-radius:14px;
-padding:12px 16px;
-display:flex;
-align-items:center;
-gap:8px;
-cursor:pointer;
-font-weight:700;
-font-size:13px;
-box-shadow:0 6px 15px rgba(0,0,0,.08);
-}
-
-.doc-icon{
-font-size:18px;
-}
-
-.doc-btn.foto{
-background:#e5e7eb;
-color:#111827;
-}
-
-.doc-btn.pdf{
-background:#111827;
-color:#fff;
-}
-
-.doc-btn.traslado{
-background:#dc2626;
-color:#fff;
-}
-
-/* BOTONES MODAL */
-
-.modal-actions{
-display:flex;
-justify-content:flex-end;
-gap:10px;
-margin-top:25px;
-}
-
-.btn-close{
-background:#6b7280;
-}
-
-.btn-close:hover{
-background:#4b5563;
-}
+/* TABLA PRODUCTOS */
 
 .detalle{
 width:100%;
@@ -429,74 +331,14 @@ width:100%;
 padding:6px;
 }
 
-.btn-traslado{
-background:#dc2626;
-color:#fff;
-border-radius:8px;
-padding:8px 12px;
-}
-
-label{
-display:block;
-font-size:13px;
-font-weight:800;
-margin-top:10px;
-margin-bottom:4px;
-color:#374151;
-}
-
-textarea{
-width:100%;
-min-height:80px;
-padding:10px;
-border-radius:8px;
-border:1px solid #d1d5db;
-}
-
-#tTotal{
-width:100%;
-padding:10px;
-border-radius:8px;
-border:1px solid #d1d5db;
-font-weight:700;
-background:#f9fafb;
-}
-
-
-#trasladoModal label{
-display:block;
-font-size:13px;
-font-weight:700;
-margin-top:10px;
-margin-bottom:4px;
-color:#374151;
-}
-
-#trasladoModal input,
-#trasladoModal textarea{
-width:100%;
-padding:10px;
-border:1px solid #d1d5db;
-border-radius:8px;
-background:#fff;
-}
-
-.btn-pdf{
-background:#111827;
-color:#fff;
-padding:8px 12px;
-border-radius:8px;
-font-size:13px;
-text-decoration:none;
-display:inline-flex;
+.modal-actions{
+display:flex;
+gap:10px;
+margin-top:20px;
+justify-content:flex-start;
 align-items:center;
-gap:6px;
-font-weight:700;
 }
 
-.btn-pdf:hover{
-background:#dc2626;
-}
 /* RESPONSIVE */
 
 @media (max-width:1000px){
@@ -509,103 +351,19 @@ grid-template-columns:repeat(2,1fr);
 
 @media (max-width:600px){
 
-.form-grid{
-grid-template-columns:1fr;
-}
-
 .cards-grid{
 grid-template-columns:1fr;
 }
 
-.docs-area{
-grid-template-columns:1fr;
 }
 
-}
-
-/* ================= AJUSTE MODAL MOVIL ================= */
+/* PRODUCTOS MOVIL */
 
 @media (max-width:768px){
-
-.modal-content{
-
-padding:20px 16px;
-border-radius:14px;
-
-}
-
-/* separar inputs */
-
-#modalForm label{
-margin-top:10px;
-display:block;
-font-size:13px;
-}
-
-#modalForm input,
-#modalForm select{
-
-margin-top:4px;
-margin-bottom:12px;
-padding:12px;
-font-size:14px;
-border-radius:10px;
-
-}
-
-/* botones con más espacio */
-
-#modalForm button{
-
-padding:12px;
-font-size:14px;
-flex:1;
-
-}
-
-/* contenedor botones */
-
-#modalForm div[style*="display:flex"]{
-
-gap:12px;
-flex-wrap:wrap;
-
-}
-
-/* inputs de consulta rut */
-
-#mRutConsulta{
-
-flex:1;
-
-}
-
-#btnConsultarRut{
-
-min-width:50px;
-
-}
-
-}
-/* ================= PRODUCTOS VERTICAL MOVIL ================= */
-
-@media (max-width:768px){
-
-/* eliminar tabla horizontal */
-
-.detalle{
-width:100%;
-border-collapse:separate;
-border-spacing:0;
-}
-
-/* ocultar encabezado */
 
 .detalle thead{
 display:none;
 }
-
-/* cada fila será una tarjeta */
 
 .detalle tr{
 display:block;
@@ -616,15 +374,11 @@ padding:12px;
 margin-bottom:12px;
 }
 
-/* celdas verticales */
-
 .detalle td{
 display:block;
 border:none;
 padding:6px 0;
 }
-
-/* inputs grandes */
 
 .detalle input{
 width:100%;
@@ -632,8 +386,6 @@ padding:12px;
 font-size:15px;
 border-radius:8px;
 }
-
-/* botón eliminar */
 
 .detalle button{
 width:100%;
@@ -644,65 +396,7 @@ background:#ef4444;
 color:#fff;
 }
 
-/* botón agregar producto */
-
-#trasladoModal button{
-width:100%;
-margin-top:10px;
-padding:14px;
-font-size:15px;
-border-radius:10px;
 }
-
-/* observaciones */
-
-#tObs{
-min-height:110px;
-font-size:15px;
-}
-
-}
-
-.producto-add{
-display:grid;
-grid-template-columns:1fr 1fr 120px auto;
-gap:10px;
-margin-bottom:15px;
-align-items:center;
-}
-
-#btnAddProducto{
-padding:12px;
-border-radius:10px;
-font-weight:700;
-}
-
-/* MOVIL */
-
-@media (max-width:768px){
-
-.producto-add{
-grid-template-columns:1fr;
-position:sticky;
-top:0;
-background:#fff;
-padding-bottom:10px;
-z-index:20;
-}
-
-.producto-add input{
-padding:12px;
-font-size:15px;
-}
-
-#btnAddProducto{
-width:100%;
-padding:14px;
-font-size:15px;
-}
-
-}
-
 </style>
 
 </head>
@@ -928,32 +622,36 @@ font-size:15px;
     <input id="tTransporte" readonly>
 
 
-    
     <label>Agregar Producto</label>
 
-<div class="producto-add">
+    <div class="producto-add">
+    
+    <input id="pProducto" placeholder="Producto">
+    <input id="pDetalle" placeholder="Detalle">
+    <input id="pCantidad" type="number" placeholder="Cantidad">
+    
+    <button type="button" onclick="addProducto()" id="btnAddProducto">
+    + Agregar Producto
+    </button>
+    
+    
 
-<input id="pProducto" placeholder="Producto">
-<input id="pDetalle" placeholder="Detalle">
-<input id="pCantidad" type="number" placeholder="Cantidad">
+    </div>
 
-<button onclick="addProducto()" id="btnAddProducto">
-+ Agregar Producto
-</button>
-
-</div>
-
-<table class="detalle">
-<thead>
-<tr>
-<th>Producto</th>
-<th>Detalle</th>
-<th>Cantidad</th>
-<th></th>
-</tr>
-</thead>
-<tbody id="detalleTable"></tbody>
-</table>
+     
+    
+    <table class="detalle">
+    <thead>
+    <tr>
+    <th>Producto</th>
+    <th>Detalle</th>
+    <th>Cantidad</th>
+    <th></th>
+    </tr>
+    </thead>
+    <tbody id="detalleTable"></tbody>
+    </table>
+    
     <label for="tObs">Observaciones</label>
     <textarea id="tObs" placeholder="Observaciones"></textarea>
     
@@ -963,21 +661,18 @@ font-size:15px;
     <div class="modal-actions">
     
         <button id="btnGuardarTraslado" onclick="guardarTraslado()">
-
-            <span class="btn-text">Guardar Traslado</span>
+            <span class="btn-text">Generar Traslado</span>
             <span class="btn-loader"></span>
-            
             </button>
+            
+            <button type="button" onclick="document.getElementById('trasladoModal').style.display='none'">
+            Cerrar
+            </button>
+   
     
-    <button onclick="document.getElementById('trasladoModal').style.display='none'">
-    Cerrar
-    </button>
-    
-    </div>
-    
-    </div>
     </div>
 
+    
 
 <script>
 
@@ -995,7 +690,12 @@ panel.classList.toggle("hidden");
 }
 
 </script>
-<script src="segurity.js"></script>
+
+
+
+
+
+
 <script src="envio2.js"></script>
 
 

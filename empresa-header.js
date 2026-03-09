@@ -9,6 +9,9 @@
 const API_EMPRESA =
 "https://script.google.com/macros/s/AKfycbykKpB2xH6vw7p8lXNrLjN2Wk4ze3KDZVl-1Pds04_vPpsdMVV027sR3caGMD-huzYR/exec";
 
+// ✅ Variable global para el logo de la empresa activa
+let logoEmpresaActiva = "";
+
 /* =================================================
    EMPRESA ACTIVA (HEADER)
 ================================================= */
@@ -31,6 +34,9 @@ async function cargarEmpresaHeader(){
       logo.src = d.data.logo + "?v=" + Date.now();
       logo.style.display = "block";
     }
+
+    // ✅ Guardamos el logo activo en la variable global
+    logoEmpresaActiva = d.data.logo || "";
 
   }catch(err){
     console.error("Empresa:", err);
