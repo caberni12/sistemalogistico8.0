@@ -397,6 +397,110 @@ color:#fff;
 }
 
 }
+
+/* ================= DOCUMENTOS MODAL ================= */
+
+.docs-area{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:14px;
+margin-top:12px;
+width:100%;
+}
+
+/* CONTENEDOR CADA DOCUMENTO */
+
+.doc-item{
+display:flex;
+flex-direction:column;
+gap:6px;
+width:100%;
+}
+
+/* TITULO DOCUMENTO */
+
+.doc-title{
+font-size:12px;
+font-weight:800;
+color:#6b7280;
+text-transform:uppercase;
+}
+
+/* BOTON DOCUMENTO */
+
+.doc-btn{
+width:100%;
+padding:14px;
+border-radius:12px;
+border:0;
+font-weight:800;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:8px;
+cursor:pointer;
+color:#fff;
+font-size:14px;
+transition:.2s;
+}
+
+/* ICONO */
+
+.doc-icon{
+font-size:16px;
+}
+
+/* COLORES BOTONES */
+
+.doc-btn.foto{
+background:#0ea5e9;
+}
+
+.doc-btn.foto:hover{
+background:#0284c7;
+}
+
+.doc-btn.pdf{
+background:#111827;
+}
+
+.doc-btn.pdf:hover{
+background:#dc2626;
+}
+
+.doc-btn.traslado{
+background:#16a34a;
+}
+
+.doc-btn.traslado:hover{
+background:#15803d;
+}
+
+/* RESPONSIVE TABLET */
+
+@media (max-width:900px){
+
+.docs-area{
+grid-template-columns:repeat(2,1fr);
+}
+
+}
+
+/* RESPONSIVE MOVIL */
+
+@media (max-width:600px){
+
+.docs-area{
+grid-template-columns:1fr;
+}
+
+.doc-btn{
+padding:16px;
+font-size:15px;
+}
+
+}
+
 </style>
 
 </head>
