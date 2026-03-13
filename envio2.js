@@ -1,4 +1,4 @@
-const API="https://script.google.com/macros/s/AKfycby_rIYFa2zbh9aE570HQpYj0jPL9uPmr0dNw7W3THYfrHkxgzsJMPB-NsYzcw6m5YwztQ/exec";
+const API="https://script.google.com/macros/s/AKfycbzxmrAzVB5XMuySpxEOs1yyNKyGRYrbStB28mTYYpDRAMOHQe5QdAnbyUZHeECj58hEuA/exec";
 
 let RAW=[];
 let FILT=[];
@@ -606,89 +606,144 @@ function openTraslado(row){
  
     
 
- /* ================= GUARDAR TRASLADO ================= */
+/* ================= GUARDAR TRASLADO ================= */
+
 async function guardarTraslado(){
 
     const btn = document.getElementById("btnGuardarTraslado");
     setLoading(btn,true);
 
-    const r = RAW.find(x => Number(x._row) === Number(TRASLADO_ROW));
-    if(!r){
-        setLoading(btn,false);
-        return;
-    }
-
-    /* OBTENER PRODUCTOS */
-    const productos = [];
-    document.querySelectorAll("#detalleTable tr").forEach(tr=>{
-        const prod = tr.querySelector(".prod")?.value || "";
-        const det  = tr.querySelector(".det")?.value || "";
-        const cant = Number(tr.querySelector(".cant")?.value || 0);
-        if(prod || det || cant){
-            productos.push({
-                producto: prod,
-                detalle: det,
-                cantidad: cant
-            });
-        }
-    });
-
-    /* VALIDAR PRODUCTOS */
-    if(productos.length===0){
-        alert("Debe agregar al menos un producto");
-        setLoading(btn,false);
-        return;
-    }
-
-    /* URL LOGO EMPRESA MANUAL */
-    const logoEmpresa = "https://lh3.googleusercontent.com/d/11T8x616pxgYq0QYV51JpTulsF2s4szkk"; // aquí pones la URL que quieras
-
-    /* PAYLOAD */
-    const payload = {
-        action: "crearTraslado",
-        row: TRASLADO_ROW,
-        pedido: r.pedido,
-        cliente: r.cliente,
-        direccion: r.direccion,
-        comuna: r.comuna,
-        transporte: r.transporte,
-        observaciones: document.getElementById("tObs")?.value || "",
-        total: document.getElementById("tTotal")?.value || 0,
-        productos: productos,
-        logo: logoEmpresa // ✅ aquí agregamos el logo manual
-    };
-
     try{
-        const resp = await fetch(API, {
-            method: "POST",
+
+        const r = RAW.find(x => Number(x._row) === Number(TRASLADO_ROW));
+
+        if(!r){
+            alert("Pedido no encontrado");
+            setLoading(btn,false);
+            return;
+        }
+
+        /* ================= OBTENER PRODUCTOS ================= */
+
+        const productos = [];
+
+        document.querySelectorAll("#detalleTable tr").forEach(tr=>{
+
+            const prod = tr.querySelector(".prod")?.value.trim() || "";
+            const det  = tr.querySelector(".det")?.value.trim() || "";
+            const cant = Number(tr.querySelector(".cant")?.value || 0);
+
+            if(prod !== "" && cant > 0){
+
+                productos.push({
+                    producto: prod,
+                    detalle: det,
+                    cantidad: cant
+                });
+
+            }
+
+        });
+
+        if(productos.length === 0){
+            alert("Debe agregar al menos un producto");
+            setLoading(btn,false);
+            return;
+        }
+
+        /* ================= LOGO EMPRESA ================= */
+
+        const logoEmpresa = "https://lh3.googleusercontent.com/d/11T8x616pxgYq0QYV51JpTulsF2s4szkk";
+
+        /* ================= PAYLOAD ================= */
+
+        const payload = {
+
+            action: "crearTraslado",
+
+            row: TRASLADO_ROW,
+
+            pedido: r.pedido,
+            cliente: r.cliente,
+            direccion: r.direccion,
+            comuna: r.comuna,
+            transporte: r.transporte,
+
+            observaciones: document.getElementById("tObs")?.value || "",
+            total: Number(document.getElementById("tTotal")?.value || 0),
+
+            productos: productos,
+
+            logo: logoEmpresa
+
+        };
+
+        /* ================= ENVIO ================= */
+
+        const resp = await fetch(API,{
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
             body: JSON.stringify(payload)
         });
 
         const data = await resp.json();
 
-        /* ACTUALIZAR OBJETO LOCAL */
-        if(data.traslado){
-            r.solicitudTraslado = data.traslado;
-            r.pdfTraslado      = data.pdf;
+        /* ================= VALIDAR RESPUESTA ================= */
+
+        if(!data || data.ok === false){
+
+            console.error("Error servidor:",data);
+
+            alert("Error generando traslado: " + (data?.error || "Respuesta inválida"));
+
+            setLoading(btn,false);
+            return;
+
         }
 
-        /* RECARGAR TARJETAS DESDE API */
+        /* ================= ACTUALIZAR OBJETO LOCAL ================= */
+
+        if(data.traslado){
+
+            r.solicitudTraslado = data.traslado;
+
+        }
+
+        if(data.pdf){
+
+            r.pdfTraslado = data.pdf;
+
+        }
+
+        /* ================= RECARGAR SISTEMA ================= */
+
         await load();
 
-        /* ABRIR PDF */
+        /* ================= ABRIR PDF ================= */
+
         if(data.pdf){
+
             window.open(data.pdf,"_blank");
+
         }
 
-        alert("Traslado generado: "+data.traslado);
+        alert("Traslado generado: " + data.traslado);
+
         closeTraslado();
 
-    }catch(e){
+    }
+    catch(e){
+
         console.error(e);
+
         alert("Error generando traslado");
+
     }
 
     setLoading(btn,false);
+
 }
 /************************************************
  * CERRAR MODAL
