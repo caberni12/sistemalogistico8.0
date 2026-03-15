@@ -1,4 +1,4 @@
-const API="https://script.google.com/macros/s/AKfycbzxmrAzVB5XMuySpxEOs1yyNKyGRYrbStB28mTYYpDRAMOHQe5QdAnbyUZHeECj58hEuA/exec";
+const API="https://script.google.com/macros/s/AKfycbyDy6mT8zRnsU9CTPWxyVALTBeRFEgaRyglidCsUHE4lVI3xotg2DjAEYzsRAJECl9o/exec";
 
 let RAW=[];
 let FILT=[];
@@ -607,6 +607,7 @@ function openTraslado(row){
     
 
 /* ================= GUARDAR TRASLADO ================= */
+/* ================= GUARDAR TRASLADO ================= */
 
 async function guardarTraslado(){
 
@@ -619,39 +620,35 @@ async function guardarTraslado(){
 
         if(!r){
             alert("Pedido no encontrado");
-            setLoading(btn,false);
             return;
         }
 
-        /* ================= OBTENER PRODUCTOS ================= */
+        /* ================= PRODUCTOS ================= */
 
         const productos = [];
 
         document.querySelectorAll("#detalleTable tr").forEach(tr=>{
 
-            const prod = tr.querySelector(".prod")?.value.trim() || "";
-            const det  = tr.querySelector(".det")?.value.trim() || "";
+            const prod = tr.querySelector(".prod")?.value?.trim() || "";
+            const det  = tr.querySelector(".det")?.value?.trim() || "";
             const cant = Number(tr.querySelector(".cant")?.value || 0);
 
-            if(prod !== "" && cant > 0){
-
+            if(prod && cant > 0){
                 productos.push({
                     producto: prod,
                     detalle: det,
                     cantidad: cant
                 });
-
             }
 
         });
 
         if(productos.length === 0){
             alert("Debe agregar al menos un producto");
-            setLoading(btn,false);
             return;
         }
 
-        /* ================= LOGO EMPRESA ================= */
+        /* ================= LOGO ================= */
 
         const logoEmpresa = "https://lh3.googleusercontent.com/d/11T8x616pxgYq0QYV51JpTulsF2s4szkk";
 
@@ -661,13 +658,13 @@ async function guardarTraslado(){
 
             action: "crearTraslado",
 
-            row: TRASLADO_ROW,
+            row: Number(TRASLADO_ROW),
 
-            pedido: r.pedido,
-            cliente: r.cliente,
-            direccion: r.direccion,
-            comuna: r.comuna,
-            transporte: r.transporte,
+            pedido: r.pedido || "",
+            cliente: r.cliente || "",
+            direccion: r.direccion || "",
+            comuna: r.comuna || "",
+            transporte: r.transporte || "",
 
             observaciones: document.getElementById("tObs")?.value || "",
             total: Number(document.getElementById("tTotal")?.value || 0),
@@ -675,10 +672,9 @@ async function guardarTraslado(){
             productos: productos,
 
             logo: logoEmpresa
-
         };
 
-        /* ================= ENVIO ================= */
+        /* ================= FETCH ================= */
 
         const resp = await fetch(API,{
             method:"POST",
@@ -688,45 +684,36 @@ async function guardarTraslado(){
             body: JSON.stringify(payload)
         });
 
-        const data = await resp.json();
-
-        /* ================= VALIDAR RESPUESTA ================= */
-
-        if(!data || data.ok === false){
-
-            console.error("Error servidor:",data);
-
-            alert("Error generando traslado: " + (data?.error || "Respuesta inválida"));
-
-            setLoading(btn,false);
-            return;
-
+        if(!resp.ok){
+            throw new Error("Error HTTP: " + resp.status);
         }
 
-        /* ================= ACTUALIZAR OBJETO LOCAL ================= */
+        const data = await resp.json();
+
+        /* ================= VALIDAR ================= */
+
+        if(!data.ok){
+            throw new Error(data.error || "Error desconocido");
+        }
+
+        /* ================= ACTUALIZAR LOCAL ================= */
 
         if(data.traslado){
-
             r.solicitudTraslado = data.traslado;
-
         }
 
         if(data.pdf){
-
             r.pdfTraslado = data.pdf;
-
         }
 
-        /* ================= RECARGAR SISTEMA ================= */
+        /* ================= RECARGAR ================= */
 
         await load();
 
         /* ================= ABRIR PDF ================= */
 
         if(data.pdf){
-
             window.open(data.pdf,"_blank");
-
         }
 
         alert("Traslado generado: " + data.traslado);
@@ -737,14 +724,18 @@ async function guardarTraslado(){
     catch(e){
 
         console.error(e);
+        alert("Error generando traslado: " + e.message);
 
-        alert("Error generando traslado");
+    }
+    finally{
+
+        setLoading(btn,false);
 
     }
 
-    setLoading(btn,false);
-
 }
+
+
 /************************************************
  * CERRAR MODAL
  ************************************************/
@@ -786,60 +777,6 @@ let autoAlertas = setInterval(() => {
     }
 }, 60000); // cada 1 minuto
 
-/* ================= GUARDAR ESTADO DEL MODAL TRASLADO ================= */
-function guardarEstadoTraslado(row) {
-    localStorage.setItem("trasladoModalRow", row);
-}
-
-function restaurarModalTraslado() {
-    const row = localStorage.getItem("trasladoModalRow");
-    if (row) {
-        openTraslado(Number(row));
-    }
-}
-
-/* MODIFICAR openTraslado PARA GUARDAR ESTADO */
-function openTraslado(row){
-    TRASLADO_ROW = row;
-    guardarEstadoTraslado(row); // ✅ Guardar fila en localStorage
-
-    /* BUSCAR REGISTRO */
-    const r = RAW.find(x => Number(x._row) === Number(row));
-    if(!r){
-        console.warn("Pedido no encontrado",row);
-        return;
-    }
-
-    /* OBTENER MODAL */
-    const modal = document.getElementById("trasladoModal");
-    if(!modal){
-        console.error("No existe el modal trasladoModal");
-        return;
-    }
-
-    /* ABRIR MODAL */
-    modal.style.display = "flex";
-
-    /* CARGAR DATOS */
-    const tPedido = document.getElementById("tPedido");
-    const tCliente = document.getElementById("tCliente");
-    const tDireccion = document.getElementById("tDireccion");
-    const tComuna = document.getElementById("tComuna");
-    const tTransporte = document.getElementById("tTransporte");
-
-    if(tPedido) tPedido.value = r.pedido || "";
-    if(tCliente) tCliente.value = r.cliente || "";
-    if(tDireccion) tDireccion.value = r.direccion || "";
-    if(tComuna) tComuna.value = r.comuna || "";
-    if(tTransporte) tTransporte.value = r.transporte || "";
-
-    /* LIMPIAR TABLA PRODUCTOS */
-    const tabla = document.getElementById("detalleTable");
-    if(tabla) tabla.innerHTML="";
-
-    /* CREAR PRIMERA FILA */
-    addProducto();
-}
 
 /* LIMPIAR localStorage AL CERRAR MODAL */
 function closeTraslado() {
@@ -848,9 +785,6 @@ function closeTraslado() {
     localStorage.removeItem("trasladoModalRow");
 }
 
-/* RESTAURAR MODAL AL RECARGAR */
-window.addEventListener("load", () => {
-    restaurarModalTraslado();
-});
+
 
 load();
