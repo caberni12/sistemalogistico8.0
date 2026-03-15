@@ -633,7 +633,7 @@ async function guardarTraslado(){
             const det  = tr.querySelector(".det")?.value?.trim() || "";
             const cant = Number(tr.querySelector(".cant")?.value || 0);
 
-            if(prod && cant > 0){
+            if(prod && cant>0){
                 productos.push({
                     producto: prod,
                     detalle: det,
@@ -643,35 +643,34 @@ async function guardarTraslado(){
 
         });
 
-        if(productos.length === 0){
+        if(productos.length===0){
             alert("Debe agregar al menos un producto");
             return;
         }
 
         /* ================= LOGO ================= */
 
-        const logoEmpresa = "https://lh3.googleusercontent.com/d/11T8x616pxgYq0QYV51JpTulsF2s4szkk";
+        const logoEmpresa="https://lh3.googleusercontent.com/d/11T8x616pxgYq0QYV51JpTulsF2s4szkk";
 
         /* ================= PAYLOAD ================= */
 
-        const payload = {
+        const payload={
 
-            action: "crearTraslado",
+            action:"crearTraslado",
 
-            row: Number(TRASLADO_ROW),
+            row:Number(TRASLADO_ROW),
 
-            pedido: r.pedido || "",
-            cliente: r.cliente || "",
-            direccion: r.direccion || "",
-            comuna: r.comuna || "",
-            transporte: r.transporte || "",
+            pedido:r.pedido||"",
+            cliente:r.cliente||"",
+            direccion:r.direccion||"",
+            comuna:r.comuna||"",
+            transporte:r.transporte||"",
 
-            observaciones: document.getElementById("tObs")?.value || "",
-            total: Number(document.getElementById("tTotal")?.value || 0),
+            observaciones:document.getElementById("tObs")?.value||"",
+            total:Number(document.getElementById("tTotal")?.value||0),
 
-            productos: productos,
-
-            logo: logoEmpresa
+            productos:productos,
+            logo:logoEmpresa
         };
 
         /* ================= FETCH ================= */
@@ -679,44 +678,42 @@ async function guardarTraslado(){
         const resp = await fetch(API,{
             method:"POST",
             headers:{
-                "Content-Type":"application/json"
+                "Content-Type":"text/plain;charset=utf-8"
             },
-            body: JSON.stringify(payload)
+            body:JSON.stringify(payload)
         });
 
-        if(!resp.ok){
-            throw new Error("Error HTTP: " + resp.status);
+        const text = await resp.text();
+
+        let data;
+        try{
+            data = JSON.parse(text);
+        }catch(e){
+            console.error("Respuesta servidor:",text);
+            throw new Error("Respuesta inválida del servidor");
         }
-
-        const data = await resp.json();
-
-        /* ================= VALIDAR ================= */
 
         if(!data.ok){
-            throw new Error(data.error || "Error desconocido");
+            throw new Error(data.error || "Error generando traslado");
         }
 
-        /* ================= ACTUALIZAR LOCAL ================= */
+        /* ================= ACTUALIZAR DATOS ================= */
 
         if(data.traslado){
-            r.solicitudTraslado = data.traslado;
+            r.solicitudTraslado=data.traslado;
         }
 
         if(data.pdf){
-            r.pdfTraslado = data.pdf;
+            r.pdfTraslado=data.pdf;
         }
 
-        /* ================= RECARGAR ================= */
-
         await load();
-
-        /* ================= ABRIR PDF ================= */
 
         if(data.pdf){
             window.open(data.pdf,"_blank");
         }
 
-        alert("Traslado generado: " + data.traslado);
+        alert("Traslado generado: "+data.traslado);
 
         closeTraslado();
 
@@ -724,7 +721,7 @@ async function guardarTraslado(){
     catch(e){
 
         console.error(e);
-        alert("Error generando traslado: " + e.message);
+        alert("Error generando traslado: "+e.message);
 
     }
     finally{
@@ -734,6 +731,7 @@ async function guardarTraslado(){
     }
 
 }
+
 
 
 /************************************************
