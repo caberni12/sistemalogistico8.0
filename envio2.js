@@ -1,4 +1,9 @@
-const API="https://script.google.com/macros/s/AKfycbyDy6mT8zRnsU9CTPWxyVALTBeRFEgaRyglidCsUHE4lVI3xotg2DjAEYzsRAJECl9o/exec";
+
+//const API="https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec";
+
+
+const API="https://script.google.com/macros/s/AKfycbxqR3tjKkUZiexoPMcX-d1a3Qrb1TVgxq9wuzBBFu0FNSA30U_oERNKdN8HLYF-D0yW/exec";
+//https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec
 
 let RAW=[];
 let FILT=[];
@@ -243,107 +248,143 @@ return "estado";
 
 /* TARJETAS */
 
-function renderMore(){
+// ============================================
+// Renderizado de tarjetas y scroll infinito
+// ============================================
+function renderMore() {
+    const fragment = document.createDocumentFragment();
+    const slice = FILT.slice(visibleCount, visibleCount + CHUNK);
+  
+    slice.forEach(r => {
+      let clase = "card";
+      if (r.semaforo === "ROJO") clase += " card-atraso";
+      if (r.semaforo === "AMARILLO") clase += " card-alerta";
+  
+      const mapId = "map_" + r._row;
+      const card = document.createElement("div");
+      card.className = clase;
+  
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="pedido-numero">#${r.pedido}</div>
+          <div class="${statusClass(r.status)}">${r.status}</div>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Cliente</div>
+          <div class="section-value">${r.cliente}</div>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Dirección</div>
+          <div class="section-value">${r.direccion} (${r.comuna})</div>
+        </div>
+  
+        <div class="section">
+          <div class="section-title">Responsable</div>
+          <div class="section-value">${r.responsable || ""}</div>
+        </div>
+  
+        <div class="cajas-box">
+          CAJAS <span>${r.etiquetas || 0}</span>
+        </div>
+  
+        ${r.solicitudTraslado ? `
+          <div class="traslado-ref">
+            📦 Traslado: <b>${r.solicitudTraslado}</b>
+          </div>` : ""}
+  
+        ${r.alerta ? `
+          <div style="color:#dc2626;font-weight:800">
+            ${r.alerta}
+            ${r.diasAtraso > 0 ? `<br>Días atraso: ${r.diasAtraso}` : ""}
+          </div>` : ""}
+  
+        <div class="card-actions">
+          ${r.pdfTraslado ? 
+            `<a href="${r.pdfTraslado}" target="_blank" class="btn-pdf">📄 Documento Generado</a>` : ""}
+          <button onclick="toggleMap('${mapId}',this)">🗺 Mapa</button>
+          ${r.status === "ENTREGADO" && !r.solicitudTraslado ? 
+            `<button onclick="openTraslado(${r._row})">📦 Traslado</button>` : ""}
+          <button onclick="openEdit(${r._row})">✏️ Editar</button>
+        </div>
+  
+        <div class="map-container" id="${mapId}">
+          <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(r.direccion + " " + r.comuna)}&z=15&output=embed"></iframe>
+        </div>
+      `;
+  
+      fragment.appendChild(card);
+    });
+  
+    cardsGrid.appendChild(fragment);
+    visibleCount += CHUNK;
+  }
+  
+  /* SCROLL INFINITO */
+  window.addEventListener("scroll", () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 400) {
+      renderMore();
+    }
+  });
+  
+  /* ===== FUNCION PARA ACTUALIZAR EL BOTÓN "Documento Generado" DESPUÉS DE CREAR EL TRASLADO ===== */
+  function actualizarBotonPdfTraslado(row, pdfUrl, trasladoNum) {
+    const cards = document.querySelectorAll(".card");
+    cards.forEach(card => {
+      const numeroPedido = card.querySelector(".pedido-numero").textContent.replace("#", "");
+      if (numeroPedido == row) {
+        const acciones = card.querySelector(".card-actions");
+        const existe = acciones.querySelector(".btn-pdf");
+        if (!existe) {
+          const a = document.createElement("a");
+          a.href = pdfUrl;
+          a.target = "_blank";
+          a.className = "btn-pdf";
+          a.textContent = "📄 Documento Generado";
+          acciones.insertBefore(a, acciones.firstChild);
+        }
+        // Actualizar número de traslado visible
+        const trasladoRef = card.querySelector(".traslado-ref");
+        if (!trasladoRef) {
+          const div = document.createElement("div");
+          div.className = "traslado-ref";
+          div.innerHTML = `📦 Traslado: <b>${trasladoNum}</b>`;
+          acciones.insertBefore(div, acciones.firstChild.nextSibling);
+        }
+      }
+    });
+  }
+  
 
-const fragment=document.createDocumentFragment();
-
-const slice=FILT.slice(visibleCount,visibleCount+CHUNK);
-
-slice.forEach(r=>{
-
-let clase="card";
-
-if(r.semaforo==="ROJO") clase+=" card-atraso";
-if(r.semaforo==="AMARILLO") clase+=" card-alerta";
-
-const mapId="map_"+r._row;
-
-const card=document.createElement("div");
-card.className=clase;
-
-card.innerHTML=`
-
-<div class="card-header">
-
-<div class="pedido-numero">#${r.pedido}</div>
-
-<div class="${statusClass(r.status)}">${r.status}</div>
-
-</div>
-
-<div class="section">
-<div class="section-title">Cliente</div>
-<div class="section-value">${r.cliente}</div>
-</div>
-
-<div class="section">
-<div class="section-title">Dirección</div>
-<div class="section-value">${r.direccion} (${r.comuna})</div>
-</div>
-
-<div class="section">
-<div class="section-title">Responsable</div>
-<div class="section-value">${r.responsable||""}</div>
-</div>
-
-<div class="cajas-box">
-CAJAS
-<span>${r.etiquetas||0}</span>
-</div>
-
-${r.solicitudTraslado ? `
-<div class="traslado-ref">
-📦 Traslado: <b>${r.solicitudTraslado}</b>
-</div>
-` : ""}
-
-${r.alerta?`
-    <div style="color:#dc2626;font-weight:800">
-    ${r.alerta}
-    
-    ${r.diasAtraso>0 ? `<br>Días atraso: ${r.diasAtraso}` : ""}
-    
-    </div>
-    `:""}
-
-<div class="card-actions">
-${r.pdfTraslado ? 
-    `<a href="${r.pdfTraslado}" target="_blank" class="btn-pdf">📄 Documento Generado</a>` : ""}
-<button onclick="toggleMap('${mapId}',this)">🗺 Mapa</button>
-
-${r.status==="ENTREGADO" && !r.solicitudTraslado ? 
-`<button onclick="openTraslado(${r._row})">📦 Traslado</button>` : ""}
-
-
-
-<button onclick="openEdit(${r._row})">✏️ Editar</button>
-
-</div>
-
-<div class="map-container" id="${mapId}">
-<iframe src="https://maps.google.com/maps?q=${encodeURIComponent(r.direccion+" "+r.comuna)}&z=15&output=embed"></iframe>
-</div>
-
-`;
-
-fragment.appendChild(card);
-
-});
-
-cardsGrid.appendChild(fragment);
-
-visibleCount+=CHUNK;
-
-}
-
-/* SCROLL INFINITO */
-
-window.addEventListener("scroll",()=>{
-if(window.innerHeight+window.scrollY>=document.body.offsetHeight-400){
-renderMore();
-}
-});
-
+  
+  // ============================================
+  // Función que se llama al generar traslado
+  // ============================================
+  async function generarTraslado(row) {
+    try {
+      // Llamada a tu API global
+      const response = await fetch(API, {
+        method: "POST",
+        body: JSON.stringify({ row }),
+        headers: { "Content-Type": "application/json" }
+      });
+  
+      const data = await response.json();
+  
+      if (data.ok) {
+        // Actualizar tarjeta inmediatamente
+        actualizarBotonPdfTraslado(row, data.pdf, data.traslado);
+        alert("Traslado generado correctamente: " + data.traslado);
+      } else {
+        alert("Error al generar traslado: " + (data.error || "Desconocido"));
+      }
+  
+    } catch (err) {
+      console.error(err);
+      alert("Error al generar traslado: Failed to fetch");
+    }
+  }
 /* EDITAR */
 
 
@@ -467,7 +508,6 @@ async function guardar(){
     setLoading(btnGuardar,false);
     
     }
-
 /* MAPA */
 
 function toggleMap(id,btn){
@@ -607,7 +647,6 @@ function openTraslado(row){
     
 
 /* ================= GUARDAR TRASLADO ================= */
-/* ================= GUARDAR TRASLADO ================= */
 
 async function guardarTraslado(){
 
@@ -731,6 +770,8 @@ async function guardarTraslado(){
     }
 
 }
+
+
 
 
 
