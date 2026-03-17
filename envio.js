@@ -3,7 +3,7 @@ API
 ***************************************************/
 //const API="https://script.google.com/macros/s/AKfycbxtLfg0gSUBPCBgDZZeVC-yO7KElDU5RLbTmvj68K9UPOthpdtgLfrk_MRTGTpRaa1M/exec";
 
-const API="https://script.google.com/macros/s/AKfycbxqR3tjKkUZiexoPMcX-d1a3Qrb1TVgxq9wuzBBFu0FNSA30U_oERNKdN8HLYF-D0yW/exec";
+const API="https://script.google.com/macros/s/AKfycbzwsl3NcNLfSBEi1S9MMapEdIUWz82WQy1-iq-tTQfIwI5CP9O0w7iJsihdpvGoaiQk/exec";
 
 /***************************************************
 DOM
@@ -53,6 +53,11 @@ const mapModal=document.getElementById("mapModal");
 const mapFrame=document.getElementById("mapFrame");
 const btnCerrarMapa=document.getElementById("btnCerrarMapa");
 
+/* 🔒 BLOQUEAR PEDIDO */
+if(mPedido){
+  mPedido.readOnly = true;
+}
+
 /***************************************************
 VARIABLES
 ***************************************************/
@@ -60,6 +65,8 @@ let RAW=[];
 let FILT=[];
 let EDIT=null;
 let KPI_CHARTS={};
+let isEditing = false;
+let selectedIndex = -1;
 /***************************************************
 PAGINACION
 ***************************************************/
@@ -281,68 +288,153 @@ TABLA
 ***************************************************/
 function renderTable(data){
 
-  tbody.innerHTML="";
- 
+  tbody.innerHTML = "";
+
   if(!data.length){
-   tbody.innerHTML="<tr><td colspan='19'>Sin datos</td></tr>";
-   return;
+    tbody.innerHTML = "<tr><td colspan='19'>Sin datos</td></tr>";
+    return;
   }
- 
-  data.forEach(r=>{
- 
-  const semaforo=calcularSemaforo(r.fechaEntrega);
- 
-  const tr=`
- <tr>
- <td>${formatDate(r.fechaIngreso)}</td>
- <td>${r.pedido||""}</td>
- <td>${r.tipoDocumento||""}</td>
- <td>${r.numeroDocumento||""}</td>
- <td>${r.cliente||""}</td>
- 
- <td>
- <a href="#" onclick="verMapa(\`${r.direccion||""}\`)">
- ${r.direccion||""}
- </a>
- </td>
- 
- <td>${r.comuna||""}</td>
- <td>${r.transporte||""}</td>
- <td>${r.etiquetas||""}</td>
- 
- <td>${renderEstado(r.status)}</td>
- 
- <td>${r.fechaEntrega||""}</td>
- 
- <td>${renderAlerta(r.alerta)}</td>
- 
- <td>${r.diasAtraso||""}</td>
- 
- <td>${semaforo}</td>
- 
- <td>${r.responsable||""}</td>
- 
- <td>
- ${r.foto?`<img src="${r.foto}" class="foto-thumb" onclick="verFoto('${r.foto}')">`:""}
- </td>
- 
- <td>${renderPDF(r.pdf)}</td>
- 
- <td>${renderPDF(r.pdfTraslado)}</td>
- 
- <td class="actions">
- <button onclick="openModal(${r._row})">✏️</button>
- <button onclick="deleteRow(${r._row})">🗑️</button>
- </td>
- 
- </tr>
- `;
- 
-  tbody.insertAdjacentHTML("beforeend",tr);
- 
+
+  data.forEach((r,i)=>{
+
+    const semaforo = calcularSemaforo(r.fechaEntrega);
+
+    const tr = `
+<tr 
+  data-index="${i}" 
+  onclick="selectRow(${i}); openModal(${r._row})" 
+  style="cursor:pointer"
+>
+
+<td>${formatDate(r.fechaIngreso)}</td>
+
+<td>${r.pedido||""}</td>
+
+<td>${r.tipoDocumento||""}</td>
+
+<td>${r.numeroDocumento||""}</td>
+
+<td>${r.cliente||""}</td>
+
+<td>
+  <a href="#" onclick="event.stopPropagation(); verMapa(\`${r.direccion||""}\`)">
+    ${r.direccion||""}
+  </a>
+</td>
+
+<td>${r.comuna||""}</td>
+
+<td>${r.transporte||""}</td>
+
+<td>${r.etiquetas||""}</td>
+
+<td>${renderEstado(r.status)}</td>
+
+<td>${r.fechaEntrega||""}</td>
+
+<td>${renderAlerta(r.alerta)}</td>
+
+<td>${r.diasAtraso||""}</td>
+
+<td>${semaforo}</td>
+
+<td>${r.responsable||""}</td>
+
+<td>
+  ${
+    r.foto
+    ? `<img 
+        src="${r.foto}" 
+        class="foto-thumb" 
+        onclick="event.stopPropagation(); verFoto('${r.foto}')"
+      >`
+    : ""
+  }
+</td>
+
+<td>${renderPDF(r.pdf)}</td>
+
+<td>${renderPDF(r.pdfTraslado)}</td>
+
+<td class="actions">
+
+  <button onclick="event.stopPropagation(); openModal(${r._row})">
+    ✏️
+  </button>
+
+  <button onclick="event.stopPropagation(); deleteRow(${r._row})">
+    🗑️
+  </button>
+
+</td>
+
+</tr>
+`;
+
+    tbody.insertAdjacentHTML("beforeend", tr);
+
   });
- 
- }
+
+}
+
+function selectRow(index){
+
+  const rows = tbody.querySelectorAll("tr");
+
+  rows.forEach(r => r.classList.remove("selected"));
+
+  const row = rows[index];
+
+  if(row){
+    row.classList.add("selected");
+    selectedIndex = index;
+  }
+
+}
+
+document.addEventListener("keydown", (e)=>{
+
+  const rows = tbody.querySelectorAll("tr");
+  if(!rows.length) return;
+
+  if(e.key === "ArrowDown"){
+
+    e.preventDefault();
+
+    if(selectedIndex < rows.length - 1){
+      selectedIndex++;
+    }
+
+    selectRow(selectedIndex);
+    rows[selectedIndex].scrollIntoView({block:"nearest"});
+
+  }
+
+  if(e.key === "ArrowUp"){
+
+    e.preventDefault();
+
+    if(selectedIndex > 0){
+      selectedIndex--;
+    }
+
+    selectRow(selectedIndex);
+    rows[selectedIndex].scrollIntoView({block:"nearest"});
+
+  }
+
+  if(e.key === "Enter"){
+
+    if(selectedIndex >= 0){
+      const rowData = FILT[(PAGE-1)*PAGE_SIZE + selectedIndex];
+      if(rowData){
+        openModal(rowData._row);
+      }
+    }
+
+  }
+
+});
 
 
 function renderCards(data){
@@ -638,61 +730,60 @@ GUARDAR
 ***************************************************/
 btnGuardar.onclick=async()=>{
 
- try{
-
- setLoading(btnGuardar,true);
-
- let foto="";
- let pdf="";
-
- if(mFotos && mFotos.files.length){
-  foto=await fileToBase64(mFotos.files[0]);
- }
-
- if(mPdf && mPdf.files.length){
-  pdf=await fileToBase64(mPdf.files[0]);
- }
-
- const data={
-  action:EDIT?"update":"add",
-  row:EDIT,
-  "TIPO DOCUMENTO":mTipoDoc.value,
-  "NUMERO DOCUMENTO":mNumeroDoc.value,
-  "CLIENTE":mCliente.value,
-  "DIRECCION":mDireccion.value,
-  "COMUNA":mComuna.value,
-  "TRANSPORTE":mTransporte.value,
-  "ETIQUETAS":mCajas.value,
-  "STATUS":mStatus.value,
-  "FECHA ENTREGA":mHoraEntrega.value,
-  "RESPONSABLE":mResponsable.value,
-  "OBSERVACIONES":mObs.value,
-  FOTO:foto,
-  PDF:pdf
+  try{
+ 
+  setLoading(btnGuardar,true);
+ 
+  let foto="";
+  let pdf="";
+ 
+  if(mFotos && mFotos.files.length){
+   foto=await fileToBase64(mFotos.files[0]);
+  }
+ 
+  if(mPdf && mPdf.files.length){
+   pdf=await fileToBase64(mPdf.files[0]);
+  }
+ 
+  const data={
+   action:EDIT?"update":"add",
+   row:EDIT,
+   "TIPO DOCUMENTO":mTipoDoc.value,
+   "NUMERO DOCUMENTO":mNumeroDoc.value,
+   "CLIENTE":mCliente.value,
+   "DIRECCION":mDireccion.value,
+   "COMUNA":mComuna.value,
+   "TRANSPORTE":mTransporte.value,
+   "ETIQUETAS":mCajas.value,
+   "STATUS":mStatus.value,
+   "FECHA ENTREGA":mHoraEntrega.value,
+   "RESPONSABLE":mResponsable.value,
+   "OBSERVACIONES":mObs.value,
+   FOTO:foto,
+   PDF:pdf
+  };
+ 
+  const params=new URLSearchParams();
+  params.append("data",JSON.stringify(data));
+ 
+  await fetch(API,{
+   method:"POST",
+   body:params
+  });
+ 
+  modalForm.style.display="none";
+ 
+  load();
+ 
+  }catch(e){
+ 
+   alert("Error guardando");
+ 
+  }
+ 
+  setLoading(btnGuardar,false);
+ 
  };
-
- const params=new URLSearchParams();
- params.append("data",JSON.stringify(data));
-
- await fetch(API,{
-  method:"POST",
-  body:params
- });
-
- modalForm.style.display="none";
-
- load();
-
- }catch(e){
-
-  alert("Error guardando");
-
- }
-
- setLoading(btnGuardar,false);
-
-};
-
 /***************************************************
 DELETE
 ***************************************************/
@@ -945,9 +1036,35 @@ btnTogglePanel.textContent = hidden
 
 }
 
+function autoRefresh(){
+
+  setInterval(async ()=>{
+
+    try{
+
+      /* ❌ NO refrescar si estás editando */
+      if(isEditing) return;
+
+      await load();
+
+    }catch(err){
+
+      console.error("AutoRefresh error:", err);
+
+    }
+
+  },60000);
+
+}
+
 /***************************************************
 INIT
 ***************************************************/
-btnReload.onclick=load;
+btnReload.onclick = load;
 
-load();
+window.onload = () => {
+
+  load();
+  autoRefresh();
+
+};

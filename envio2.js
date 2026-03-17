@@ -2,7 +2,7 @@
 //const API="https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec";
 
 
-const API="https://script.google.com/macros/s/AKfycbxqR3tjKkUZiexoPMcX-d1a3Qrb1TVgxq9wuzBBFu0FNSA30U_oERNKdN8HLYF-D0yW/exec";
+const API="https://script.google.com/macros/s/AKfycbz02T5nejNyclS-ux3Zh22eBS8E8grbyc97tKsxRcIbwuC5ifxyM6qtj5foGsE99lez/exec";
 //https://script.google.com/macros/s/AKfycbzj3sRVqYDgGVak1PNHrycYQ6FI5Mk5UyADOL0uI4CDAprlT7LDv3ZVWrfMCkwPMCgW/exec
 
 let RAW=[];
@@ -576,7 +576,7 @@ function openTraslado(row){
     addProducto();
     
     }
-    
+
     function addProducto(){
 
         const tabla = document.getElementById("detalleTable");
@@ -711,6 +711,8 @@ async function guardarTraslado(){
             productos:productos,
             logo:logoEmpresa
         };
+
+
 
         /* ================= FETCH ================= */
 
